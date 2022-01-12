@@ -1,7 +1,7 @@
 # musicdiff
 A Python3 package for computing and visualizing the differences between two music scores.
 
-musicdiff is derived from: [music-score-diff[(https://github.com/fosfrancesco/music-score-diff.git)
+musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git)
     by [Francesco Foscarin](https://github.com/fosfrancesco)
 
 ## Setup
