@@ -2,7 +2,7 @@
 A Python3 package for computing and visualizing the differences between two music scores.
 
 musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git)
-    by [Francesco Foscarin](https://github.com/fosfrancesco)
+    by [Francesco Foscarin](https://github.com/fosfrancesco).
 
 ## Setup
 Depends on music21. After installing music21 you also will need to set it up to display a musical score (e.g. with MuseScore).
