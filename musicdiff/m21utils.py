@@ -44,7 +44,7 @@ class M21Utils:
         else:
             out_string += "N"
         # add notehead information (4,2,1,1/2, etc...). 4 means a black note, 2 white, 1 whole etc...
-        type_number = Fraction(duration.convertTypeToNumber(gn.duration.type))
+        type_number = Fraction(m21.duration.convertTypeToNumber(gn.duration.type))
         if type_number >= 4:
             out_string += "4"
         else:
@@ -74,12 +74,12 @@ class M21Utils:
             # This can happen when there are no measures in the test data.
             # We will guess, based on displayType.
             # displayType can be 'normal', 'always', 'never', 'unless-repeated', 'even-tied'
-            print("accidental.displayStatus unknown, so we will guess based on displayType")
+            # print("accidental.displayStatus unknown, so we will guess based on displayType")
             displayType = note.pitch.accidental.displayType
             if displayType is None:
                 displayType = "normal"
 
-            if displayType == "always" or displayType == "even-tied":
+            if displayType in ("always", "even-tied"):
                 note_accidental = note.pitch.accidental.name
             elif displayType == "never":
                 note_accidental = "None"
@@ -94,12 +94,7 @@ class M21Utils:
         # TODO: we should append editorial style info to note_accidental here ('paren', etc)
 
         # add tie information
-        if note.tie is not None and (
-            note.tie.type == "stop" or note.tie.type == "continue"
-        ):
-            note_tie = True
-        else:
-            note_tie = False
+        note_tie = note.tie is not None and note.tie.type in ("stop", "continue")
         return (note_pitch, note_accidental, note_tie)
 
 
@@ -150,7 +145,7 @@ class M21Utils:
             raise TypeError("The generalNote must be a Chord, a Rest or a Note")
 
         # notehead information (4,2,1,1/2, etc...). 4 means a black note, 2 white, 1 whole etc...
-        type_number = Fraction(duration.convertTypeToNumber(gn.duration.type))
+        type_number = Fraction(m21.duration.convertTypeToNumber(gn.duration.type))
         if type_number >= 4:
             note_head = "4"
         else:
@@ -195,7 +190,7 @@ class M21Utils:
     def get_types(note_list):
         _type_list = []
         for n in note_list:
-            _type_list.append(duration.convertTypeToNumber(n.duration.type))
+            _type_list.append(m21.duration.convertTypeToNumber(n.duration.type))
         return _type_list
 
 
@@ -213,9 +208,9 @@ class M21Utils:
     @staticmethod
     def get_enhance_beamings(note_list):
         """create a mod_beam_list that take into account also the single notes with a type > 4"""
-        _beam_list = get_beamings(note_list)
-        _type_list = get_types(note_list)
-        _mod_beam_list = get_beamings(note_list)
+        _beam_list = M21Utils.get_beamings(note_list)
+        _type_list = M21Utils.get_types(note_list)
+        _mod_beam_list = M21Utils.get_beamings(note_list)
         # add informations for rests and notes not grouped
         for i, n in enumerate(_beam_list):
             if len(n) == 0:
@@ -238,30 +233,30 @@ class M21Utils:
         for beam_depth in range(max_beam_len):
             for note_index in range(len(_mod_beam_list)):
                 if (
-                    safe_get(_mod_beam_list[note_index], beam_depth) == "start"
-                    and safe_get(safe_get(_mod_beam_list, note_index + 1), beam_depth)
+                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "start"
+                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth)
                     is None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "partial"
                 elif (
-                    safe_get(_mod_beam_list[note_index], beam_depth) == "stop"
-                    and safe_get(safe_get(_mod_beam_list, note_index - 1), beam_depth)
+                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "stop"
+                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth)
                     is None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "partial"
                 elif (
-                    safe_get(_mod_beam_list[note_index], beam_depth) == "continue"
-                    and safe_get(safe_get(_mod_beam_list, note_index - 1), beam_depth)
+                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "continue"
+                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth)
                     is None
-                    and safe_get(safe_get(_mod_beam_list, note_index + 1), beam_depth)
+                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth)
                     is None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "partial"
                 elif (
-                    safe_get(_mod_beam_list[note_index], beam_depth) == "continue"
-                    and safe_get(safe_get(_mod_beam_list, note_index - 1), beam_depth)
+                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "continue"
+                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth)
                     is None
-                    and safe_get(safe_get(_mod_beam_list, note_index + 1), beam_depth)
+                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth)
                     is not None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "start"
@@ -281,7 +276,7 @@ class M21Utils:
 
     @staticmethod
     def get_norm_durations(note_list):
-        dur_list = get_durations(note_list)
+        dur_list = M21Utils.get_durations(note_list)
         if sum(dur_list) == 0:
             raise ValueError("It's not possible to normalize the durations if the sum is 0")
         return [d / sum(dur_list) for d in dur_list]  # normalize the duration
@@ -299,9 +294,7 @@ class M21Utils:
         for n in note_list:
             tuple_info_list_for_note = []
             for t in n.duration.tuplets:
-                if (
-                    t.tupletNormalShow == "number" or t.tupletNormalShow == "both"
-                ):  # if there is a notation like "2:3"
+                if t.tupletNormalShow in ("number", "both"): # if there is a notation like "2:3"
                     new_info = str(t.numberNotesActual) + ":" + str(t.numberNotesNormal)
                 else:  # just a number for the tuplets
                     new_info = str(t.numberNotesActual)
@@ -321,7 +314,7 @@ class M21Utils:
         max_tupl_len = max([len(t) for t in tuplets_list])
         for ii in range(max_tupl_len):
             start_index = None
-            stop_index = None
+            # stop_index = None
             for i, note_tuple in enumerate(tuplets_list):
                 if len(note_tuple) > ii:
                     if note_tuple[ii] == "start":
@@ -349,11 +342,11 @@ class M21Utils:
         out = []
         if allowGraceNotes:
             for n in measure.getElementsByClass('GeneralNote'):
-                if n.style.hideObjectOnPrint == False:
+                if not n.style.hideObjectOnPrint:
                     out.append(n)
         else:
             for n in measure.getElementsByClass('GeneralNote'):
-                if n.style.hideObjectOnPrint == False and n.duration.quarterLength != 0:
+                if not n.style.hideObjectOnPrint and n.duration.quarterLength != 0:
                     out.append(n)
         return out
 
@@ -366,7 +359,7 @@ class M21Utils:
         """
         out = []
         for n in measure.getElementsByClass('GeneralNote'):
-            if n.style.hideObjectOnPrint == False:
+            if not n.style.hideObjectOnPrint:
                 out.append(n)
         return out
 
@@ -380,12 +373,11 @@ class M21Utils:
 
 
     @staticmethod
-    def safe_get(list, idx):
-        if list is None:
+    def safe_get(indexable, idx):
+        if indexable is None:
             out = None
-        elif idx < len(list) and idx >= 0:
-            out = list[idx]
+        elif 0 <= idx < len(indexable):
+            out = indexable[idx]
         else:
             out = None
         return out
-

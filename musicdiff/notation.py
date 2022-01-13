@@ -13,9 +13,10 @@
 # ------------------------------------------------------------------------------
 
 from fractions import Fraction
+
 import music21 as m21
 
-from musicdiff import m21utils as m21u
+from musicdiff import M21Utils
 
 
 class AnnotatedNote:
@@ -37,10 +38,10 @@ class AnnotatedNote:
             ]  # accidental and tie are automaticaly set for rests
         elif general_note.isChord:
             self.pitches = [
-                m21u.note2tuple(p) for p in general_note.sortDiatonicAscending().notes
+                M21Utils.note2tuple(p) for p in general_note.sortDiatonicAscending().notes
             ]
         elif general_note.isNote:
-            self.pitches = [m21u.note2tuple(general_note)]
+            self.pitches = [M21Utils.note2tuple(general_note)]
         else:
             raise TypeError("The generalNote must be a Chord, a Rest or a Note")
         # note head
@@ -74,7 +75,7 @@ class AnnotatedNote:
         size = 0
         # add for the pitches
         for pitch in self.pitches:
-            size += m21u.pitch_size(pitch)
+            size += M21Utils.pitch_size(pitch)
         # add for the dots
         size += self.dots * len(self.pitches)  # one dot for each note if it's a chord
         # add for the beamings
@@ -89,16 +90,8 @@ class AnnotatedNote:
 
     def __repr__(self):
         # does consider the MEI id!
-        return "{},{},{},{},{},{},{},{}".format(
-            self.pitches,
-            self.note_head,
-            self.dots,
-            self.beamings,
-            self.tuplets,
-            self.general_note,
-            self.articulations,
-            self.expressions,
-        )
+        return (f"{self.pitches},{self.note_head},{self.dots},{self.beamings}," +
+                f"{self.tuplets},{self.general_note},{self.articulations},{self.expressions}")
 
     def __str__(self):
         """
@@ -130,7 +123,7 @@ class AnnotatedNote:
                 elif b == "partial":
                     string += "pa"
                 else:
-                    raise Exception("Incorrect beaming type: {}".format(b))
+                    raise Exception(f"Incorrect beaming type: {b}")
         if len(self.tuplets) > 0:  # add for tuplets
             string += "T"
             for t in self.tuplets:
@@ -141,7 +134,7 @@ class AnnotatedNote:
                 elif t == "stop":
                     string += "sp"
                 else:
-                    raise Exception("Incorrect tuplets type: {}".format(t))
+                    raise Exception(f"Incorrect tuplets type: {t}")
         if len(self.articulations) > 0:  # add for articulations
             for a in self.articulations:
                 string += a
@@ -183,20 +176,20 @@ class Voice:
         :param measure: m21 voice for one measure
         """
         self.voice = voice.id
-        self.note_list = m21u.get_notes(voice)
+        self.note_list = M21Utils.get_notes(voice)
         if not self.note_list:
             self.en_beam_list = []
             self.tuplet_list = []
             self.tuple_info = []
             self.annot_notes = []
         else:
-            self.en_beam_list = m21u.get_enhance_beamings(
+            self.en_beam_list = M21Utils.get_enhance_beamings(
                 self.note_list
             )  # beams and type (type for note shorter than quarter notes)
-            self.tuplet_list = m21u.get_tuplets_type(
+            self.tuplet_list = M21Utils.get_tuplets_type(
                 self.note_list
             )  # corrected tuplets (with "start" and "continue")
-            self.tuple_info = m21u.get_tuplets_info(self.note_list)
+            self.tuple_info = M21Utils.get_tuplets_info(self.note_list)
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
             for i, n in enumerate(self.note_list):
@@ -211,13 +204,14 @@ class Voice:
         # equality does not consider MEI id!
         if not isinstance(other, Voice):
             return False
-        elif len(self.annot_notes) != len(other.annot_notes):
+
+        if len(self.annot_notes) != len(other.annot_notes):
             return False
-        else:
-            return self.precomputed_str == other.precomputed_str
-            # return all(
-            #     [an[0] == an[1] for an in zip(self.annot_notes, other.annot_notes)]
-            # )
+
+        return self.precomputed_str == other.precomputed_str
+        # return all(
+        #     [an[0] == an[1] for an in zip(self.annot_notes, other.annot_notes)]
+        # )
 
     def notation_size(self):
         return sum([an.notation_size() for an in self.annot_notes])
@@ -272,11 +266,12 @@ class Bar:
         # equality does not consider MEI id!
         if not isinstance(other, Bar):
             return False
-        elif len(self.voices_list) != len(other.voices_list):
+
+        if len(self.voices_list) != len(other.voices_list):
             return False
-        else:
-            return self.precomputed_str == other.precomputed_str
-            # return all([v[0] == v[1] for v in zip(self.voices_list, other.voices_list)])
+
+        return self.precomputed_str == other.precomputed_str
+        # return all([v[0] == v[1] for v in zip(self.voices_list, other.voices_list)])
 
     def notation_size(self):
         return sum([v.notation_size() for v in self.voices_list])
@@ -313,10 +308,11 @@ class Part:
         # equality does not consider MEI id!
         if not isinstance(other, Part):
             return False
-        elif len(self.bar_list) != len(other.bar_list):
+
+        if len(self.bar_list) != len(other.bar_list):
             return False
-        else:
-            return all([b[0] == b[1] for b in zip(self.bar_list, other.bar_list)])
+
+        return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
 
     def notation_size(self):
         return sum([b.notation_size() for b in self.bar_list])
@@ -352,10 +348,11 @@ class Score:
         # equality does not consider MEI id!
         if not isinstance(other, Score):
             return False
-        elif len(self.part_list) != len(other.part_list):
+
+        if len(self.part_list) != len(other.part_list):
             return False
-        else:
-            return all([p[0] == p[1] for p in zip(self.part_list, other.part_list)])
+
+        return all(p[0] == p[1] for p in zip(self.part_list, other.part_list))
 
     def notation_size(self):
         return sum([p.notation_size() for p in self.part_list])
@@ -373,8 +370,6 @@ class Score:
     def measures_from_part(self, part_number):
         if part_number not in range(0, len(self.part_list)):
             raise Exception(
-                "parameter 'part_number' should be between 0 and {}".format(
-                    len(self.part_list) - 1
-                )
+                f"parameter 'part_number' should be between 0 and {len(self.part_list) - 1}"
             )
         return self.part_list[part_number].bar_list

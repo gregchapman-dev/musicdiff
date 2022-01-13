@@ -11,7 +11,11 @@
 # ------------------------------------------------------------------------------
 
 __all__ = [
-    'm21utils'
+    'M21utils',
+    'Visualization',
+    'Comparison'
 ]
 
-from .m21utils import m21utils
+from .m21utils import M21Utils
+from .visualization import Visualization
+from .comparison import Comparison

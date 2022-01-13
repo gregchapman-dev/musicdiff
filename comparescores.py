@@ -10,18 +10,15 @@
 # Copyright:     (c) 2022 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
-import json
 import sys
 import os
-import resource
 import argparse
-from pathlib import Path
-from timeit import default_timer as timer
 
 import music21 as m21
-from musicdiff import visualization as sv
-from musicdiff import notation as nlin
-from musicdiff import comparison as scl
+
+from musicdiff import Visualization
+from musicdiff import notation # for notation.Score, etc
+from musicdiff import Comparison
 
 # To use the new Humdrum importer from converter21 in place of the one in music21:
 # git clone https://github.com/gregchapman-dev/converter21.git
@@ -73,64 +70,31 @@ _, fileExt1 = os.path.splitext(args.file1)
 _, fileExt2 = os.path.splitext(args.file2)
 
 if fileExt1 not in getInputExtensionsList():
-    print("file1 extension '{}' not supported.".format(fileExt1))
+    print(f"file1 extension '{fileExt1}' not supported.")
     badExt = True
 if fileExt2 not in getInputExtensionsList():
-    print("file2 extension '{}' not supported.".format(fileExt2))
+    print(f"file2 extension '{fileExt2}' not supported.")
     badExt = True
 if badExt:
     printSupportedInputFormats()
     sys.exit(1)
 
-totalTime = 0
-start = timer()
 score1 = m21.converter.parse(args.file1, forceSource=True)
-end = timer()
-print('imported first file into music21 score: {:.3f} seconds'.format(end - start))
-totalTime += end - start
-
-start = timer()
 score2 = m21.converter.parse(args.file2, forceSource=True)
-end = timer()
-print('imported second file into music21 score: {:.3f} seconds'.format(end - start))
-totalTime += end - start
 
 # build ScoreTrees
-start = timer()
-score_lin1 = nlin.Score(score1)
-end = timer()
-print('built ScoreTree from score1: {:.3f} seconds'.format(end - start))
-totalTime += end - start
-
-start = timer()
-score_lin2 = nlin.Score(score2)
-end = timer()
-print('built ScoreTree from score2: {:.3f} seconds'.format(end - start))
-totalTime += end - start
+score_lin1 = notation.Score(score1)
+score_lin2 = notation.Score(score2)
 
 # compute the complete score diff
-start = timer()
-op_list, cost = scl.complete_scorelin_diff(score_lin1, score_lin2)
-end = timer()
-print('diffed two ScoreTrees: {:.3f} seconds'.format(end - start))
-totalTime += end - start
+comp: Comparison = Comparison(score_lin1, score_lin2)
+comp.complete_scorelin_diff()
 
-numDiffs = len(op_list)
+numDiffs = len(comp.op_list)
 print(f'number of differences = {numDiffs}')
 
 if numDiffs > 0:
-    # annotate the scores to show differences
-    start = timer()
-    sv.annotate_differences(score1, score2, op_list)
-    end = timer()
-    print('annotated the two music21 scores: {:.3f} seconds'.format(end - start))
-    totalTime += end - start
-
     # display the two annotated scores
-    start = timer()
-    sv.show_differences(score1, score2)
-    end = timer()
-    print('rendered the two annotated scores: {:.3f} seconds'.format(end - start))
-    totalTime += end - start
-
-print('total time:: {:.3f} seconds'.format(totalTime))
+    viz: Visualization = Visualization(score1, score2, comp.op_list)
+    viz.annotate_differences()
+    viz.show_differences()
