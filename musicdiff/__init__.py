@@ -21,7 +21,7 @@ from pathlib import Path
 import music21 as m21
 
 from musicdiff.m21utils import M21Utils
-from musicdiff import notation
+from musicdiff.annotation import AnnScore
 from musicdiff.comparison import Comparison
 from musicdiff.visualization import Visualization
 
@@ -80,11 +80,12 @@ def diff(score1: Union[str, Path, m21.stream.Score],
         return None
 
     # scan each score, producing an annotated wrapper
-    annotated_score1: notation.Score = notation.Score(score1)
-    annotated_score2: notation.Score = notation.Score(score2)
+    annotated_score1: AnnScore = AnnScore(score1)
+    annotated_score2: AnnScore = AnnScore(score2)
 
     diff_list: List = None
-    diff_list, _cost = Comparison.compare_annotated_scores(annotated_score1, annotated_score2)
+    _cost: int = None
+    diff_list, _cost = Comparison.annotated_scores_diff(annotated_score1, annotated_score2)
 
     numDiffs: int = len(diff_list)
     if visualize_diffs and numDiffs != 0:
@@ -93,9 +94,9 @@ def diff(score1: Union[str, Path, m21.stream.Score],
         #Visualization.INSERTED_COLOR = 'red'
         #Visualization.DELETED_COLOR = 'red'
         #Visualization.CHANGED_COLOR = 'red'
-        Visualization.mark_differences(score1, score2, diff_list)
+        Visualization.mark_diffs(score1, score2, diff_list)
 
         # ask music21 to display the scores as PDFs
-        Visualization.show_differences(score1, score2)
+        Visualization.show_diffs(score1, score2)
 
     return numDiffs

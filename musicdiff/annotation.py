@@ -19,7 +19,7 @@ import music21 as m21
 from musicdiff import M21Utils
 
 
-class AnnotatedNote:
+class AnnNote:
     def __init__(self, general_note, enhanced_beam_list, tuple_list):
         """
         A class with the purpose to extend music21 GeneralNote
@@ -150,7 +150,7 @@ class AnnotatedNote:
         # equality does not consider the MEI id!
         return self.precomputed_str == other.precomputed_str
 
-        # if not isinstance(other, AnnotatedNote):
+        # if not isinstance(other, AnnNote):
         #     return False
         # elif self.pitches != other.pitches:
         #     return False
@@ -170,7 +170,7 @@ class AnnotatedNote:
         #     return True
 
 
-class Voice:
+class AnnVoice:
     def __init__(self, voice):
         """
         :param measure: m21 voice for one measure
@@ -194,7 +194,7 @@ class Voice:
             self.annot_notes = []
             for i, n in enumerate(self.note_list):
                 self.annot_notes.append(
-                    AnnotatedNote(n, self.en_beam_list[i], self.tuplet_list[i])
+                    AnnNote(n, self.en_beam_list[i], self.tuplet_list[i])
                 )
 
         self.n_of_notes = len(self.annot_notes)
@@ -202,7 +202,7 @@ class Voice:
 
     def __eq__(self, other):
         # equality does not consider MEI id!
-        if not isinstance(other, Voice):
+        if not isinstance(other, AnnVoice):
             return False
 
         if len(self.annot_notes) != len(other.annot_notes):
@@ -235,7 +235,7 @@ class Voice:
         return [an.general_note for an in self.annot_notes]
 
 
-class Bar:
+class AnnMeasure:
     def __init__(self, measure):
         """
         :param measure: m21 measure
@@ -244,15 +244,15 @@ class Bar:
         self.voices_list = []
         if (
             len(measure.voices) == 0
-        ):  # there is a single Voice ( == for the library there are no voices)
-            ann_voice = Voice(measure)
+        ):  # there is a single AnnVoice ( == for the library there are no voices)
+            ann_voice = AnnVoice(measure)
             if ann_voice.n_of_notes > 0:
                 self.voices_list.append(ann_voice)
         else:  # there are multiple voices (or an array with just one voice)
             for voice in measure.voices:
-                ann_voice = Voice(voice)
+                ann_voice = AnnVoice(voice)
                 if ann_voice.n_of_notes > 0:
-                    self.voices_list.append(Voice(voice))
+                    self.voices_list.append(AnnVoice(voice))
         self.n_of_voices = len(self.voices_list)
 
         # precomputed values to speed up the computation. As they start to be long, they are hashed
@@ -264,7 +264,7 @@ class Bar:
 
     def __eq__(self, other):
         # equality does not consider MEI id!
-        if not isinstance(other, Bar):
+        if not isinstance(other, AnnMeasure):
             return False
 
         if len(self.voices_list) != len(other.voices_list):
@@ -286,7 +286,7 @@ class Bar:
         return notes_id
 
 
-class Part:
+class AnnPart:
     def __init__(self, part):
         """
         :param part: m21 part
@@ -294,7 +294,7 @@ class Part:
         self.part = part.id
         self.bar_list = []
         for measure in part.getElementsByClass("Measure"):
-            ann_bar = Bar(measure)  # create the bar objects
+            ann_bar = AnnMeasure(measure)  # create the bar objects
             if ann_bar.n_of_voices > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars = len(self.bar_list)
@@ -306,7 +306,7 @@ class Part:
 
     def __eq__(self, other):
         # equality does not consider MEI id!
-        if not isinstance(other, Part):
+        if not isinstance(other, AnnPart):
             return False
 
         if len(self.bar_list) != len(other.bar_list):
@@ -327,7 +327,7 @@ class Part:
         return notes_id
 
 
-class Score:
+class AnnScore:
     def __init__(self, score):
         """
         Take a music21 score and store it a sequence of Full Trees
@@ -338,15 +338,15 @@ class Score:
         self.score = score.id
         self.part_list = []
         for part in score.parts.stream():
-            # create and add the Part object to part_list
-            ann_part = Part(part)
+            # create and add the AnnPart object to part_list
+            ann_part = AnnPart(part)
             if ann_part.n_of_bars > 0:
                 self.part_list.append(ann_part)
         self.n_of_parts = len(self.part_list)
 
     def __eq__(self, other):
         # equality does not consider MEI id!
-        if not isinstance(other, Score):
+        if not isinstance(other, AnnScore):
             return False
 
         if len(self.part_list) != len(other.part_list):

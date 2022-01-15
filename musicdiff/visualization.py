@@ -15,7 +15,7 @@ from typing import List, Tuple
 
 import music21 as m21
 
-from musicdiff import notation
+from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
 
 class Visualization:
     # These can be set by the client to different colors
@@ -24,11 +24,11 @@ class Visualization:
     CHANGED_COLOR = "red"
 
     @staticmethod
-    def mark_differences(score1: m21.stream.Score, score2: m21.stream.Score, operations: List[Tuple]):
+    def mark_diffs(score1: m21.stream.Score, score2: m21.stream.Score, operations: List[Tuple]):
         for op in operations:
             # bar
             if op[0] == "insbar":
-                assert type(op[2]) == notation.Bar
+                assert isinstance(op[2], AnnMeasure)
                 # color all the notes in the inserted score2 measure using Visualization.INSERTED_COLOR
                 measure2 = score2.recurse().getElementById(op[2].measure)
                 textExp = m21.expressions.TextExpression("inserted measure")
@@ -39,7 +39,7 @@ class Visualization:
                     el.style.color = Visualization.INSERTED_COLOR
 
             elif op[0] == "delbar":
-                assert type(op[1]) == notation.Bar
+                assert isinstance(op[1], AnnMeasure)
                 # color all the notes in the deleted score1 measure using Visualization.DELETED_COLOR
                 measure1 = score1.recurse().getElementById(op[1].measure)
                 textExp = m21.expressions.TextExpression("deleted measure")
@@ -51,7 +51,7 @@ class Visualization:
 
             # voices
             elif op[0] == "voiceins":
-                assert type(op[2]) == notation.Voice
+                assert isinstance(op[2], AnnVoice)
                 # color all the notes in the inserted score2 voice using Visualization.INSERTED_COLOR
                 voice2 = score2.recurse().getElementById(op[2].voice)
                 textExp = m21.expressions.TextExpression("inserted voice")
@@ -63,7 +63,7 @@ class Visualization:
                     el.style.color = Visualization.INSERTED_COLOR
 
             elif op[0] == "voicedel":
-                assert type(op[1]) == notation.Voice
+                assert isinstance(op[1], AnnVoice)
                 # color all the notes in the deleted score1 voice using Visualization.DELETED_COLOR
                 voice1 = score1.recurse().getElementById(op[1].voice)
                 textExp = m21.expressions.TextExpression("deleted voice")
@@ -76,7 +76,7 @@ class Visualization:
 
             # note
             elif op[0] == "noteins":
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[2], AnnNote)
                 # color the inserted score2 general note (note, chord, or rest) using Visualization.INSERTED_COLOR
                 note2 = score2.recurse().getElementById(op[2].general_note)
                 note2.style.color = Visualization.INSERTED_COLOR
@@ -90,7 +90,7 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "notedel":
-                assert type(op[1]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
                 # color the deleted score1 general note (note, chord, or rest) using Visualization.DELETED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.DELETED_COLOR
@@ -105,8 +105,8 @@ class Visualization:
 
             # pitch
             elif op[0] == "pitchnameedit":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the changed note (in both scores) using Visualization.CHANGED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)
@@ -138,7 +138,7 @@ class Visualization:
                     chord2.activeSite.insert(chord2.offset, textExp)
 
             elif op[0] == "inspitch":
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the inserted note in score2 using Visualization.INSERTED_COLOR
                 chord2 = score2.recurse().getElementById(op[2].general_note)
@@ -159,7 +159,7 @@ class Visualization:
                     chord2.activeSite.insert(chord2.offset, textExp)
 
             elif op[0] == "delpitch":
-                assert type(op[1]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the deleted note in score1 using Visualization.DELETED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)
@@ -180,8 +180,8 @@ class Visualization:
                     chord1.activeSite.insert(chord1.offset, textExp)
 
             elif op[0] == "headedit":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the changed note/rest/chord (in both scores) using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
@@ -197,8 +197,8 @@ class Visualization:
 
             # beam
             elif op[0] == "insbeam":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.INSERTED_COLOR
@@ -219,8 +219,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "delbeam":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.DELETED_COLOR
@@ -241,8 +241,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "editbeam":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
@@ -264,8 +264,8 @@ class Visualization:
 
             # accident
             elif op[0] == "accidentins":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)
@@ -301,8 +301,8 @@ class Visualization:
                     chord2.activeSite.insert(chord2.offset, textExp)
 
             elif op[0] == "accidentdel":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the modified note in both scores using Visualization.DELETED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)
@@ -338,8 +338,8 @@ class Visualization:
                     chord2.activeSite.insert(chord2.offset, textExp)
 
             elif op[0] == "accidentedit":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the changed accidental (in both scores) using Visualization.CHANGED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)
@@ -375,8 +375,8 @@ class Visualization:
                     chord2.activeSite.insert(chord2.offset, textExp)
 
             elif op[0] == "dotins":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # In music21, the dots are not separately colorable from the note,
                 # so we will just color the modified note here in both scores, using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
@@ -392,8 +392,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "dotdel":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # In music21, the dots are not separately colorable from the note,
                 # so we will just color the modified note here in both scores, using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
@@ -410,8 +410,8 @@ class Visualization:
 
             # tuplets
             elif op[0] == "instuplet":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
                 textExp = m21.expressions.TextExpression("inserted tuplet")
@@ -425,8 +425,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "deltuplet":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
                 textExp = m21.expressions.TextExpression("deleted tuplet")
@@ -440,8 +440,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "edittuplet":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
                 textExp = m21.expressions.TextExpression("changed tuplet")
@@ -456,8 +456,8 @@ class Visualization:
 
             # ties
             elif op[0] == "tieins":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # Color the modified note here in both scores, using Visualization.INSERTED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)
@@ -489,8 +489,8 @@ class Visualization:
                     chord2.activeSite.insert(chord2.offset, textExp)
 
             elif op[0] == "tiedel":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # Color the modified note in both scores, using Visualization.DELETED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)
@@ -523,8 +523,8 @@ class Visualization:
 
             # expressions
             elif op[0] == "insexpression":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.INSERTED_COLOR
@@ -539,8 +539,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "delexpression":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the deleted expression in score1 using Visualization.DELETED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.DELETED_COLOR
@@ -555,8 +555,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "editexpression":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
@@ -572,8 +572,8 @@ class Visualization:
 
             # articulations
             elif op[0] == "insarticulation":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.INSERTED_COLOR
@@ -588,8 +588,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "delarticulation":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.DELETED_COLOR
@@ -604,8 +604,8 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "editarticulation":
-                assert type(op[1]) == notation.AnnotatedNote
-                assert type(op[2]) == notation.AnnotatedNote
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
                 # color the modified note (in both scores) using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
@@ -623,7 +623,7 @@ class Visualization:
                 print(f"Annotation type {op[0]} not yet supported for visualization")
 
     @staticmethod
-    def show_differences(score1: m21.stream.Score, score2: m21.stream.Score):
+    def show_diffs(score1: m21.stream.Score, score2: m21.stream.Score):
         # display the two (presumably annotated) scores
         originalComposer1: str = None
         originalComposer2: str = None

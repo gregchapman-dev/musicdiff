@@ -13,8 +13,6 @@
 import sys
 import argparse
 
-import music21 as m21
-
 import musicdiff
 
 # To use the new Humdrum importer from converter21 in place of the one in music21:
@@ -41,6 +39,7 @@ parser.add_argument("file2",
                     help="second music file to compare")
 args = parser.parse_args()
 
+# Note that musicdiff.diff can take a music21 Score instead of a file, for either or both arguments.
 numDiffs: int = musicdiff.diff(args.file1, args.file2)
 if numDiffs is not None and numDiffs == 0:
     print('Scores in {args.file1} and {args.files} are identical.', file=sys.stderr)
