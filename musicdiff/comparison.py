@@ -12,7 +12,7 @@
 # ------------------------------------------------------------------------------
 
 import copy
-from typing import List, Tuple
+from typing import List
 from collections import namedtuple
 
 import numpy as np
@@ -87,24 +87,19 @@ def _memoize_generic_lev_diff(func):
     return memoizer
 
 class Comparison:
-    def __init__(self, score1: notation.Score, score2: notation.Score):
-        self.score1: notation.Score = score1
-        self.score2: notation.Score = score2
-        self.op_list: List[Tuple] = []
-        self.cost: int = None
-
-    def complete_scorelin_diff(self):
+    @staticmethod
+    def compare_annotated_scores(score1: notation.Score, score2: notation.Score):
         # for now just working with equal number of parts that are already pairs
         # TODO : extend to different number of parts
-        assert self.score1.n_of_parts == self.score2.n_of_parts
-        n_of_parts = self.score1.n_of_parts
+        assert score1.n_of_parts == score2.n_of_parts
+        n_of_parts = score1.n_of_parts
         op_list_total, cost_total = [], 0
         # iterate for all parts in the score
         for p_number in range(n_of_parts):
             # compute non-common-subseq
             ncs = Comparison.non_common_subsequences_of_measures(
-                self.score1.part_list[p_number].bar_list,
-                self.score2.part_list[p_number].bar_list,
+                score1.part_list[p_number].bar_list,
+                score2.part_list[p_number].bar_list,
             )
             # compute blockdiff
             for subseq in ncs:
@@ -113,8 +108,7 @@ class Comparison:
                 )
                 op_list_total.extend(op_list_block)
                 cost_total += cost_block
-        self.op_list = op_list_total
-        self.cost = cost_total
+
         return op_list_total, cost_total
 
     @staticmethod
