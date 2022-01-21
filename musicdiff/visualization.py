@@ -211,7 +211,7 @@ class Visualization:
 
                 note2 = score2.recurse().getElementById(op[2].general_note)
                 note2.style.color = Visualization.INSERTED_COLOR
-                if hasattr(note1, 'beams'):
+                if hasattr(note2, 'beams'):
                     for beam in note2.beams:
                         beam.style.color = Visualization.INSERTED_COLOR  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("increased flags")
