@@ -17,6 +17,7 @@ import music21 as m21
 
 from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
 
+
 class Visualization:
     # These can be set by the client to different colors
     INSERTED_COLOR = "red"
@@ -24,7 +25,9 @@ class Visualization:
     CHANGED_COLOR = "red"
 
     @staticmethod
-    def mark_diffs(score1: m21.stream.Score, score2: m21.stream.Score, operations: List[Tuple]):
+    def mark_diffs(
+        score1: m21.stream.Score, score2: m21.stream.Score, operations: List[Tuple]
+    ):
         for op in operations:
             # bar
             if op[0] == "insbar":
@@ -34,7 +37,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted measure")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 measure2.insert(0, textExp)
-                measure2.style.color = Visualization.INSERTED_COLOR  # this apparently does nothing
+                measure2.style.color = (
+                    Visualization.INSERTED_COLOR
+                )  # this apparently does nothing
                 for el in measure2.recurse().notesAndRests:
                     el.style.color = Visualization.INSERTED_COLOR
 
@@ -45,7 +50,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted measure")
                 textExp.style.color = Visualization.DELETED_COLOR
                 measure1.insert(0, textExp)
-                measure1.style.color = Visualization.DELETED_COLOR  # this apparently does nothing
+                measure1.style.color = (
+                    Visualization.DELETED_COLOR
+                )  # this apparently does nothing
                 for el in measure1.recurse().notesAndRests:
                     el.style.color = Visualization.DELETED_COLOR
 
@@ -58,7 +65,9 @@ class Visualization:
                 textExp.style.color = Visualization.INSERTED_COLOR
                 voice2.insert(0, textExp)
 
-                voice2.style.color = Visualization.INSERTED_COLOR  # this apparently does nothing
+                voice2.style.color = (
+                    Visualization.INSERTED_COLOR
+                )  # this apparently does nothing
                 for el in voice2.recurse().notesAndRests:
                     el.style.color = Visualization.INSERTED_COLOR
 
@@ -70,7 +79,9 @@ class Visualization:
                 textExp.style.color = Visualization.DELETED_COLOR
                 voice1.insert(0, textExp)
 
-                voice1.style.color = Visualization.DELETED_COLOR  # this apparently does nothing
+                voice1.style.color = (
+                    Visualization.DELETED_COLOR
+                )  # this apparently does nothing
                 for el in voice1.recurse().notesAndRests:
                     el.style.color = Visualization.DELETED_COLOR
 
@@ -202,18 +213,22 @@ class Visualization:
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.INSERTED_COLOR
-                if hasattr(note1, 'beams'):
+                if hasattr(note1, "beams"):
                     for beam in note1.beams:
-                        beam.style.color = Visualization.INSERTED_COLOR  # this apparently does nothing
+                        beam.style.color = (
+                            Visualization.INSERTED_COLOR
+                        )  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("increased flags")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note1.activeSite.insert(note1.offset, textExp)
 
                 note2 = score2.recurse().getElementById(op[2].general_note)
                 note2.style.color = Visualization.INSERTED_COLOR
-                if hasattr(note2, 'beams'):
+                if hasattr(note2, "beams"):
                     for beam in note2.beams:
-                        beam.style.color = Visualization.INSERTED_COLOR  # this apparently does nothing
+                        beam.style.color = (
+                            Visualization.INSERTED_COLOR
+                        )  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("increased flags")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
@@ -224,18 +239,22 @@ class Visualization:
                 # color the modified note in both scores using Visualization.DELETED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.DELETED_COLOR
-                if hasattr(note1, 'beams'):
+                if hasattr(note1, "beams"):
                     for beam in note1.beams:
-                        beam.style.color = Visualization.DELETED_COLOR  # this apparently does nothing
+                        beam.style.color = (
+                            Visualization.DELETED_COLOR
+                        )  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("decreased flags")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note1.activeSite.insert(note1.offset, textExp)
 
                 note2 = score2.recurse().getElementById(op[2].general_note)
                 note2.style.color = Visualization.DELETED_COLOR
-                if hasattr(note1, 'beams'):
+                if hasattr(note2, "beams"):
                     for beam in note2.beams:
-                        beam.style.color = Visualization.DELETED_COLOR  # this apparently does nothing
+                        beam.style.color = (
+                            Visualization.DELETED_COLOR
+                        )  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("decreased flags")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
@@ -246,18 +265,22 @@ class Visualization:
                 # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
-                if hasattr(note1, 'beams'):
+                if hasattr(note1, "beams"):
                     for beam in note1.beams:
-                        beam.style.color = Visualization.CHANGED_COLOR  # this apparently does nothing
+                        beam.style.color = (
+                            Visualization.CHANGED_COLOR
+                        )  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("changed flags")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note1.activeSite.insert(note1.offset, textExp)
 
                 note2 = score2.recurse().getElementById(op[2].general_note)
                 note2.style.color = Visualization.CHANGED_COLOR
-                if hasattr(note1, 'beams'):
+                if hasattr(note2, "beams"):
                     for beam in note2.beams:
-                        beam.style.color = Visualization.CHANGED_COLOR  # this apparently does nothing
+                        beam.style.color = (
+                            Visualization.CHANGED_COLOR
+                        )  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("changed flags")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
@@ -645,5 +668,6 @@ class Visualization:
         else:
             score2.metadata.composer = "score2          " + originalComposer2
 
-        score1.show('musicxml.pdf', makeNotation=False)
-        score2.show('musicxml.pdf', makeNotation=False)
+        score1.show("musicxml.pdf", makeNotation=False)
+        score2.show("musicxml.pdf", makeNotation=False)
+
