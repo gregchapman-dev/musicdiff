@@ -1,0 +1,6 @@
+.coverage
+.idea
+htmlcov
+__pycache__
+musicdiff.egg-info
+.DS_Store
