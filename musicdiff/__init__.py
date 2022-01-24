@@ -51,34 +51,53 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
 
     badArg1: bool = False
     badArg2: bool = False
-    if isinstance(score1, (str, Path)):
-        file1 = score1
-        _, fileExt1 = os.path.splitext(file1)
+
+    # Convert input strings to Paths
+    if isinstance(score1, str):
+        try:
+            score1 = Path(score1)
+        except:
+            print(f'score1 ({score1}) is not a valid path.')
+            badArg1 = True
+
+    if isinstance(score2, str):
+        try:
+            score2 = Path(score2)
+        except:
+            print(f'score2 ({score2}) is not a valid path.')
+            badArg2 = True
+
+    if badArg1 or badArg2:
+        return None
+
+    if isinstance(score1, Path):
+        fileName1 = score1.name
+        fileExt1 = score1.suffix
 
         if fileExt1 not in _getInputExtensionsList():
-            print(f'score1 file extension "{fileExt1}"" not supported.', file=sys.stderr)
+            print(f'score1 file extension ({fileExt1}) not supported by music21.', file=sys.stderr)
             badArg1 = True
 
         if not badArg1:
             try:
-                score1 = m21.converter.parse(file1, forceSource = force_parse)
+                score1 = m21.converter.parse(score1, forceSource = force_parse)
             except:
-                print(f'score1 ({file1}) could not be parsed by music21', file=sys.stderr)
+                print(f'score1 ({fileName1}) could not be parsed by music21', file=sys.stderr)
                 badArg1 = True
 
-    if isinstance(score2, (str, Path)):
-        file2 = score2
-        _, fileExt2 = os.path.splitext(file2)
+    if isinstance(score2, Path):
+        fileName2: str = score2.name
+        fileExt2: str = score2.suffix
 
         if fileExt2 not in _getInputExtensionsList():
-            print(f'score2 file extension "{fileExt2}"" not supported.', file=sys.stderr)
+            print(f'score2 file extension ({fileExt2}) not supported by music21.', file=sys.stderr)
             badArg2 = True
 
         if not badArg2:
             try:
-                score2 = m21.converter.parse(file2, forceSource = force_parse)
+                score2 = m21.converter.parse(score2, forceSource = force_parse)
             except:
-                print(f'score2 ({file2}) could not be parsed by music21', file=sys.stderr)
+                print(f'score2 ({fileName2}) could not be parsed by music21', file=sys.stderr)
                 badArg2 = True
 
     if badArg1 or badArg2:

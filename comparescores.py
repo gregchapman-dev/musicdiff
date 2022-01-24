@@ -40,6 +40,7 @@ parser.add_argument("file2",
 args = parser.parse_args()
 
 # Note that musicdiff.diff can take a music21 Score instead of a file, for either or both arguments.
+# Note also that musicdiff.diff can take str or pathlib.Path for files.
 numDiffs: int = musicdiff.diff(args.file1, args.file2)
 if numDiffs is not None and numDiffs == 0:
     print('Scores in {args.file1} and {args.files} are identical.', file=sys.stderr)
