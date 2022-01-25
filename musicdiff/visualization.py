@@ -646,7 +646,7 @@ class Visualization:
                 print(f"Annotation type {op[0]} not yet supported for visualization")
 
     @staticmethod
-    def show_diffs(score1: m21.stream.Score, score2: m21.stream.Score):
+    def show_diffs(score1: m21.stream.Score, score2: m21.stream.Score, out_path1: str = None, out_path2 : str = None):
         # display the two (presumably annotated) scores
         originalComposer1: str = None
         originalComposer2: str = None
@@ -668,6 +668,12 @@ class Visualization:
         else:
             score2.metadata.composer = "score2          " + originalComposer2
 
-        score1.show("musicxml.pdf", makeNotation=False)
-        score2.show("musicxml.pdf", makeNotation=False)
+        #save files if requested
+        if (out_path1 is not None) and (out_path2 is not None):
+            score1.write("musicxml.pdf", fp=out_path1)
+            score2.write("musicxml.pdf", fp=out_path2)
+            print(f"Annotated scores saved in {out_path1} and {out_path2}.")
+        else: # just display the scores
+            score1.show("musicxml.pdf", makeNotation=False)
+            score2.show("musicxml.pdf", makeNotation=False)
 

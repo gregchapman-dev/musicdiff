@@ -45,6 +45,8 @@ def _printSupportedInputFormats():
 
 def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
          score2: Union[str, Path, m21.stream.Score], # can be file or Score
+         out_path1:  Union[str, Path] = None, # save the pdf of score1 in a specific position
+         out_path2:  Union[str, Path] = None, # save the pdf of score2 in a specific position
          force_parse: bool = True, # should we force music21 to re-parse a file it has parsed recently?
          visualize_diffs: bool = True, # should we display the scores with differences marked?
         ) -> int: # returns numDiffs.  0 means scores were identical, None means the diff failed.
@@ -125,6 +127,6 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
 
         # ask music21 to display the scores as PDFs.  Composer's name will be prepended with
         # 'score1 ' and 'score2 ', respectively, so you can see which is which.
-        Visualization.show_diffs(score1, score2)
+        Visualization.show_diffs(score1, score2, out_path1, out_path2)
 
     return numDiffs
