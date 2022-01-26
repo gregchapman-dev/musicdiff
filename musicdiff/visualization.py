@@ -12,6 +12,7 @@
 # ------------------------------------------------------------------------------
 
 from typing import List, Tuple
+import sys
 
 import music21 as m21
 
@@ -643,7 +644,7 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
 
             else:
-                print(f"Annotation type {op[0]} not yet supported for visualization")
+                print(f"Annotation type {op[0]} not yet supported for visualization", file=sys.stderr)
 
     @staticmethod
     def show_diffs(score1: m21.stream.Score, score2: m21.stream.Score, out_path1: str = None, out_path2 : str = None):
@@ -672,8 +673,7 @@ class Visualization:
         if (out_path1 is not None) and (out_path2 is not None):
             score1.write("musicxml.pdf", makeNotation=False, fp=out_path1)
             score2.write("musicxml.pdf", makeNotation=False, fp=out_path2)
-            print(f"Annotated scores saved in {out_path1} and {out_path2}.")
+            print(f"Annotated scores saved in {out_path1} and {out_path2}.", file=sys.stderr)
         else: # just display the scores
             score1.show("musicxml.pdf", makeNotation=False)
             score2.show("musicxml.pdf", makeNotation=False)
-

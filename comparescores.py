@@ -30,7 +30,7 @@ import musicdiff
 # to use the new Humdrum importer from converter21 in place of the one in music21...
 # m21.converter.unregisterSubconverter(m21.converter.subConverters.ConverterHumdrum) # c21
 # m21.converter.registerSubconverter(HumdrumConverter)                               # c21
-# print('registered converter21 humdrum importer')                                   # c21
+# print('registered converter21 humdrum importer', file=sys.stderr)                  # c21
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file1",

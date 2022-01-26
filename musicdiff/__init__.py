@@ -59,14 +59,14 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
         try:
             score1 = Path(score1)
         except:
-            print(f'score1 ({score1}) is not a valid path.')
+            print(f'score1 ({score1}) is not a valid path.', file=sys.stderr)
             badArg1 = True
 
     if isinstance(score2, str):
         try:
             score2 = Path(score2)
         except:
-            print(f'score2 ({score2}) is not a valid path.')
+            print(f'score2 ({score2}) is not a valid path.', file=sys.stderr)
             badArg2 = True
 
     if badArg1 or badArg2:
@@ -81,12 +81,14 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
             badArg1 = True
 
         if not badArg1:
+            # pylint: disable=broad-except
             try:
                 score1 = m21.converter.parse(score1, forceSource = force_parse)
             except Exception as e:
                 print(f'score1 ({fileName1}) could not be parsed by music21', file=sys.stderr)
                 print(e, file=sys.stderr)
                 badArg1 = True
+            # pylint: enable=broad-except
 
     if isinstance(score2, Path):
         fileName2: str = score2.name
@@ -97,12 +99,14 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
             badArg2 = True
 
         if not badArg2:
+            # pylint: disable=broad-except
             try:
                 score2 = m21.converter.parse(score2, forceSource = force_parse)
             except Exception as e:
                 print(f'score2 ({fileName2}) could not be parsed by music21', file=sys.stderr)
                 print(e, file=sys.stderr)
                 badArg2 = True
+            # pylint: enable=broad-except
 
     if badArg1 or badArg2:
         return None

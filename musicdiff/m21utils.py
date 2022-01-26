@@ -13,6 +13,7 @@
 
 from fractions import Fraction
 import math
+# import sys
 import music21 as m21
 
 class M21Utils:
@@ -74,7 +75,7 @@ class M21Utils:
             # This can happen when there are no measures in the test data.
             # We will guess, based on displayType.
             # displayType can be 'normal', 'always', 'never', 'unless-repeated', 'even-tied'
-            # print("accidental.displayStatus unknown, so we will guess based on displayType")
+            # print("accidental.displayStatus unknown, so we will guess based on displayType", file=sys.stderr)
             displayType = note.pitch.accidental.displayType
             if displayType is None:
                 displayType = "normal"
