@@ -45,6 +45,8 @@ def _printSupportedInputFormats():
 
 def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
          score2: Union[str, Path, m21.stream.Score], # can be file or Score
+         out_path1:  Union[str, Path] = None, # save the pdf of score1 in a specific position
+         out_path2:  Union[str, Path] = None, # save the pdf of score2 in a specific position
          force_parse: bool = True, # should we force music21 to re-parse a file it has parsed recently?
          visualize_diffs: bool = True, # should we display the scores with differences marked?
         ) -> int: # returns numDiffs.  0 means scores were identical, None means the diff failed.
@@ -81,8 +83,9 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
         if not badArg1:
             try:
                 score1 = m21.converter.parse(score1, forceSource = force_parse)
-            except:
+            except Exception as e:
                 print(f'score1 ({fileName1}) could not be parsed by music21', file=sys.stderr)
+                print(e, file=sys.stderr)
                 badArg1 = True
 
     if isinstance(score2, Path):
@@ -96,8 +99,9 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
         if not badArg2:
             try:
                 score2 = m21.converter.parse(score2, forceSource = force_parse)
-            except:
+            except Exception as e:
                 print(f'score2 ({fileName2}) could not be parsed by music21', file=sys.stderr)
+                print(e, file=sys.stderr)
                 badArg2 = True
 
     if badArg1 or badArg2:
@@ -123,6 +127,6 @@ def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
 
         # ask music21 to display the scores as PDFs.  Composer's name will be prepended with
         # 'score1 ' and 'score2 ', respectively, so you can see which is which.
-        Visualization.show_diffs(score1, score2)
+        Visualization.show_diffs(score1, score2, out_path1, out_path2)
 
     return numDiffs
