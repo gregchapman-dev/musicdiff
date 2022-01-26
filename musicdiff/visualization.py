@@ -670,8 +670,8 @@ class Visualization:
 
         #save files if requested
         if (out_path1 is not None) and (out_path2 is not None):
-            score1.write("musicxml.pdf", fp=out_path1)
-            score2.write("musicxml.pdf", fp=out_path2)
+            score1.write("musicxml.pdf", makeNotation=False, fp=out_path1)
+            score2.write("musicxml.pdf", makeNotation=False, fp=out_path2)
             print(f"Annotated scores saved in {out_path1} and {out_path2}.")
         else: # just display the scores
             score1.show("musicxml.pdf", makeNotation=False)
