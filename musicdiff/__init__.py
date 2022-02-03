@@ -10,8 +10,7 @@
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
-__all__ = [
-]
+__docformat__ = "google"
 
 import sys
 import os
@@ -43,14 +42,40 @@ def _printSupportedInputFormats():
             print('\tformats   : ' + ', '.join(subc.registerFormats)
                     + '\textensions: ' + ', '.join(subc.registerInputExtensions), file=sys.stderr)
 
-def diff(score1: Union[str, Path, m21.stream.Score], # can be file or Score
-         score2: Union[str, Path, m21.stream.Score], # can be file or Score
-         out_path1:  Union[str, Path] = None, # save the pdf of score1 in a specific position
-         out_path2:  Union[str, Path] = None, # save the pdf of score2 in a specific position
-         force_parse: bool = True, # should we force music21 to re-parse a file it has parsed recently?
-         visualize_diffs: bool = True, # should we display the scores with differences marked?
-        ) -> int: # returns numDiffs.  0 means scores were identical, None means the diff failed.
+def diff(score1: Union[str, Path, m21.stream.Score],
+         score2: Union[str, Path, m21.stream.Score],
+         out_path1:  Union[str, Path] = None,
+         out_path2:  Union[str, Path] = None,
+         force_parse: bool = True,
+         visualize_diffs: bool = True,
+        ) -> int:
+    '''
+    Compare two musical scores and optionally save/display the differences as two marked-up
+    rendered PDFs.
 
+    Args:
+        score1 (str, Path, music21.stream.Score): The first music score to compare. The score
+            can be a file of any format readable by music21 (e.g. MusicXML, MEI, Humdrum, MIDI,
+            etc), or a music21 Score object.
+        score2 (str, Path, music21.stream.Score): The second musical score to compare. The score
+            can be a file of any format readable by music21 (e.g. MusicXML, MEI, Humdrum, MIDI,
+            etc), or a music21 Score object.
+        out_path1 (str, Path): Where to save the first marked-up rendered score PDF.
+            If out_path1 is None, both PDFs will be displayed in the default PDF viewer.
+            (default is None)
+        out_path2 (str, Path): Where to save the second marked-up rendered score PDF.
+            If out_path2 is None, both PDFs will be displayed in the default PDF viewer.
+            (default is None)
+        force_parse (bool): Whether or not to force music21 to re-parse a file it has parsed
+            previously.
+            (default is True)
+        visualize_diffs (bool): Whether or not to render diffs as marked up PDFs. If False,
+            the only result of the call will be the return value (the number of differences).
+            (default is True)
+
+    Returns:
+        int: The number of differences found (0 means the scores were identical, None means the diff failed)
+    '''
     badArg1: bool = False
     badArg2: bool = False
 

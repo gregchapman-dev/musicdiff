@@ -12,6 +12,8 @@
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
+__docformat__ = "google"
+
 from fractions import Fraction
 
 import music21 as m21
@@ -20,16 +22,18 @@ from musicdiff import M21Utils
 
 
 class AnnNote:
-    def __init__(self, general_note, enhanced_beam_list, tuple_list):
+    def __init__(self, general_note, enhanced_beam_list, tuplet_list):
         """
-        A class with the purpose to extend music21 GeneralNote
-        :param note: the music21 generalNote
-        :param enhanced_beam_list a list with beaming informations
-        :tuple_info: a list with tuple info
+        Extend music21 GeneralNote with some precomputed, easily compared information about it.
+
+        Args:
+            general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.
+            enhanced_beam_list (list): A list of beaming information about this GeneralNote.
+            tuplet_list (list): A list of tuplet info about this GeneralNote.
         """
         self.general_note = general_note.id
         self.beamings = enhanced_beam_list
-        self.tuplets = tuple_list
+        self.tuplets = tuplet_list
         ##compute the representaiton of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tie)
         if general_note.isRest:
@@ -67,10 +71,11 @@ class AnnNote:
         self.precomputed_str = self.__str__()
 
     def notation_size(self):
-        """a measure of how much symbols are display in the score
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnNote`.
 
         Returns:
-            [int] -- the notation size of the annotated note
+            int: The notation size of the annotated note
         """
         size = 0
         # add for the pitches
@@ -96,7 +101,7 @@ class AnnNote:
     def __str__(self):
         """
         Returns:
-            str -- the representation of the Annotated note. Does not consider MEI id
+            str: the representation of the Annotated note. Does not consider MEI id
         """
         string = "["
         for p in self.pitches:  # add for pitches
@@ -143,7 +148,14 @@ class AnnNote:
                 string += e
         return string
 
-    def get_note_id(self):
+    def get_note_ids(self):
+        """
+        Computes a list of the GeneralNote ids for this `AnnNote`.  Since there
+        is only one GeneralNote here, this will always be a single-element list.
+
+        Returns:
+            [int]: A list containing the single GeneralNote id for this note.
+        """
         return [self.general_note]
 
     def __eq__(self, other):
@@ -173,7 +185,10 @@ class AnnNote:
 class AnnVoice:
     def __init__(self, voice):
         """
-        :param measure: m21 voice for one measure
+        Extend music21 Voice with some precomputed, easily compared information about it.
+
+        Args:
+            voice (music21.stream.Voice): The music21 voice to extend.
         """
         self.voice = voice.id
         self.note_list = M21Utils.get_notes(voice)
@@ -214,6 +229,12 @@ class AnnVoice:
         # )
 
     def notation_size(self):
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnVoice`.
+
+        Returns:
+            int: The notation size of the annotated voice
+        """
         return sum([an.notation_size() for an in self.annot_notes])
 
     def __repr__(self):
@@ -231,14 +252,23 @@ class AnnVoice:
         string += "]"
         return string
 
-    def get_note_id(self):
+    def get_note_ids(self):
+        """
+        Computes a list of the GeneralNote ids for this `AnnVoice`.
+
+        Returns:
+            [int]: A list containing the GeneralNote ids contained in this voice
+        """
         return [an.general_note for an in self.annot_notes]
 
 
 class AnnMeasure:
     def __init__(self, measure):
         """
-        :param measure: m21 measure
+        Extend music21 Measure with some precomputed, easily compared information about it.
+
+        Args:
+            measure (music21.stream.Measure): The music21 measure to extend.
         """
         self.measure = measure.id
         self.voices_list = []
@@ -274,22 +304,37 @@ class AnnMeasure:
         # return all([v[0] == v[1] for v in zip(self.voices_list, other.voices_list)])
 
     def notation_size(self):
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnMeasure`.
+
+        Returns:
+            int: The notation size of the annotated measure
+        """
         return sum([v.notation_size() for v in self.voices_list])
 
     def __repr__(self):
         return self.voices_list.__repr__()
 
-    def get_note_id(self):
+    def get_note_ids(self):
+        """
+        Computes a list of the GeneralNote ids for this `AnnMeasure`.
+
+        Returns:
+            [int]: A list containing the GeneralNote ids contained in this measure
+        """
         notes_id = []
         for v in self.voices_list:
-            notes_id.extend(v.get_note_id())
+            notes_id.extend(v.get_note_ids())
         return notes_id
 
 
 class AnnPart:
     def __init__(self, part):
         """
-        :param part: m21 part
+        Extend music21 Part/PartStaff with some precomputed, easily compared information about it.
+
+        Args:
+            part (music21.stream.Part, music21.stream.PartStaff): The music21 Part/PartStaff to extend.
         """
         self.part = part.id
         self.bar_list = []
@@ -315,25 +360,37 @@ class AnnPart:
         return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
 
     def notation_size(self):
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnPart`.
+
+        Returns:
+            int: The notation size of the annotated part
+        """
         return sum([b.notation_size() for b in self.bar_list])
 
     def __repr__(self):
         return self.bar_list.__repr__()
 
-    def get_note_id(self):
+    def get_note_ids(self):
+        """
+        Computes a list of the GeneralNote ids for this `AnnPart`.
+
+        Returns:
+            [int]: A list containing the GeneralNote ids contained in this part
+        """
         notes_id = []
         for b in self.bar_list:
-            notes_id.extend(b.get_note_id())
+            notes_id.extend(b.get_note_ids())
         return notes_id
 
 
 class AnnScore:
     def __init__(self, score):
         """
-        Take a music21 score and store it a sequence of Full Trees
-        The hierarchy is "score -> parts ->measures -> voices -> notes"
-        Arguments:
-            score {[music21 score]} a music21 score
+        Take a music21 score and store it as a sequence of Full Trees.
+        The hierarchy is "score -> parts -> measures -> voices -> notes"
+        Args:
+            score (music21.stream.Score): The music21 score
         """
         self.score = score.id
         self.part_list = []
@@ -355,19 +412,32 @@ class AnnScore:
         return all(p[0] == p[1] for p in zip(self.part_list, other.part_list))
 
     def notation_size(self):
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnScore`.
+
+        Returns:
+            int: The notation size of the annotated score
+        """
         return sum([p.notation_size() for p in self.part_list])
 
     def __repr__(self):
         return self.part_list.__repr__()
 
-    def get_note_id(self):
+    def get_note_ids(self):
+        """
+        Computes a list of the GeneralNote ids for this `AnnScore`.
+
+        Returns:
+            [int]: A list containing the GeneralNote ids contained in this score
+        """
         notes_id = []
         for p in self.part_list:
-            notes_id.extend(p.get_note_id())
+            notes_id.extend(p.get_note_ids())
         return notes_id
 
     # return the sequences of measures for a specified part
-    def measures_from_part(self, part_number):
+    def _measures_from_part(self, part_number):
+        # only used by tests/test_scl.py
         if part_number not in range(0, len(self.part_list)):
             raise Exception(
                 f"parameter 'part_number' should be between 0 and {len(self.part_list) - 1}"

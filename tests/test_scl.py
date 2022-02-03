@@ -246,7 +246,7 @@ def test_block_diff1():
     score_lin2 = AnnScore(score2)
     #   compute the blockdiff between all the bars (just for test, in practise we will run on non common subseq)
     op_list, cost = Comparison.block_diff_lin(
-        score_lin1.measures_from_part(0), score_lin2.measures_from_part(0)
+        score_lin1._measures_from_part(0), score_lin2._measures_from_part(0)
     )
     assert cost == 8
 

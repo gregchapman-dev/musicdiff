@@ -11,7 +11,10 @@
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
-from typing import List, Tuple
+__docformat__ = "google"
+
+from typing import List, Tuple, Union
+from pathlib import Path
 import sys
 
 import music21 as m21
@@ -22,13 +25,32 @@ from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
 class Visualization:
     # These can be set by the client to different colors
     INSERTED_COLOR = "red"
+    """
+    `INSERTED_COLOR` can be set to customize the rendered score markup that `mark_diffs` does.
+    """
     DELETED_COLOR = "red"
+    """
+    `DELETED_COLOR` can be set to customize the rendered score markup that `mark_diffs` does.
+    """
     CHANGED_COLOR = "red"
+    """
+    `CHANGED_COLOR` can be set to customize the rendered score markup that `mark_diffs` does.
+    """
 
     @staticmethod
     def mark_diffs(
         score1: m21.stream.Score, score2: m21.stream.Score, operations: List[Tuple]
     ):
+        """
+        Mark up two music21 scores with the differences described by an operations
+        list (e.g. a list returned from `musicdiff.Comparison.annotated_scores_diff`).
+
+        Args:
+            score1 (music21.stream.Score): The first score to mark up
+            score2 (music21.stream.Score): The second score to mark up
+            operations (List[Tuple]): The operations list that describes the difference
+                between the two scores
+        """
         for op in operations:
             # bar
             if op[0] == "insbar":
@@ -647,7 +669,25 @@ class Visualization:
                 print(f"Annotation type {op[0]} not yet supported for visualization", file=sys.stderr)
 
     @staticmethod
-    def show_diffs(score1: m21.stream.Score, score2: m21.stream.Score, out_path1: str = None, out_path2 : str = None):
+    def show_diffs(score1: m21.stream.Score,
+                   score2: m21.stream.Score,
+                   out_path1: Union[str, Path] = None,
+                   out_path2: Union[str, Path] = None):
+        """
+        Render two (presumably marked-up) music21 scores.  If both out_path1 and out_path2 are not None,
+        save the rendered PDFs at those two locations, otherwise just display them using the default
+        PDF viewer on the system.
+
+        Args:
+            score1 (music21.stream.Score): The first score to render
+            score2 (music21.stream.Score): The second score to render
+            out_path1 (str, Path): Where to save the first marked-up rendered score PDF.
+                If out_path1 is None, both PDFs will be displayed in the default PDF viewer.
+                (default is None)
+            out_path2 (str, Path): Where to save the second marked-up rendered score PDF.
+                If out_path2 is None, both PDFs will be displayed in the default PDF viewer.
+                (default is None)
+        """
         # display the two (presumably annotated) scores
         originalComposer1: str = None
         originalComposer2: str = None
