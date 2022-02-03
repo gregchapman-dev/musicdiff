@@ -40,17 +40,22 @@ class AnnNote:
             self.pitches = [
                 ("R", "None", False)
             ]  # accidental and tie are automaticaly set for rests
-        elif general_note.isChord:
+        elif general_note.isChord or "ChordBase" in general_note.classSet:
+            # ChordBase/PercussionChord is new in v7, so I am being careful to use
+            # it only as a string so v6 will still work.
+            noteList: [m21.note.GeneralNote] = general_note.notes
+            if hasattr(general_note, "sortDiatonicAscending"): # PercussionChords don't have this
+                noteList = general_note.sortDiatonicAscending().notes
             self.pitches = [
-                M21Utils.note2tuple(p) for p in general_note.sortDiatonicAscending().notes
+                M21Utils.note2tuple(p) for p in noteList
             ]
-        elif general_note.isNote:
+        elif general_note.isNote or isinstance(general_note, m21.note.Unpitched):
             self.pitches = [M21Utils.note2tuple(general_note)]
         else:
             raise TypeError("The generalNote must be a Chord, a Rest or a Note")
         # note head
         type_number = Fraction(
-            m21.duration.convertTypeToNumber(general_note.duration.type)
+            M21Utils.get_type_num(general_note.duration)
         )
         if type_number >= 4:
             self.note_head = 4

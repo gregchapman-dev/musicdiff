@@ -60,41 +60,46 @@ class M21Utils:
     @staticmethod
     def note2tuple(note):
         # pitch name (including octave, but not accidental)
-        note_pitch = note.pitch.step + str(note.pitch.octave)
-
-        # note_accidental is only set to non-'None' if the accidental will
-        # be visible in the printed score.
-        note_accidental = "None"
-        if note.pitch.accidental is None:
-            pass
-        elif note.pitch.accidental.displayStatus is not None:
-            if note.pitch.accidental.displayStatus:
-                note_accidental = note.pitch.accidental.name
+        if isinstance(note, m21.note.Unpitched):
+            # use the displayName (e.g. 'G4') with no accidental
+            note_pitch = note.displayName
+            note_accidental = "None"
         else:
-            # note.pitch.accidental.displayStatus was not set.
-            # This can happen when there are no measures in the test data.
-            # We will guess, based on displayType.
-            # displayType can be 'normal', 'always', 'never', 'unless-repeated', 'even-tied'
-            # print("accidental.displayStatus unknown, so we will guess based on displayType", file=sys.stderr)
-            displayType = note.pitch.accidental.displayType
-            if displayType is None:
-                displayType = "normal"
+            note_pitch = note.pitch.step + str(note.pitch.octave)
 
-            if displayType in ("always", "even-tied"):
-                note_accidental = note.pitch.accidental.name
-            elif displayType == "never":
-                note_accidental = "None"
-            elif displayType == "normal":
-                # Complete guess: the accidental will be displayed
-                # This will be wrong if this is not the first such note in the measure.
-                note_accidental = note.pitch.accidental.name
-            elif displayType == "unless-repeated":
-                # Guess that the note is not repeated
-                note_accidental = note.pitch.accidental.name
+            # note_accidental is only set to non-'None' if the accidental will
+            # be visible in the printed score.
+            note_accidental = "None"
+            if note.pitch.accidental is None:
+                pass
+            elif note.pitch.accidental.displayStatus is not None:
+                if note.pitch.accidental.displayStatus:
+                    note_accidental = note.pitch.accidental.name
+            else:
+                # note.pitch.accidental.displayStatus was not set.
+                # This can happen when there are no measures in the test data.
+                # We will guess, based on displayType.
+                # displayType can be 'normal', 'always', 'never', 'unless-repeated', 'even-tied'
+                # print("accidental.displayStatus unknown, so we will guess based on displayType", file=sys.stderr)
+                displayType = note.pitch.accidental.displayType
+                if displayType is None:
+                    displayType = "normal"
 
-        # TODO: we should append editorial style info to note_accidental here ('paren', etc)
+                if displayType in ("always", "even-tied"):
+                    note_accidental = note.pitch.accidental.name
+                elif displayType == "never":
+                    note_accidental = "None"
+                elif displayType == "normal":
+                    # Complete guess: the accidental will be displayed
+                    # This will be wrong if this is not the first such note in the measure.
+                    note_accidental = note.pitch.accidental.name
+                elif displayType == "unless-repeated":
+                    # Guess that the note is not repeated
+                    note_accidental = note.pitch.accidental.name
 
-        # add tie information
+            # TODO: we should append editorial style info to note_accidental here ('paren', etc)
+
+        # add tie information (Unpitched has this, too)
         note_tie = note.tie is not None and note.tie.type in ("stop", "continue")
         return (note_pitch, note_accidental, note_tie)
 
@@ -188,10 +193,18 @@ class M21Utils:
 
 
     @staticmethod
-    def get_types(note_list):
+    def get_type_num(duration: m21.duration.Duration) -> float:
+        typeStr: str = duration.type
+        if typeStr == 'complex':
+            typeStr = m21.duration.quarterLengthToClosestType(duration.quarterLength)[0]
+        typeNum: float = m21.duration.convertTypeToNumber(typeStr)
+        return typeNum
+
+    @staticmethod
+    def get_type_nums(note_list):
         _type_list = []
         for n in note_list:
-            _type_list.append(m21.duration.convertTypeToNumber(n.duration.type))
+            _type_list.append(M21Utils.get_type_num(n.duration))
         return _type_list
 
 
@@ -210,7 +223,7 @@ class M21Utils:
     def get_enhance_beamings(note_list):
         """create a mod_beam_list that take into account also the single notes with a type > 4"""
         _beam_list = M21Utils.get_beamings(note_list)
-        _type_list = M21Utils.get_types(note_list)
+        _type_list = M21Utils.get_type_nums(note_list)
         _mod_beam_list = M21Utils.get_beamings(note_list)
         # add informations for rests and notes not grouped
         for i, n in enumerate(_beam_list):

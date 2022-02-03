@@ -43,4 +43,4 @@ args = parser.parse_args()
 # Note also that musicdiff.diff can take str or pathlib.Path for files.
 numDiffs: int = musicdiff.diff(args.file1, args.file2)
 if numDiffs is not None and numDiffs == 0:
-    print('Scores in {args.file1} and {args.files} are identical.', file=sys.stderr)
+    print(f'Scores in {args.file1} and {args.file2} are identical.', file=sys.stderr)
