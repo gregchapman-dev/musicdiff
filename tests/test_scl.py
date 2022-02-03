@@ -12,7 +12,7 @@ def test_non_common_subsequences_myers1():
     # since repr and str of integers are the same thing, we just duplicate the values in a new column
     original = [[e, e] for e in original]
     compare_to = [[e, e] for e in compare_to]
-    non_common_subsequences = Comparison.non_common_subsequences_myers(original, compare_to)
+    non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
     expected_result = [
         {"original": [1], "compare_to": [0, 0]},
         {"original": [7, 8], "compare_to": [4, 5]},
@@ -26,7 +26,7 @@ def test_non_common_subsequences_myers2():
     # since repr and str of integers are the same thing, we just duplicate the values in a new column
     original = [[e, e] for e in original]
     compare_to = [[e, e] for e in compare_to]
-    non_common_subsequences = Comparison.non_common_subsequences_myers(original, compare_to)
+    non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
     expected_result = [{"original": [0, 1, 2], "compare_to": [5, 7, 8, 6]}]
     assert non_common_subsequences == expected_result
 
@@ -37,7 +37,7 @@ def test_non_common_subsequences_myers3():
     # since repr and str of integers are the same thing, we just duplicate the values in a new column
     original = [[e, e] for e in original]
     compare_to = [[e, e] for e in compare_to]
-    non_common_subsequences = Comparison.non_common_subsequences_myers(original, compare_to)
+    non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
     expected_result = [{"original": [3, 4], "compare_to": []}]
     assert non_common_subsequences == expected_result
 
@@ -48,7 +48,7 @@ def test_non_common_subsequences_myers4():
     # since repr and str of integers are the same thing, we just duplicate the values in a new column
     original = [[e, e] for e in original]
     compare_to = [[e, e] for e in compare_to]
-    non_common_subsequences = Comparison.non_common_subsequences_myers(original, compare_to)
+    non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
     # keep just one integer for easy comparison
     for s in non_common_subsequences:
         for k in s.keys():
@@ -74,7 +74,7 @@ def test_non_common_subsequences_bars1():
     score_tree2 = AnnScore(score2)
     # compute the non common_subsequences for part 0
     part = 0
-    ncs = Comparison.non_common_subsequences_of_measures(
+    ncs = Comparison._non_common_subsequences_of_measures(
         score_tree1.part_list[part].bar_list, score_tree2.part_list[part].bar_list
     )
     assert len(ncs) == 2
@@ -97,7 +97,7 @@ def test_non_common_subsequences_bars2():
     score_tree2 = AnnScore(score2)
     # compute the non common_subsequences for part 0
     part = 0
-    non_common_subsequences = Comparison.non_common_subsequences_of_measures(
+    non_common_subsequences = Comparison._non_common_subsequences_of_measures(
         score_tree1.part_list[part].bar_list, score_tree2.part_list[part].bar_list
     )
     expected_non_common1 = {
@@ -139,7 +139,7 @@ def test_non_common_subsequences_bars3():
     score_lin2 = AnnScore(score2)
     # compute the non common_subsequences for part 0
     part = 0
-    non_common_subsequences = Comparison.non_common_subsequences_of_measures(
+    non_common_subsequences = Comparison._non_common_subsequences_of_measures(
         score_lin1.part_list[part].bar_list, score_lin2.part_list[part].bar_list
     )
     expected_non_common1 = {
@@ -174,7 +174,7 @@ def test_pitches_diff1():
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
     # compare
-    op_list, cost = Comparison.pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
+    op_list, cost = Comparison._pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
     assert cost == 1
     assert op_list == [("accidentedit", note1, note2, 1, (0, 0))]
 
@@ -188,7 +188,7 @@ def test_pitches_diff2():
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
     # compare
-    op_list, cost = Comparison.pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
+    op_list, cost = Comparison._pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
     assert cost == 2
     assert len(op_list) == 2
     assert ("accidentins", note1, note2, 1, (0, 0)) in op_list
@@ -205,7 +205,7 @@ def test_pitches_diff3():
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
     # compare
-    op_list, cost = Comparison.pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
+    op_list, cost = Comparison._pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
     assert cost == 3
     assert len(op_list) == 3
     assert ("accidentdel", note1, note2, 1, (0, 0)) in op_list
@@ -224,7 +224,7 @@ def test_pitches_diff4():
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
     # compare
-    op_list, cost = Comparison.pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
+    op_list, cost = Comparison._pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
     assert cost == 1
     assert len(op_list) == 1
     assert ("accidentins", note1, note2, 1, (0, 0)) in op_list
@@ -245,7 +245,7 @@ def test_block_diff1():
     score_lin1 = AnnScore(score1)
     score_lin2 = AnnScore(score2)
     #   compute the blockdiff between all the bars (just for test, in practise we will run on non common subseq)
-    op_list, cost = Comparison.block_diff_lin(
+    op_list, cost = Comparison._block_diff_lin(
         score_lin1._measures_from_part(0), score_lin2._measures_from_part(0)
     )
     assert cost == 8
