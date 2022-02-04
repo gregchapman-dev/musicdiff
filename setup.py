@@ -17,7 +17,7 @@ musicdiffversion = '1.0.1b1'
 
 here = pathlib.Path(__file__).parent.resolve()
 
-long_description = (here / 'README.md').read_text(encoding='utf-8')
+long_description = (here / 'pypi_README.md').read_text(encoding='utf-8')
 
 if __name__ == '__main__':
     setup(
