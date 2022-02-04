@@ -9,6 +9,7 @@ Depends on music21 (best with v7) and numpy. You also will need to configure mus
 
 ## Usage
 On the command line:
+
     python3 -m musicdiff file1.musicxml file2.krn
 
 The source for that command-line tool, which calls musicdiff's high-level diff() API, can be seen [here](musicdiff/__main__.py).  You can use it as example code for adding musicdiff capabilities to your own code.  See the documentation [here](https://gregchapman-dev.github.io/musicdiff) to find out how to customize diff()'s behavior beyond what the command line tool does.
