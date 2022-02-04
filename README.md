@@ -8,11 +8,14 @@ musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/mu
 Depends on music21 (best with v7) and numpy. You also will need to configure music21 to display a musical score (e.g. with MuseScore).
 
 ## Usage
-An example music file comparison tool based on musicdiff's high-level API musicdiff.diff() is available in [comparescores.py](comparescores.py).  You can use it directly, or as example code for adding musicdiff capabilities to your own code.
+On the command line:
+    python3 -m musicdiff file.musicxml file2.krn
+
+The source for that command-line tool, which calls musicdiff's high-level diff() API, can be seen [here](musicdiff/__main__.py).  You can use it as example code for adding musicdiff capabilities to your own code.  See the documentation [here](https://gregchapman-dev.github.io/musicdiff) to find out how to customize diff()'s behavior beyond what the command line tool does.
+
+If you are interested in calling the lower-level musicdiff APIs to get the list of diffs, the source for musicdiff's high-level diff() API (found [here](musicdiff/__init__.py)) is good example code to read.
 
 A google colab notebook is also available [here](examples/musicdiff_demo.ipynb).
-
-The source for musicdiff.diff() (found [here](musicdiff/__init__.py)) is good example code to read if you want to call the lower-level musicdiff APIs to get the list of diffs and then do interesting things with that list.
 
 ## Documentation
 You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).
