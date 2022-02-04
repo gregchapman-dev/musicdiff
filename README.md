@@ -12,6 +12,10 @@ On the command line:
 
     python3 -m musicdiff file1.musicxml file2.krn
 
+    positional arguments:
+      file1       first music score file to compare (any format music21 can parse)
+      file2       second music score file to compare (any format music21 can parse)
+
 The source for that command-line tool, which calls musicdiff's high-level diff() API, can be seen [here](musicdiff/__main__.py).  You can use it as example code for adding musicdiff capabilities to your own code.  See the documentation [here](https://gregchapman-dev.github.io/musicdiff) to find out how to customize diff()'s behavior beyond what the command line tool does.
 
 If you are interested in calling the lower-level musicdiff APIs to get the list of diffs, the source for musicdiff's high-level diff() API (found [here](musicdiff/__init__.py)) is good example code to read.
