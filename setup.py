@@ -10,24 +10,41 @@
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
-import setuptools
+from setuptools import setup, find_packages
+import pathlib
 
 musicdiffversion = '1.0.0'
 
+here = pathlib.Path(__file__).parent.resolve()
+
+long_description = (here / 'README.md').read_text(encoding='utf-8')
+
 if __name__ == '__main__':
-    setuptools.setup(
+    setup(
         name='musicdiff',
         version=musicdiffversion,
+        description='music score diff package',
+        long_description=long_description,
+        long_description_content_type='text/markdown',
+        url='https://github.com/gregchapman-dev/musicdiff',
         author='Greg Chapman',
         author_email='gregc@mac.com',
-        url='https://github.com/gregchapman-dev/musicdiff',
-        license='MIT',
-        python_requires='>=3.7',
-        description='music score diff package',
-        long_description=open('README.md').read(),
-        packages=setuptools.find_packages(),
-        install_requires=[
-            'music21',
-            'numpy'
+        classifiers=[
+            'Development Status :: 4 - Production/Stable',
+            'Topic :: Music Notation :: Assessment',
+            'License :: OSI Approved :: MIT License',
+            'Programming Language :: Python :: 3 :: Only',
         ],
+        keywords='music, score, notation, diff, compare, OMR, assessment, music21',
+        packages=find_packages(),
+        python_requires='>=3.7',
+        install_requires=[
+            'music21>=6.7',
+            'numpy',
+        ],
+        project_urls={
+            'Documentation': 'https://gregchapman-dev.github.io/musicdiff',
+            'Source': 'https://github.com/gregchapman-dev/musicdiff',
+            'Bug Reports': 'https://github.com/gregchapman-dev/musicdiff/issues',
+        }
     )
