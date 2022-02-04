@@ -32,13 +32,13 @@ if __name__ == '__main__':
         classifiers=[
             'Development Status :: 5 - Production/Stable',
             'License :: OSI Approved :: MIT License',
-            'Intended Audience :: Developers',
             'Programming Language :: Python :: 3 :: Only',
             'Operating System :: OS Independent',
             'Natural Language :: English',
         ],
         keywords='music, score, notation, diff, compare, OMR, assessment, music21',
         packages=find_packages(),
+        py_modules=comparescores
         python_requires='>=3.7',
         install_requires=[
             'music21>=6.7',
