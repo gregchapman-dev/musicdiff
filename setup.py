@@ -13,7 +13,7 @@
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '1.0.1b1'
+musicdiffversion = '1.0.1b2'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -38,6 +38,7 @@ if __name__ == '__main__':
         ],
         keywords='music, score, notation, diff, compare, OMR, assessment, music21',
         packages=find_packages(),
+
         python_requires='>=3.7',
         install_requires=[
             'music21>=6.7',
