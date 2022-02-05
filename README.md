@@ -18,9 +18,9 @@ On the command line:
 
 The source for that command-line tool, which calls musicdiff's high-level diff() API, can be seen [here](musicdiff/__main__.py).  You can use it as example code for adding musicdiff capabilities to your own code.  See the documentation [here](https://gregchapman-dev.github.io/musicdiff) to find out how to customize diff()'s behavior beyond what the command line tool does.
 
-If you are interested in calling the lower-level musicdiff APIs to get the list of diffs, the source for musicdiff's high-level diff() API (found [here](musicdiff/__init__.py)) is good example code to read.
+A google colab notebook is available [here](examples/musicdiff_demo.ipynb).
 
-A google colab notebook is also available [here](examples/musicdiff_demo.ipynb).
+If you are interested in calling lower-level musicdiff APIs to do more complicated things than just visualization in PDFs, the source for musicdiff's high-level diff() API (found [here](musicdiff/__init__.py)) is good example code to read.
 
 ## Documentation
 You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).

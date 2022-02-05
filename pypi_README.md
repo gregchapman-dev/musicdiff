@@ -18,8 +18,10 @@ On the command line:
 
 The musicdiff command line tool will display two rendered score PDFs that have the differences highlighted with color and descriptive text.
 
+musicdiff is also a package, with APIs you can call in your own code. There is the high-level diff() API that the command-line tool uses (that you can tweak the behavior of), and there are also lower level APIs that you can use in projects that perhaps want to do something more complicated than just visualization in PDFs.
+
 ## Documentation
-If you want to call musicdiff APIs in your own code, there is a high-level diff() API that the command-line tool uses (that you can customize the behavior of) as well as lower level APIs that you can use in projects that perhaps want to do something other than visualization via PDF. You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).
+You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).
 
 ## Citing
 If you use this work in any research, please cite the relevant paper:
