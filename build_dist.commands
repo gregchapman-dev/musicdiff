@@ -1,0 +1,16 @@
+# Clean up previous stuff:
+rm -r __pycache__
+rm -r musicdiff/__pycache__
+rm -r dist build
+
+# Build dist and wheel:
+python3 -m build # builds dist and wheel
+
+# Check for malformed README URLs:
+python3 -m twine check dist/*
+
+# Test-publish to testpypi:
+python3 -m twine upload --repository testpypi dist/*
+
+# If all looks good, then publish on pypi proper:
+python3 -m twine upload dist/*
