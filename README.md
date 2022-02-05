@@ -1,11 +1,13 @@
 # musicdiff
-A Python3 package (and command-line tool) for computing and visualizing the differences between two music scores.
+A Python3 package (and command-line tool) for computing and visualizing the notation differences between two music scores.
+
+musicdiff is focused on visible notation differences, not only on audible musical differences.  For example, two tied eighth notes are considered different from a single quarter note.  And two beamed 16th notes are considered different from two unbeamed 16th notes. This makes musicdiff particularly useful for assessing the results of Optical Music Recognition software.
 
 musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git)
     by [Francesco Foscarin](https://github.com/fosfrancesco).
 
 ## Setup
-Depends on music21 (best with v7) and numpy. You also will need to configure music21 to display a musical score (e.g. with MuseScore).
+Depends on music21 (version 7) and numpy. You also will need to configure music21 to display a musical score (e.g. with MuseScore).
 
 ## Usage
 On the command line:

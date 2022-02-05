@@ -13,7 +13,7 @@
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '1.0.1b2'
+musicdiffversion = '1.0.1'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -23,12 +23,16 @@ if __name__ == '__main__':
     setup(
         name='musicdiff',
         version=musicdiffversion,
-        description='music score diff package',
+
+        description='A music score notation diff package',
         long_description=long_description,
         long_description_content_type='text/markdown',
+
         url='https://github.com/gregchapman-dev/musicdiff',
+
         author='Greg Chapman',
         author_email='gregc@mac.com',
+
         classifiers=[
             'Development Status :: 5 - Production/Stable',
             'License :: OSI Approved :: MIT License',
@@ -36,14 +40,29 @@ if __name__ == '__main__':
             'Operating System :: OS Independent',
             'Natural Language :: English',
         ],
-        keywords='music, score, notation, diff, compare, OMR, assessment, music21',
+
+        keywords=[
+            'music',
+            'score',
+            'notation',
+            'diff',
+            'compare',
+            'OMR',
+            'Optical Music Recognition',
+            'assessment',
+            'comparison',
+            'music21',
+        ],
+
         packages=find_packages(),
 
         python_requires='>=3.7',
+
         install_requires=[
-            'music21>=6.7',
+            'music21>=7.1',
             'numpy',
         ],
+
         project_urls={
             'Documentation': 'https://gregchapman-dev.github.io/musicdiff',
             'Source': 'https://github.com/gregchapman-dev/musicdiff',
