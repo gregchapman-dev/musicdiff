@@ -18,11 +18,9 @@ On the command line:
       file1       first music score file to compare (any format music21 can parse)
       file2       second music score file to compare (any format music21 can parse)
 
-The source for that command-line tool, which calls musicdiff's high-level diff() API, can be seen [here](musicdiff/__main__.py).  You can use it as example code for adding musicdiff capabilities to your own code.  See the documentation [here](https://gregchapman-dev.github.io/musicdiff) to find out how to customize diff()'s behavior beyond what the command line tool does.
+The musicdiff command line tool will display two rendered score PDFs that have the differences highlighted with color and descriptive text.
 
-A google colab notebook is available [here](examples/musicdiff_demo.ipynb).
-
-If you are interested in calling lower-level musicdiff APIs to do more complicated things than just visualization in PDFs, the source for musicdiff's high-level diff() API (found [here](musicdiff/__init__.py)) is good example code to read.
+musicdiff is also a package, with APIs you can call in your own code. There is the high-level diff() API that the command-line tool uses (that you can tweak the behavior of), and there are also lower level APIs that you can use in projects that perhaps want to do something more complicated than just visualization in PDFs.
 
 ## Documentation
 You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).
@@ -42,8 +40,16 @@ If you use this work in any research, please cite the relevant paper:
 
 The paper is freely available [here](https://hal.inria.fr/hal-02267454v2/document).
 
-## License
-Licensed under the [MIT License](LICENSE).
-
 ## Acknowledgment
 Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowing me to use his [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git) code, and for continuing to work with and advise me on this project.
+
+## License
+The MIT License (MIT)
+Copyright (c) 2022, Francesco Foscarin, Greg Chapman
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

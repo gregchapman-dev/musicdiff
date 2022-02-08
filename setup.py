@@ -10,24 +10,62 @@
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
-import setuptools
+from setuptools import setup, find_packages
+import pathlib
 
-musicdiffversion = '1.0.0'
+musicdiffversion = '1.0.1'
+
+here = pathlib.Path(__file__).parent.resolve()
+
+long_description = (here / 'pypi_README.md').read_text(encoding='utf-8')
 
 if __name__ == '__main__':
-    setuptools.setup(
+    setup(
         name='musicdiff',
         version=musicdiffversion,
+
+        description='A music score notation diff package',
+        long_description=long_description,
+        long_description_content_type='text/markdown',
+
+        url='https://github.com/gregchapman-dev/musicdiff',
+
         author='Greg Chapman',
         author_email='gregc@mac.com',
-        url='https://github.com/gregchapman-dev/musicdiff',
-        license='MIT',
-        python_requires='>=3.7',
-        description='music score diff package',
-        long_description=open('README.md').read(),
-        packages=setuptools.find_packages(),
-        install_requires=[
-            'music21',
-            'numpy'
+
+        classifiers=[
+            'Development Status :: 5 - Production/Stable',
+            'License :: OSI Approved :: MIT License',
+            'Programming Language :: Python :: 3 :: Only',
+            'Operating System :: OS Independent',
+            'Natural Language :: English',
         ],
+
+        keywords=[
+            'music',
+            'score',
+            'notation',
+            'diff',
+            'compare',
+            'OMR',
+            'Optical Music Recognition',
+            'assessment',
+            'comparison',
+            'music21',
+        ],
+
+        packages=find_packages(),
+
+        python_requires='>=3.7',
+
+        install_requires=[
+            'music21>=7.1',
+            'numpy',
+        ],
+
+        project_urls={
+            'Documentation': 'https://gregchapman-dev.github.io/musicdiff',
+            'Source': 'https://github.com/gregchapman-dev/musicdiff',
+            'Bug Reports': 'https://github.com/gregchapman-dev/musicdiff/issues',
+        }
     )
