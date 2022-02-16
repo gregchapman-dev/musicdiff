@@ -19,7 +19,7 @@ import sys
 
 import music21 as m21
 
-from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
+from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote, AnnExtra
 
 
 class Visualization:
@@ -108,19 +108,127 @@ class Visualization:
                 for el in voice1.recurse().notesAndRests:
                     el.style.color = Visualization.DELETED_COLOR
 
+            # extra
+            elif op[0] == "extrains":
+                assert isinstance(op[2], AnnExtra)
+                # color the extra using Visualization.INSERTED_COLOR, and add a textExpression
+                # describing the insertion.
+                extra2 = score2.recurse().getElementById(op[2].extra)
+                textExp = m21.expressions.TextExpression(f"inserted {extra2.classes[0]}")
+                textExp.style.color = Visualization.INSERTED_COLOR
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint = extra2.getFirst()
+                    insertionPoint.activeSite.insert(insertionPoint.offset, textExp)
+                else:
+                    extra2.activeSite.insert(extra2.offset, textExp)
+
+            elif op[0] == "extradel":
+                assert isinstance(op[1], AnnExtra)
+                # color the extra using Visualization.DELETED_COLOR, and add a textExpression
+                # describing the deletion.
+                extra1 = score1.recurse().getElementById(op[1].extra)
+                textExp = m21.expressions.TextExpression(f"deleted {extra1.classes[0]}")
+                textExp.style.color = Visualization.DELETED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint = extra1.getFirst()
+                    insertionPoint.activeSite.insert(insertionPoint.offset, textExp)
+                else:
+                    extra1.activeSite.insert(extra1.offset, textExp)
+
+            elif op[0] == "extraedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)
+                extra2 = score2.recurse().getElementById(op[2].extra)
+                if extra1.classes[0] != extra2.classes[0]:
+                    textExp1 = m21.expressions.TextExpression(
+                                    f"changed to {extra2.classes[0]}")
+                    textExp2 = m21.expressions.TextExpression(
+                                    f"changed from {extra1.classes[0]}")
+                else:
+                    textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]}")
+                    textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]}")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                    insertionPoint2 = extra2.getFirst()
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                else:
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+
+            elif op[0] == "extracontentedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)
+                extra2 = score2.recurse().getElementById(op[2].extra)
+                textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} text")
+                textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} text")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                    insertionPoint2 = extra2.getFirst()
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                else:
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+
+            elif op[0] == "extraoffsetedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)
+                extra2 = score2.recurse().getElementById(op[2].extra)
+                textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} offset")
+                textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} offset")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                    insertionPoint2 = extra2.getFirst()
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                else:
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+
+            elif op[0] == "extradurationedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)
+                extra2 = score2.recurse().getElementById(op[2].extra)
+                textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} duration")
+                textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} duration")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                    insertionPoint2 = extra2.getFirst()
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                else:
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+
             # note
             elif op[0] == "noteins":
                 assert isinstance(op[2], AnnNote)
                 # color the inserted score2 general note (note, chord, or rest) using Visualization.INSERTED_COLOR
                 note2 = score2.recurse().getElementById(op[2].general_note)
                 note2.style.color = Visualization.INSERTED_COLOR
-                if "Rest" in note2.classes:
-                    textExp = m21.expressions.TextExpression("inserted rest")
-                elif "Chord" in note2.classes:
-                    textExp = m21.expressions.TextExpression("inserted chord")
-                else:
-                    textExp = m21.expressions.TextExpression("inserted note")
-                textExp.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression(f"inserted {note2.classes[0]}")
+                textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
             elif op[0] == "notedel":
@@ -128,13 +236,8 @@ class Visualization:
                 # color the deleted score1 general note (note, chord, or rest) using Visualization.DELETED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.DELETED_COLOR
-                if "Rest" in note1.classes:
-                    textExp = m21.expressions.TextExpression("deleted rest")
-                elif "Chord" in note1.classes:
-                    textExp = m21.expressions.TextExpression("deleted chord")
-                else:
-                    textExp = m21.expressions.TextExpression("deleted note")
-                textExp.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression(f"deleted {note2.classes[0]}")
+                textExp.style.color = Visualization.DELETED_COLOR
                 note1.activeSite.insert(note1.offset, textExp)
 
             # pitch

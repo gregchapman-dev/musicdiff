@@ -13,6 +13,8 @@
 
 from fractions import Fraction
 import math
+import sys
+from typing import List
 # import sys
 import music21 as m21
 
@@ -378,6 +380,28 @@ class M21Utils:
         return out
 
     @staticmethod
+    def get_extras(measure: m21.stream.Measure, spannerBundle: m21.spanner.SpannerBundle) -> List[m21.base.Music21Object]:
+        # returns a list of every object contained in the measure (and in the measure's
+        # substreams/Voices), skipping any Streams, GeneralNotes (which are returned from
+        # get_notes/get_notes_and_gracenotes), and Barlines.  We're looking for things
+        # like Clefs, TextExpressions, and Dynamics...
+        output: List[m21.base.Music21Object] = list(measure.recurse().getElementsNotOfClass((m21.note.GeneralNote,
+                                                        m21.stream.Stream,
+                                                        m21.bar.Barline,
+                                                        m21.layout.LayoutBase )))
+
+        # we must add any Crescendo/Diminuendo spanners that start on GeneralNotes in this measure
+        for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
+            dwList: List[m21.dynamics.DynamicWedge] = gn.getSpannerSites(m21.dynamics.DynamicWedge)
+            for dw in dwList:
+                if dw not in spannerBundle:
+                    continue
+                if dw.isFirst(gn):
+                    output.append(dw)
+
+        return output
+
+    @staticmethod
     def note_to_string(note):
         if note.isRest:
             _str = "R"
@@ -395,3 +419,75 @@ class M21Utils:
         else:
             out = None
         return out
+
+    @staticmethod
+    def clef_to_string(clef: m21.clef.Clef) -> str:
+        # sign(str), line(int), octaveChange(int == # octaves to shift up(+) or down(-))
+        sign: str = '' if clef.sign is None else clef.sign
+        line: str = '0' if clef.line is None else f'{clef.line}'
+        octave: str = '' if clef.octaveChange == 0 else f'{8 * clef.octaveChange:+}'
+        return f'CL:{sign}{line}{octave}'
+
+    @staticmethod
+    def timesig_to_string(timesig: m21.meter.TimeSignature) -> str:
+        if not timesig.symbol:
+            return 'TS:{timesig.numerator}/{timesig.denominator}'
+        if timesig.symbol in ('common', 'cut'):
+            return 'TS:{timesig.symbol}'
+        if timesig.symbol == 'single-number':
+            return 'TS:{timesig.numerator}'
+        return 'TS:{timesig.numerator}/{timesig.denominator}'
+
+    @staticmethod
+    def tempo_to_string(mm: m21.tempo.TempoIndication) -> str:
+        # pylint: disable=protected-access
+        # We need direct access to mm._textExpression and mm._tempoText, to avoid
+        # the extra formatting that referencing via the .text propert will perform.
+        if isinstance(mm, m21.tempo.TempoText):
+            if mm._textExpression is None:
+                return ''
+            return M21Utils.extra_to_string(mm._textExpression)
+
+        if isinstance(mm, m21.tempo.MetricModulation):
+            # convert to MetronomeMark
+            mm = mm.newMetronome
+
+        # Assume mm is now a MetronomeMark
+        if mm.textImplicit is True or mm._tempoText is None:
+            if mm.referent is None or mm.number is None:
+                return ''
+            return f'MM:{mm.referent.fullName}={float(mm.number)}'
+        if mm.numberImplicit is True or mm.number is None:
+            if mm._tempoText is None:
+                return ''
+            return M21Utils.extra_to_string(mm._tempoText)
+
+        return f'MM:{M21Utils.extra_to_string(mm._tempoText)} {mm.referent.fullName}={float(mm.number)}'
+        # pylint: enable=protected-access
+
+    @staticmethod
+    def extra_to_string(extra: m21.base.Music21Object) -> str:
+        # object classes that have text content in a single field
+        if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
+            return f'KS:{extra.sharps}'
+        if isinstance(extra, m21.expressions.TextExpression):
+            return f'TX:{extra.content}'
+        if isinstance(extra, m21.dynamics.Dynamic):
+            return f'DY:{extra.value}'
+
+        # object classes whose text is derived from class name
+        if isinstance(extra, m21.dynamics.Diminuendo):
+            return 'DY:>'
+        if isinstance(extra, m21.dynamics.Crescendo):
+            return 'DY:<'
+
+        # object classes that have several fields to be combined into string
+        if isinstance(extra, m21.clef.Clef):
+            return M21Utils.clef_to_string(extra)
+        if isinstance(extra, m21.meter.TimeSignature):
+            return M21Utils.timesig_to_string(extra)
+        if isinstance(extra, m21.tempo.TempoIndication):
+            return M21Utils.tempo_to_string(extra)
+
+        print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
+        return ''
