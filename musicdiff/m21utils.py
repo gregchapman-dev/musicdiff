@@ -334,7 +334,10 @@ class M21Utils:
             for i, note_tuple in enumerate(tuplets_list):
                 if len(note_tuple) > ii:
                     if note_tuple[ii] == "start":
-                        assert start_index is None
+                        # Some medieval music has weirdly nested triplets that
+                        # end up in music21 with two starts in a row.  This is
+                        # OK, no need to assert here.
+#                        assert start_index is None
                         start_index = ii
                     elif note_tuple[ii] is None:
                         if start_index is None:
@@ -431,12 +434,12 @@ class M21Utils:
     @staticmethod
     def timesig_to_string(timesig: m21.meter.TimeSignature) -> str:
         if not timesig.symbol:
-            return 'TS:{timesig.numerator}/{timesig.denominator}'
+            return f'TS:{timesig.numerator}/{timesig.denominator}'
         if timesig.symbol in ('common', 'cut'):
-            return 'TS:{timesig.symbol}'
+            return f'TS:{timesig.symbol}'
         if timesig.symbol == 'single-number':
-            return 'TS:{timesig.numerator}'
-        return 'TS:{timesig.numerator}/{timesig.denominator}'
+            return f'TS:{timesig.numerator}'
+        return f'TS:{timesig.numerator}/{timesig.denominator}'
 
     @staticmethod
     def tempo_to_string(mm: m21.tempo.TempoIndication) -> str:
