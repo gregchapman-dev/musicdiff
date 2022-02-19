@@ -188,7 +188,7 @@ class AnnNote:
 
 
 class AnnExtra:
-    def __init__(self, extra: m21.base.Music21Object, measure: m21.stream.Score, score: m21.stream.Score):
+    def __init__(self, extra: m21.base.Music21Object, measure: m21.stream.Measure, score: m21.stream.Score):
         """
         Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.
         Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.
@@ -205,7 +205,7 @@ class AnnExtra:
             firstNote: m21.note.GeneralNote = extra.getFirst()
             lastNote: m21.note.GeneralNote = extra.getLast()
             self.offset = float(firstNote.getOffsetInHierarchy(measure))
-            # to compute duration we need to use offset-in-score, since the end note might be in another Part
+            # to compute duration we need to use offset-in-score, since the end note might be in another Measure
             startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
             endOffsetInScore: float = float(lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength)
             self.duration = endOffsetInScore - startOffsetInScore
