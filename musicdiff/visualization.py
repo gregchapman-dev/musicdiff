@@ -135,7 +135,7 @@ class Visualization:
                 else:
                     extra1.activeSite.insert(extra1.offset, textExp)
 
-            elif op[0] == "extraedit":
+            elif op[0] == "extrasub":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
