@@ -230,7 +230,13 @@ class M21Utils:
         # add informations for rests and notes not grouped
         for i, n in enumerate(_beam_list):
             if len(n) == 0:
-                for ii in range(int(math.log(_type_list[i] / 4, 2))):
+                rangeEnd: int = None
+                if _type_list[i] != 0:
+                    rangeEnd = int(math.log(_type_list[i] / 4, 2))
+                if rangeEnd is None:
+                    continue
+
+                for ii in range(0, rangeEnd):
                     if (
                         note_list[i].isRest
                         and len(_beam_list) > i + 1
