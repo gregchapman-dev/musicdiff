@@ -454,8 +454,8 @@ class M21Utils:
         # the extra formatting that referencing via the .text propert will perform.
         if isinstance(mm, m21.tempo.TempoText):
             if mm._textExpression is None:
-                return ''
-            return M21Utils.extra_to_string(mm._textExpression)
+                return 'MM:'
+            return f'MM:{M21Utils.extra_to_string(mm._textExpression)}'
 
         if isinstance(mm, m21.tempo.MetricModulation):
             # convert to MetronomeMark
@@ -464,14 +464,16 @@ class M21Utils:
         # Assume mm is now a MetronomeMark
         if mm.textImplicit is True or mm._tempoText is None:
             if mm.referent is None or mm.number is None:
-                return ''
+                return 'MM:'
             return f'MM:{mm.referent.fullName}={float(mm.number)}'
         if mm.numberImplicit is True or mm.number is None:
             if mm._tempoText is None:
-                return ''
-            return M21Utils.extra_to_string(mm._tempoText)
+                return 'MM:'
+            # no 'MM:' prefix, TempoText adds their own
+            return M21Utils.tempo_to_string(mm._tempoText)
 
-        return f'MM:{M21Utils.extra_to_string(mm._tempoText)} {mm.referent.fullName}={float(mm.number)}'
+        # no 'MM:' prefix, TempoText adds their own
+        return f'{M21Utils.tempo_to_string(mm._tempoText)} {mm.referent.fullName}={float(mm.number)}'
         # pylint: enable=protected-access
 
     @staticmethod
