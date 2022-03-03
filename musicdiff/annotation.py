@@ -34,7 +34,7 @@ class AnnNote:
         self.general_note = general_note.id
         self.beamings = enhanced_beam_list
         self.tuplets = tuplet_list
-        ##compute the representaiton of NoteNode as in the paper
+        # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tie)
         if general_note.isRest:
             self.pitches = [
@@ -187,6 +187,61 @@ class AnnNote:
         #     return True
 
 
+class AnnExtra:
+    def __init__(self, extra: m21.base.Music21Object, measure: m21.stream.Measure, score: m21.stream.Score):
+        """
+        Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.
+        Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.
+
+        Args:
+            extra (music21.base.Music21Object): The music21 non-GeneralNote/non-Stream object to extend.
+            measure (music21.stream.Measure): The music21 Measure the extra was found in.  If the extra
+                was found in a Voice, this is the Measure that the Voice was found in.
+        """
+        self.extra = extra.id
+        self.offset: float
+        self.duration: float
+        if isinstance(extra, m21.spanner.Spanner):
+            firstNote: m21.note.GeneralNote = extra.getFirst()
+            lastNote: m21.note.GeneralNote = extra.getLast()
+            self.offset = float(firstNote.getOffsetInHierarchy(measure))
+            # to compute duration we need to use offset-in-score, since the end note might be in another Measure
+            startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
+            endOffsetInScore: float = float(lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength)
+            self.duration = endOffsetInScore - startOffsetInScore
+        else:
+            self.offset = float(extra.getOffsetInHierarchy(measure))
+            self.duration = float(extra.duration.quarterLength)
+        self.content: str = M21Utils.extra_to_string(extra)
+        self._notation_size: int = 1 # so far, always 1, but maybe some extra will be bigger someday
+
+        # precomputed representations for faster comparison
+        self.precomputed_str = self.__str__()
+
+    def notation_size(self):
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnExtra`.
+
+        Returns:
+            int: The notation size of the annotated extra
+        """
+        return self._notation_size
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        """
+        Returns:
+            str: the compared representation of the AnnExtra. Does not consider music21 id.
+        """
+        return f'[{self.content},off={self.offset},dur={self.duration}]'
+
+    def __eq__(self, other):
+        # equality does not consider the MEI id!
+        return self.precomputed_str == other.precomputed_str
+
+
 class AnnVoice:
     def __init__(self, voice):
         """
@@ -268,7 +323,7 @@ class AnnVoice:
 
 
 class AnnMeasure:
-    def __init__(self, measure):
+    def __init__(self, measure, score):
         """
         Extend music21 Measure with some precomputed, easily compared information about it.
 
@@ -287,15 +342,26 @@ class AnnMeasure:
             for voice in measure.voices:
                 ann_voice = AnnVoice(voice)
                 if ann_voice.n_of_notes > 0:
-                    self.voices_list.append(AnnVoice(voice))
+                    self.voices_list.append(ann_voice)
         self.n_of_voices = len(self.voices_list)
+
+        self.extras_list = []
+        for extra in M21Utils.get_extras(measure, score.spannerBundle):
+            self.extras_list.append(AnnExtra(extra, measure, score))
+
+        # For correct comparison, sort the extras_list, so that any list slices
+        # that all have the same offset are sorted alphabetically.
+        self.extras_list.sort(key=lambda e: ( e.offset, str(e) ))
 
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str = hash(self.__str__())
         self.precomputed_repr = hash(self.__repr__())
 
     def __str__(self):
-        return str([str(v) for v in self.voices_list])
+        return str([str(v) for v in self.voices_list]) + ' Extras:' + str([str(e) for e in self.extras_list])
+
+    def __repr__(self):
+        return self.voices_list.__repr__() + ' Extras:' + self.extras_list.__repr__()
 
     def __eq__(self, other):
         # equality does not consider MEI id!
@@ -303,6 +369,9 @@ class AnnMeasure:
             return False
 
         if len(self.voices_list) != len(other.voices_list):
+            return False
+
+        if len(self.extras_list) != len(other.extras_list):
             return False
 
         return self.precomputed_str == other.precomputed_str
@@ -315,10 +384,7 @@ class AnnMeasure:
         Returns:
             int: The notation size of the annotated measure
         """
-        return sum([v.notation_size() for v in self.voices_list])
-
-    def __repr__(self):
-        return self.voices_list.__repr__()
+        return sum([v.notation_size() for v in self.voices_list]) + sum([e.notation_size() for e in self.extras_list])
 
     def get_note_ids(self):
         """
@@ -334,7 +400,7 @@ class AnnMeasure:
 
 
 class AnnPart:
-    def __init__(self, part):
+    def __init__(self, part, score):
         """
         Extend music21 Part/PartStaff with some precomputed, easily compared information about it.
 
@@ -344,7 +410,7 @@ class AnnPart:
         self.part = part.id
         self.bar_list = []
         for measure in part.getElementsByClass("Measure"):
-            ann_bar = AnnMeasure(measure)  # create the bar objects
+            ann_bar = AnnMeasure(measure, score)  # create the bar objects
             if ann_bar.n_of_voices > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars = len(self.bar_list)
@@ -401,7 +467,7 @@ class AnnScore:
         self.part_list = []
         for part in score.parts.stream():
             # create and add the AnnPart object to part_list
-            ann_part = AnnPart(part)
+            ann_part = AnnPart(part, score)
             if ann_part.n_of_bars > 0:
                 self.part_list.append(ann_part)
         self.n_of_parts = len(self.part_list)

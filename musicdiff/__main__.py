@@ -21,7 +21,7 @@ from musicdiff import diff
 # git clone https://github.com/gregchapman-dev/converter21.git
 # pip install converter21   # or pip install -e converter21 if you want it "editable"
 # Then uncomment all lines in this file marked "# c21"
-
+# import music21 as m21 # c21
 # from converter21 import HumdrumConverter # c21
 
 # ------------------------------------------------------------------------------

@@ -16,14 +16,26 @@ __docformat__ = "google"
 import copy
 from typing import List, Tuple
 from collections import namedtuple
+from difflib import ndiff
 
 import numpy as np
 
-from musicdiff.annotation import AnnScore, AnnNote
+from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra
 from musicdiff import M21Utils
 
 # memoizers to speed up the recursive computation
 def _memoize_inside_bars_diff_lin(func):
+    mem = {}
+
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in mem:
+            mem[key] = func(original, compare_to)
+        return copy.deepcopy(mem[key])
+
+    return memoizer
+
+def _memoize_extras_diff_lin(func):
     mem = {}
 
     def memoizer(original, compare_to):
@@ -369,20 +381,130 @@ class Comparison:
         )
         if (
             original[0] == compare_to[0]
-        ):  # to avoid perform the _inside_bars_diff_lin if it's not needed
+        ):  # to avoid performing the _voices_coupling_recursive if it's not needed
             inside_bar_op_list = []
             inside_bar_cost = 0
         else:
-            # run the voice coupling algorithm
+            # diff the bar extras (like _inside_bars_diff_lin, but with lists of AnnExtras
+            # instead of lists of AnnNotes)
+            extras_op_list, extras_cost = Comparison._extras_diff_lin(
+                original[0].extras_list, compare_to[0].extras_list
+            )
+
+            # run the voice coupling algorithm, and add to inside_bar_op_list and inside_bar_cost
             inside_bar_op_list, inside_bar_cost = Comparison._voices_coupling_recursive(
                 original[0].voices_list, compare_to[0].voices_list
             )
+            inside_bar_op_list.extend(extras_op_list)
+            inside_bar_cost += extras_cost
         cost_dict["editbar"] += inside_bar_cost
         op_list_dict["editbar"].extend(inside_bar_op_list)
         # compute the minimum of the possibilities
         min_key = min(cost_dict, key=lambda k: cost_dict[k])
         out = op_list_dict[min_key], cost_dict[min_key]
         return out
+
+    @staticmethod
+    @_memoize_extras_diff_lin
+    def _extras_diff_lin(original, compare_to):
+        # original and compare to are two lists of AnnExtra
+        if len(original) == 0 and len(compare_to) == 0:
+            return [], 0
+
+        if len(original) == 0:
+            cost = 0
+            op_list, cost = Comparison._extras_diff_lin(original, compare_to[1:])
+            op_list.append(("extrains", None, compare_to[0], compare_to[0].notation_size()))
+            cost += compare_to[0].notation_size()
+            return op_list, cost
+
+        if len(compare_to) == 0:
+            cost = 0
+            op_list, cost = Comparison._extras_diff_lin(original[1:], compare_to)
+            op_list.append(("extradel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
+            return op_list, cost
+
+        # compute the cost and the op_list for the many possibilities of recursion
+        cost = {}
+        op_list = {}
+        # extradel
+        op_list["extradel"], cost["extradel"] = Comparison._extras_diff_lin(
+            original[1:], compare_to
+        )
+        cost["extradel"] += original[0].notation_size()
+        op_list["extradel"].append(
+            ("extradel", original[0], None, original[0].notation_size())
+        )
+        # extrains
+        op_list["extrains"], cost["extrains"] = Comparison._extras_diff_lin(
+            original, compare_to[1:]
+        )
+        cost["extrains"] += compare_to[0].notation_size()
+        op_list["extrains"].append(
+            ("extrains", None, compare_to[0], compare_to[0].notation_size())
+        )
+        # extrasub
+        op_list["extrasub"], cost["extrasub"] = Comparison._extras_diff_lin(
+            original[1:], compare_to[1:]
+        )
+        if (
+            original[0] == compare_to[0]
+        ):  # avoid call another function if they are equal
+            extrasub_op, extrasub_cost = [], 0
+        else:
+            extrasub_op, extrasub_cost = Comparison._annotated_extra_diff(original[0], compare_to[0])
+        cost["extrasub"] += extrasub_cost
+        op_list["extrasub"].extend(extrasub_op)
+        # compute the minimum of the possibilities
+        min_key = min(cost, key=cost.get)
+        out = op_list[min_key], cost[min_key]
+        return out
+
+    @staticmethod
+    def _strings_leveinshtein_distance(str1: str, str2: str):
+        counter: dict = {"+": 0, "-": 0}
+        distance: int = 0
+        for edit_code, *_ in ndiff(str1, str2):
+            if edit_code == " ":
+                distance += max(counter.values())
+                counter = {"+": 0, "-": 0}
+            else:
+                counter[edit_code] += 1
+        distance += max(counter.values())
+        return distance
+
+    @staticmethod
+    def _annotated_extra_diff(annExtra1: AnnExtra, annExtra2: AnnExtra):
+        """compute the differences between two annotated extras
+        Each annotated extra consists of three values: content, offset, and duration
+        """
+        cost = 0
+        op_list = []
+
+        # add for the content
+        if annExtra1.content != annExtra2.content:
+            content_cost: int = Comparison._strings_leveinshtein_distance(
+                                            annExtra1.content, annExtra2.content)
+            cost += content_cost
+            op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
+
+        # add for the offset
+        if annExtra1.offset != annExtra2.offset:
+            # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
+            # min cost is 1, though, don't round down to zero.
+            offset_cost: int = min(1, abs(annExtra1.duration - annExtra2.duration))
+            cost += offset_cost
+            op_list.append(("extraoffsetedit", annExtra1, annExtra2, offset_cost))
+
+        # add for the duration
+        if annExtra1.duration != annExtra2.duration:
+            # duration is in quarter-notes, so let's make the cost in quarter-notes as well.
+            duration_cost = min(1, abs(annExtra1.duration - annExtra2.duration))
+            cost += duration_cost
+            op_list.append(("extradurationedit", annExtra1, annExtra2, duration_cost))
+
+        return op_list, cost
 
     @staticmethod
     @_memoize_inside_bars_diff_lin
@@ -642,7 +764,7 @@ class Comparison:
         return out
 
     @staticmethod
-    def _voices_coupling_recursive(original: List, compare_to):
+    def _voices_coupling_recursive(original: List[AnnVoice], compare_to: List[AnnVoice]):
         """compare all the possible voices permutations, considering also deletion and insertion (equation on office lens)
         original [list] -- a list of Voice
         compare_to [list] -- a list of Voice
