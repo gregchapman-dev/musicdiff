@@ -251,23 +251,23 @@ class AnnVoice:
             voice (music21.stream.Voice): The music21 voice to extend.
         """
         self.voice = voice.id
-        self.note_list = M21Utils.get_notes(voice)
-        if not self.note_list:
+        note_list = M21Utils.get_notes(voice)
+        if not note_list:
             self.en_beam_list = []
             self.tuplet_list = []
             self.tuple_info = []
             self.annot_notes = []
         else:
             self.en_beam_list = M21Utils.get_enhance_beamings(
-                self.note_list
+                note_list
             )  # beams and type (type for note shorter than quarter notes)
             self.tuplet_list = M21Utils.get_tuplets_type(
-                self.note_list
+                note_list
             )  # corrected tuplets (with "start" and "continue")
-            self.tuple_info = M21Utils.get_tuplets_info(self.note_list)
+            self.tuple_info = M21Utils.get_tuplets_info(note_list)
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
-            for i, n in enumerate(self.note_list):
+            for i, n in enumerate(note_list):
                 self.annot_notes.append(
                     AnnNote(n, self.en_beam_list[i], self.tuplet_list[i])
                 )
