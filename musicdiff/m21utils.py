@@ -396,7 +396,6 @@ class M21Utils:
         # like Clefs, TextExpressions, and Dynamics...
         output: List[m21.base.Music21Object] = list(measure.recurse().getElementsNotOfClass((m21.note.GeneralNote,
                                                         m21.stream.Stream,
-                                                        m21.bar.Barline,
                                                         m21.layout.LayoutBase )))
 
         # we must add any Crescendo/Diminuendo spanners that start on GeneralNotes in this measure
@@ -477,6 +476,28 @@ class M21Utils:
         # pylint: enable=protected-access
 
     @staticmethod
+    def barline_to_string(barline: m21.bar.Barline) -> str:
+        # for all Barlines: type, pause
+        # for Repeat Barlines: direction, times
+        pauseStr: str = ''
+        if barline.pause is not None:
+            if isinstance(barline.pause, m21.expressions.Fermata):
+                pauseStr = ' with fermata'
+            else:
+                pauseStr = ' with pause (non-fermata)'
+
+        output: str = f'{barline.type}{pauseStr}'
+        if not isinstance(barline, m21.bar.Repeat):
+            return f'BL:{output}'
+
+        # add the Repeat fields (direction, times)
+        if barline.direction is not None:
+            output += f' direction={barline.direction}'
+        if barline.times is not None:
+            output += f' times={barline.times}'
+        return f'RPT:{output}'
+
+    @staticmethod
     def extra_to_string(extra: m21.base.Music21Object) -> str:
         # object classes that have text content in a single field
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
@@ -499,6 +520,8 @@ class M21Utils:
             return M21Utils.timesig_to_string(extra)
         if isinstance(extra, m21.tempo.TempoIndication):
             return M21Utils.tempo_to_string(extra)
+        if isinstance(extra, m21.bar.Barline):
+            return M21Utils.barline_to_string(extra)
 
         print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''
