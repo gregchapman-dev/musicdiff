@@ -394,9 +394,19 @@ class M21Utils:
         # substreams/Voices), skipping any Streams, GeneralNotes (which are returned from
         # get_notes/get_notes_and_gracenotes), and Barlines.  We're looking for things
         # like Clefs, TextExpressions, and Dynamics...
-        output: List[m21.base.Music21Object] = list(measure.recurse().getElementsNotOfClass((m21.note.GeneralNote,
-                                                        m21.stream.Stream,
-                                                        m21.layout.LayoutBase )))
+        output: List[m21.base.Music21Object] = []
+
+        initialList: List[m21.base.Music21Object] = list(
+            measure.recurse().getElementsNotOfClass(
+                (m21.note.GeneralNote,
+                 m21.stream.Stream,
+                 m21.layout.LayoutBase) ) )
+
+        # loop over the initialList, filtering out (and complaining about) things we
+        # don't recognize.
+        for el in initialList:
+            if M21Utils.extra_to_string(el) != '':
+                output.append(el)
 
         # we must add any Crescendo/Diminuendo spanners that start on GeneralNotes in this measure
         for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):

@@ -323,7 +323,7 @@ class AnnVoice:
 
 
 class AnnMeasure:
-    def __init__(self, measure, score):
+    def __init__(self, measure, score, spannerBundle):
         """
         Extend music21 Measure with some precomputed, easily compared information about it.
 
@@ -346,7 +346,7 @@ class AnnMeasure:
         self.n_of_voices = len(self.voices_list)
 
         self.extras_list = []
-        for extra in M21Utils.get_extras(measure, score.spannerBundle):
+        for extra in M21Utils.get_extras(measure, spannerBundle):
             self.extras_list.append(AnnExtra(extra, measure, score))
 
         # For correct comparison, sort the extras_list, so that any list slices
@@ -400,7 +400,7 @@ class AnnMeasure:
 
 
 class AnnPart:
-    def __init__(self, part, score):
+    def __init__(self, part, score, spannerBundle):
         """
         Extend music21 Part/PartStaff with some precomputed, easily compared information about it.
 
@@ -410,7 +410,7 @@ class AnnPart:
         self.part = part.id
         self.bar_list = []
         for measure in part.getElementsByClass("Measure"):
-            ann_bar = AnnMeasure(measure, score)  # create the bar objects
+            ann_bar = AnnMeasure(measure, score, spannerBundle)  # create the bar objects
             if ann_bar.n_of_voices > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars = len(self.bar_list)
@@ -465,9 +465,10 @@ class AnnScore:
         """
         self.score = score.id
         self.part_list = []
+        spannerBundle = score.spannerBundle
         for part in score.parts.stream():
             # create and add the AnnPart object to part_list
-            ann_part = AnnPart(part, score)
+            ann_part = AnnPart(part, score, spannerBundle)
             if ann_part.n_of_bars > 0:
                 self.part_list.append(ann_part)
         self.n_of_parts = len(self.part_list)
