@@ -7,7 +7,7 @@ musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/mu
     by [Francesco Foscarin](https://github.com/fosfrancesco).
 
 ## Setup
-Depends on music21 (version 7) and numpy. You also will need to configure music21 to display a musical score (e.g. with MuseScore).
+Depends on [music21](https://pypi.org/project/music21) (version 7.1+) and [numpy](https://pypi.org/project/numpy). You also will need to configure music21 (instructions [here](https://web.mit.edu/music21/doc/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).
 
 ## Usage
 On the command line:
@@ -20,7 +20,7 @@ On the command line:
 
 The musicdiff command line tool will display two rendered score PDFs that have the differences highlighted with color and descriptive text.
 
-musicdiff is also a package, with APIs you can call in your own code. There is the high-level diff() API that the command-line tool uses (that you can tweak the behavior of), and there are also lower level APIs that you can use in projects that perhaps want to do something more complicated than just visualization in PDFs.
+musicdiff is also a package, with APIs you can call in your own code. There is a high-level diff() API that the command-line tool uses (that you can tweak the behavior of), and there are also lower level APIs that you can use in projects that perhaps want to do something more complicated than just visualization in PDFs.
 
 ## Documentation
 You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).

@@ -13,6 +13,8 @@
 
 from fractions import Fraction
 import math
+import sys
+from typing import List
 # import sys
 import music21 as m21
 
@@ -228,7 +230,13 @@ class M21Utils:
         # add informations for rests and notes not grouped
         for i, n in enumerate(_beam_list):
             if len(n) == 0:
-                for ii in range(int(math.log(_type_list[i] / 4, 2))):
+                rangeEnd: int = None
+                if _type_list[i] != 0:
+                    rangeEnd = int(math.log(_type_list[i] / 4, 2))
+                if rangeEnd is None:
+                    continue
+
+                for ii in range(0, rangeEnd):
                     if (
                         note_list[i].isRest
                         and len(_beam_list) > i + 1
@@ -332,7 +340,10 @@ class M21Utils:
             for i, note_tuple in enumerate(tuplets_list):
                 if len(note_tuple) > ii:
                     if note_tuple[ii] == "start":
-                        assert start_index is None
+                        # Some medieval music has weirdly nested triplets that
+                        # end up in music21 with two starts in a row.  This is
+                        # OK, no need to assert here.
+#                        assert start_index is None
                         start_index = ii
                     elif note_tuple[ii] is None:
                         if start_index is None:
@@ -378,6 +389,37 @@ class M21Utils:
         return out
 
     @staticmethod
+    def get_extras(measure: m21.stream.Measure, spannerBundle: m21.spanner.SpannerBundle) -> List[m21.base.Music21Object]:
+        # returns a list of every object contained in the measure (and in the measure's
+        # substreams/Voices), skipping any Streams, GeneralNotes (which are returned from
+        # get_notes/get_notes_and_gracenotes), and Barlines.  We're looking for things
+        # like Clefs, TextExpressions, and Dynamics...
+        output: List[m21.base.Music21Object] = []
+
+        initialList: List[m21.base.Music21Object] = list(
+            measure.recurse().getElementsNotOfClass(
+                (m21.note.GeneralNote,
+                 m21.stream.Stream,
+                 m21.layout.LayoutBase) ) )
+
+        # loop over the initialList, filtering out (and complaining about) things we
+        # don't recognize.
+        for el in initialList:
+            if M21Utils.extra_to_string(el) != '':
+                output.append(el)
+
+        # we must add any Crescendo/Diminuendo spanners that start on GeneralNotes in this measure
+        for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
+            dwList: List[m21.dynamics.DynamicWedge] = gn.getSpannerSites(m21.dynamics.DynamicWedge)
+            for dw in dwList:
+                if dw not in spannerBundle:
+                    continue
+                if dw.isFirst(gn):
+                    output.append(dw)
+
+        return output
+
+    @staticmethod
     def note_to_string(note):
         if note.isRest:
             _str = "R"
@@ -395,3 +437,101 @@ class M21Utils:
         else:
             out = None
         return out
+
+    @staticmethod
+    def clef_to_string(clef: m21.clef.Clef) -> str:
+        # sign(str), line(int), octaveChange(int == # octaves to shift up(+) or down(-))
+        sign: str = '' if clef.sign is None else clef.sign
+        line: str = '0' if clef.line is None else f'{clef.line}'
+        octave: str = '' if clef.octaveChange == 0 else f'{8 * clef.octaveChange:+}'
+        return f'CL:{sign}{line}{octave}'
+
+    @staticmethod
+    def timesig_to_string(timesig: m21.meter.TimeSignature) -> str:
+        if not timesig.symbol:
+            return f'TS:{timesig.numerator}/{timesig.denominator}'
+        if timesig.symbol in ('common', 'cut'):
+            return f'TS:{timesig.symbol}'
+        if timesig.symbol == 'single-number':
+            return f'TS:{timesig.numerator}'
+        return f'TS:{timesig.numerator}/{timesig.denominator}'
+
+    @staticmethod
+    def tempo_to_string(mm: m21.tempo.TempoIndication) -> str:
+        # pylint: disable=protected-access
+        # We need direct access to mm._textExpression and mm._tempoText, to avoid
+        # the extra formatting that referencing via the .text propert will perform.
+        if isinstance(mm, m21.tempo.TempoText):
+            if mm._textExpression is None:
+                return 'MM:'
+            return f'MM:{M21Utils.extra_to_string(mm._textExpression)}'
+
+        if isinstance(mm, m21.tempo.MetricModulation):
+            # convert to MetronomeMark
+            mm = mm.newMetronome
+
+        # Assume mm is now a MetronomeMark
+        if mm.textImplicit is True or mm._tempoText is None:
+            if mm.referent is None or mm.number is None:
+                return 'MM:'
+            return f'MM:{mm.referent.fullName}={float(mm.number)}'
+        if mm.numberImplicit is True or mm.number is None:
+            if mm._tempoText is None:
+                return 'MM:'
+            # no 'MM:' prefix, TempoText adds their own
+            return M21Utils.tempo_to_string(mm._tempoText)
+
+        # no 'MM:' prefix, TempoText adds their own
+        return f'{M21Utils.tempo_to_string(mm._tempoText)} {mm.referent.fullName}={float(mm.number)}'
+        # pylint: enable=protected-access
+
+    @staticmethod
+    def barline_to_string(barline: m21.bar.Barline) -> str:
+        # for all Barlines: type, pause
+        # for Repeat Barlines: direction, times
+        pauseStr: str = ''
+        if barline.pause is not None:
+            if isinstance(barline.pause, m21.expressions.Fermata):
+                pauseStr = ' with fermata'
+            else:
+                pauseStr = ' with pause (non-fermata)'
+
+        output: str = f'{barline.type}{pauseStr}'
+        if not isinstance(barline, m21.bar.Repeat):
+            return f'BL:{output}'
+
+        # add the Repeat fields (direction, times)
+        if barline.direction is not None:
+            output += f' direction={barline.direction}'
+        if barline.times is not None:
+            output += f' times={barline.times}'
+        return f'RPT:{output}'
+
+    @staticmethod
+    def extra_to_string(extra: m21.base.Music21Object) -> str:
+        # object classes that have text content in a single field
+        if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
+            return f'KS:{extra.sharps}'
+        if isinstance(extra, m21.expressions.TextExpression):
+            return f'TX:{extra.content}'
+        if isinstance(extra, m21.dynamics.Dynamic):
+            return f'DY:{extra.value}'
+
+        # object classes whose text is derived from class name
+        if isinstance(extra, m21.dynamics.Diminuendo):
+            return 'DY:>'
+        if isinstance(extra, m21.dynamics.Crescendo):
+            return 'DY:<'
+
+        # object classes that have several fields to be combined into string
+        if isinstance(extra, m21.clef.Clef):
+            return M21Utils.clef_to_string(extra)
+        if isinstance(extra, m21.meter.TimeSignature):
+            return M21Utils.timesig_to_string(extra)
+        if isinstance(extra, m21.tempo.TempoIndication):
+            return M21Utils.tempo_to_string(extra)
+        if isinstance(extra, m21.bar.Barline):
+            return M21Utils.barline_to_string(extra)
+
+        print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
+        return ''
