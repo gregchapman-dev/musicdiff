@@ -15,6 +15,7 @@
 __docformat__ = "google"
 
 from fractions import Fraction
+from typing import Optional
 
 import music21 as m21
 
@@ -34,6 +35,17 @@ class AnnNote:
         self.general_note = general_note.id
         self.beamings = enhanced_beam_list
         self.tuplets = tuplet_list
+        self.stylestr: str = M21Utils.style_to_string(general_note.style)
+        self.noteshape: str = 'normal'
+        self.noteheadFill: Optional[bool] = None
+        self.noteheadParenthesis: bool = False
+        self.stemDirection: str = 'unspecified'
+        if isinstance(general_note, m21.note.NotRest):
+            self.noteshape = general_note.notehead
+            self.noteheadFill = general_note.noteheadFill
+            self.noteheadParenthesis = general_note.noteheadParenthesis
+            self.stemDirection = general_note.stemDirection
+
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tie)
         if general_note.isRest:
@@ -101,7 +113,8 @@ class AnnNote:
     def __repr__(self):
         # does consider the MEI id!
         return (f"{self.pitches},{self.note_head},{self.dots},{self.beamings}," +
-                f"{self.tuplets},{self.general_note},{self.articulations},{self.expressions}")
+                f"{self.tuplets},{self.general_note},{self.articulations},{self.expressions}" +
+                f"{self.stylestr}")
 
     def __str__(self):
         """
@@ -151,6 +164,8 @@ class AnnNote:
         if len(self.expressions) > 0:  # add for articulations
             for e in self.expressions:
                 string += e
+        if self.stylestr:
+            string += self.stylestr
         return string
 
     def get_note_ids(self):

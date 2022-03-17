@@ -411,6 +411,86 @@ class Visualization:
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
+            elif op[0] == "editnoteshape":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note shape")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note shape")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editnoteheadfill":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head fill")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head fill")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editnoteheadparenthesis":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head paren")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head paren")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editstemdirection":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed stem direction")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed stem direction")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editstyle":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note style")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note style")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
             # accident
             elif op[0] == "accidentins":
                 assert isinstance(op[1], AnnNote)

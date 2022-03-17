@@ -632,6 +632,26 @@ class Comparison:
             )
             op_list.extend(expr_op_list)
             cost += expr_cost
+        # add for noteshape
+        if annNote1.noteshape != annNote2.noteshape:
+            cost += 1
+            op_list.append(("editnoteshape", annNote1, annNote2, 1))
+        # add for noteheadFill
+        if annNote1.noteheadFill != annNote2.noteheadFill:
+            cost += 1
+            op_list.append(("editnoteheadfill", annNote1, annNote2, 1))
+        # add for noteheadParenthesis
+        if annNote1.noteheadParenthesis != annNote2.noteheadParenthesis:
+            cost += 1
+            op_list.append(("editnoteheadparenthesis", annNote1, annNote2, 1))
+        # add for stemDirection
+        if annNote1.stemDirection != annNote2.stemDirection:
+            cost += 1
+            op_list.append(("editstemdirection", annNote1, annNote2, 1))
+        # add for the stylestr
+        if annNote1.stylestr != annNote2.stylestr:
+            cost += 1
+            op_list.append(("editstyle", annNote1, annNote2, 1))
 
         return op_list, cost
 
