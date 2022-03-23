@@ -38,6 +38,8 @@ class AnnNote:
         self.stylestr: str = ''
         if general_note.hasStyleInformation:
             self.stylestr = M21Utils.style_to_string(general_note.style)
+            # styledict is for visualization details only.  Comparison is done with stylestr.
+            self.styledict = M21Utils.style_to_dict(general_note.style)
         self.noteshape: str = 'normal'
         self.noteheadFill: Optional[bool] = None
         self.noteheadParenthesis: bool = False

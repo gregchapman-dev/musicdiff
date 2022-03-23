@@ -679,38 +679,31 @@ class M21Utils:
             if generic:
                 generic += ','
             generic += f'size={style.size}'
-        if style.relativeX:
+        if style.relativeX is not None:
             if generic:
                 generic += ','
             generic += f'relX={style.relativeX}'
-        if style.relativeY:
+        if style.relativeY is not None:
             if generic:
                 generic += ','
             generic += f'relY={style.relativeY}'
-        # Most objects default to style.absX & absY of None, but
-        # Dynamic objects default to absX = -36 and absY = -80
-        if style.absoluteX and style.absoluteX != -36:
+        if style.absoluteX is not None:
             if generic:
                 generic += ','
             generic += f'absX={style.absoluteX}'
-        if style.absoluteY and style.absoluteY != -80:
+        if style.absoluteY is not None:
             if generic:
                 generic += ','
-            if style.absoluteY == 10:
-                generic += 'absY=above'
-            elif style.absoluteY == -70:
-                generic += 'absY=below'
-            else:
-                generic += f'absY={style.absoluteY}'
-        if style.enclosure:
+            generic += f'absY={style.absoluteY}'
+        if style.enclosure is not None:
             if generic:
                 generic += ','
             generic += f'encl={style.enclosure}'
-        if style.fontRepresentation:
+        if style.fontRepresentation is not None:
             if generic:
                 generic += ','
             generic += f'fontrep={style.fontRepresentation}'
-        if style.color:
+        if style.color is not None:
             if generic:
                 generic += ','
             generic += f'color={style.color}'
@@ -723,6 +716,87 @@ class M21Utils:
                 generic += ','
             generic += 'hidden'
         return generic
+
+    @staticmethod
+    def notestyle_to_dict(style: m21.style.NoteStyle) -> dict:
+        output: dict = {}
+
+        if style.stemStyle is not None:
+            output['stemstyle'] = M21Utils.genericstyle_to_dict(style.stemStyle)
+
+        if style.accidentalStyle is not None:
+            output['accidstyle'] = M21Utils.genericstyle_to_dict(style.accidentalStyle)
+
+        if style.noteSize:
+            output['size'] = style.noteSize
+
+        return output
+
+    @staticmethod
+    def textstyle_to_dict(style: m21.style.TextStyle) -> dict:
+        output: dict = {}
+
+        if isinstance(style, m21.style.TextStylePlacement) and style.placement:
+            output['placement'] = style.placement
+        if style.fontFamily:
+            output['fontFamily'] = style.fontFamily
+        if style.fontSize is not None:
+            output['fontSize'] = style.fontSize
+        if style.fontStyle is not None and style.fontStyle != 'normal':
+            output['fontStyle'] = style.fontStyle
+        if style.fontWeight is not None and style.fontWeight != 'normal':
+            output['fontWeight'] = style.fontWeight
+        if style.letterSpacing is not None and style.letterSpacing != 'normal':
+            output['letterSpacing'] = style.letterSpacing
+
+        return output
+
+    @staticmethod
+    def genericstyle_to_dict(style: m21.style.Style) -> dict:
+        output: dict = {}
+        if style.size is not None:
+            output['size'] = style.size
+        if style.relativeX is not None:
+            output['relX'] = style.relativeX
+        if style.relativeY is not None:
+            output['relY'] = style.relativeY
+        if style.absoluteX is not None:
+            output['absX'] = style.absoluteX
+        if style.absoluteY is not None:
+            output['absY'] = style.absoluteY
+        if style.enclosure is not None:
+            output['encl'] = style.enclosure
+        if style.fontRepresentation is not None:
+            output['fontrep'] = style.fontRepresentation
+        if style.color is not None:
+            output['color'] = style.color
+        if style.units != 'tenths':
+            output['units'] = style.units
+        if style.hideObjectOnPrint:
+            output['hidden'] = True
+        return output
+
+    @staticmethod
+    def specificstyle_to_dict(style: m21.style.Style) -> dict:
+        if isinstance(style, m21.style.NoteStyle):
+            return M21Utils.notestyle_to_dict(style)
+        if isinstance(style, m21.style.TextStyle): # includes TextStylePlacement
+            return M21Utils.textstyle_to_dict(style)
+        if isinstance(style, m21.style.BezierStyle):
+            return {} # M21Utils.bezierstyle_to_dict(style)
+        if isinstance(style, m21.style.LineStyle):
+            return {} # M21Utils.linestyle_to_dict(style)
+        if isinstance(style, m21.style.BeamStyle):
+            return {} # M21Utils.beamstyle_to_dict(style)
+        return {}
+
+    @staticmethod
+    def style_to_dict(style: m21.style.Style) -> dict:
+        output: dict = M21Utils.genericstyle_to_dict(style)
+        specific = M21Utils.specificstyle_to_dict(style)
+        for k,v in specific.items():
+            output[k] = v
+        return output
 
     @staticmethod
     def dynwedge_to_string(dynwedge: m21.dynamics.DynamicWedge) -> str:
