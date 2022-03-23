@@ -35,7 +35,9 @@ class AnnNote:
         self.general_note = general_note.id
         self.beamings = enhanced_beam_list
         self.tuplets = tuplet_list
-        self.stylestr: str = M21Utils.style_to_string(general_note.style)
+        self.stylestr: str = ''
+        if general_note.hasStyleInformation:
+            self.stylestr = M21Utils.style_to_string(general_note.style)
         self.noteshape: str = 'normal'
         self.noteheadFill: Optional[bool] = None
         self.noteheadParenthesis: bool = False
