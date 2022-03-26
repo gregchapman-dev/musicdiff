@@ -20,6 +20,7 @@ from pathlib import Path
 import music21 as m21
 
 from musicdiff.m21utils import M21Utils
+from musicdiff.m21utils import DetailLevel
 from musicdiff.annotation import AnnScore
 from musicdiff.comparison import Comparison
 from musicdiff.visualization import Visualization
@@ -48,6 +49,7 @@ def diff(score1: Union[str, Path, m21.stream.Score],
          out_path2:  Union[str, Path] = None,
          force_parse: bool = True,
          visualize_diffs: bool = True,
+         detail: DetailLevel = DetailLevel.Default
         ) -> int:
     '''
     Compare two musical scores and optionally save/display the differences as two marked-up
@@ -72,6 +74,9 @@ def diff(score1: Union[str, Path, m21.stream.Score],
         visualize_diffs (bool): Whether or not to render diffs as marked up PDFs. If False,
             the only result of the call will be the return value (the number of differences).
             (default is True)
+        detail (DetailLevel): What level of detail to use during the diff.  Can be
+            GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+            currently AllObjects).
 
     Returns:
         int: The number of differences found (0 means the scores were identical, None means the diff failed)
@@ -137,8 +142,8 @@ def diff(score1: Union[str, Path, m21.stream.Score],
         return None
 
     # scan each score, producing an annotated wrapper
-    annotated_score1: AnnScore = AnnScore(score1)
-    annotated_score2: AnnScore = AnnScore(score2)
+    annotated_score1: AnnScore = AnnScore(score1, detail)
+    annotated_score2: AnnScore = AnnScore(score2, detail)
 
     diff_list: List = None
     _cost: int = None

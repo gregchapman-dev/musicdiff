@@ -20,10 +20,10 @@ from typing import Optional
 import music21 as m21
 
 from musicdiff import M21Utils
-
+from musicdiff import DetailLevel
 
 class AnnNote:
-    def __init__(self, general_note, enhanced_beam_list, tuplet_list):
+    def __init__(self, general_note: m21.note.GeneralNote, enhanced_beam_list, tuplet_list, detail: DetailLevel = DetailLevel.Default):
         """
         Extend music21 GeneralNote with some precomputed, easily compared information about it.
 
@@ -35,8 +35,10 @@ class AnnNote:
         self.general_note = general_note.id
         self.beamings = enhanced_beam_list
         self.tuplets = tuplet_list
+
         self.stylestr: str = ''
-        if general_note.hasStyleInformation:
+        self.styledict: dict = {}
+        if detail >= DetailLevel.AllObjectsWithStyle and general_note.hasStyleInformation:
             self.stylestr = M21Utils.style_to_string(general_note.style)
             # styledict is for visualization details only.  Comparison is done with stylestr.
             self.styledict = M21Utils.style_to_dict(general_note.style)
@@ -44,7 +46,7 @@ class AnnNote:
         self.noteheadFill: Optional[bool] = None
         self.noteheadParenthesis: bool = False
         self.stemDirection: str = 'unspecified'
-        if isinstance(general_note, m21.note.NotRest):
+        if detail >= DetailLevel.AllObjectsWithStyle and isinstance(general_note, m21.note.NotRest):
             self.noteshape = general_note.notehead
             self.noteheadFill = general_note.noteheadFill
             self.noteheadParenthesis = general_note.noteheadParenthesis
@@ -207,7 +209,7 @@ class AnnNote:
 
 
 class AnnExtra:
-    def __init__(self, extra: m21.base.Music21Object, measure: m21.stream.Measure, score: m21.stream.Score):
+    def __init__(self, extra: m21.base.Music21Object, measure: m21.stream.Measure, score: m21.stream.Score, detail: DetailLevel = DetailLevel.Default):
         """
         Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.
         Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.
@@ -231,7 +233,7 @@ class AnnExtra:
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
-        self.content: str = M21Utils.extra_to_string(extra)
+        self.content: str = M21Utils.extra_to_string(extra, detail)
         self._notation_size: int = 1 # so far, always 1, but maybe some extra will be bigger someday
 
         # precomputed representations for faster comparison
@@ -262,7 +264,7 @@ class AnnExtra:
 
 
 class AnnVoice:
-    def __init__(self, voice):
+    def __init__(self, voice: m21.stream.Voice, detail: DetailLevel = DetailLevel.Default):
         """
         Extend music21 Voice with some precomputed, easily compared information about it.
 
@@ -288,7 +290,7 @@ class AnnVoice:
             self.annot_notes = []
             for i, n in enumerate(note_list):
                 self.annot_notes.append(
-                    AnnNote(n, self.en_beam_list[i], self.tuplet_list[i])
+                    AnnNote(n, self.en_beam_list[i], self.tuplet_list[i], detail)
                 )
 
         self.n_of_notes = len(self.annot_notes)
@@ -342,7 +344,10 @@ class AnnVoice:
 
 
 class AnnMeasure:
-    def __init__(self, measure, score, spannerBundle):
+    def __init__(self, measure: m21.stream.Measure,
+                       score: m21.stream.Score,
+                       spannerBundle: m21.spanner.SpannerBundle,
+                       detail: DetailLevel = DetailLevel.Default):
         """
         Extend music21 Measure with some precomputed, easily compared information about it.
 
@@ -354,23 +359,24 @@ class AnnMeasure:
         if (
             len(measure.voices) == 0
         ):  # there is a single AnnVoice ( == for the library there are no voices)
-            ann_voice = AnnVoice(measure)
+            ann_voice = AnnVoice(measure, detail)
             if ann_voice.n_of_notes > 0:
                 self.voices_list.append(ann_voice)
         else:  # there are multiple voices (or an array with just one voice)
             for voice in measure.voices:
-                ann_voice = AnnVoice(voice)
+                ann_voice = AnnVoice(voice, detail)
                 if ann_voice.n_of_notes > 0:
                     self.voices_list.append(ann_voice)
         self.n_of_voices = len(self.voices_list)
 
         self.extras_list = []
-        for extra in M21Utils.get_extras(measure, spannerBundle):
-            self.extras_list.append(AnnExtra(extra, measure, score))
+        if detail >= DetailLevel.AllObjects:
+            for extra in M21Utils.get_extras(measure, spannerBundle):
+                self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
-        # For correct comparison, sort the extras_list, so that any list slices
-        # that all have the same offset are sorted alphabetically.
-        self.extras_list.sort(key=lambda e: ( e.offset, str(e) ))
+            # For correct comparison, sort the extras_list, so that any list slices
+            # that all have the same offset are sorted alphabetically.
+            self.extras_list.sort(key=lambda e: ( e.offset, str(e) ))
 
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str = hash(self.__str__())
@@ -419,7 +425,10 @@ class AnnMeasure:
 
 
 class AnnPart:
-    def __init__(self, part, score, spannerBundle):
+    def __init__(self, part: m21.stream.Part,
+                       score: m21.stream.Score,
+                       spannerBundle: m21.spanner.SpannerBundle,
+                       detail: DetailLevel = DetailLevel.Default):
         """
         Extend music21 Part/PartStaff with some precomputed, easily compared information about it.
 
@@ -429,7 +438,7 @@ class AnnPart:
         self.part = part.id
         self.bar_list = []
         for measure in part.getElementsByClass("Measure"):
-            ann_bar = AnnMeasure(measure, score, spannerBundle)  # create the bar objects
+            ann_bar = AnnMeasure(measure, score, spannerBundle, detail)  # create the bar objects
             if ann_bar.n_of_voices > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars = len(self.bar_list)
@@ -475,7 +484,7 @@ class AnnPart:
 
 
 class AnnScore:
-    def __init__(self, score):
+    def __init__(self, score: m21.stream.Score, detail: DetailLevel = DetailLevel.Default):
         """
         Take a music21 score and store it as a sequence of Full Trees.
         The hierarchy is "score -> parts -> measures -> voices -> notes"
@@ -484,10 +493,10 @@ class AnnScore:
         """
         self.score = score.id
         self.part_list = []
-        spannerBundle = score.spannerBundle
+        spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
         for part in score.parts.stream():
             # create and add the AnnPart object to part_list
-            ann_part = AnnPart(part, score, spannerBundle)
+            ann_part = AnnPart(part, score, spannerBundle, detail)
             if ann_part.n_of_bars > 0:
                 self.part_list.append(ann_part)
         self.n_of_parts = len(self.part_list)
