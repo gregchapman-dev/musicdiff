@@ -76,7 +76,7 @@ def diff(score1: Union[str, Path, m21.stream.Score],
             (default is True)
         detail (DetailLevel): What level of detail to use during the diff.  Can be
             GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-            currently AllObjects).
+            currently equivalent to AllObjects).
 
     Returns:
         int: The number of differences found (0 means the scores were identical, None means the diff failed)
