@@ -31,6 +31,10 @@ class AnnNote:
             general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
             tuplet_list (list): A list of tuplet info about this GeneralNote.
+            detail (DetailLevel): What level of detail to use during the diff.  Can be
+                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+                currently equivalent to AllObjects).
+
         """
         self.general_note = general_note.id
         self.beamings = enhanced_beam_list
@@ -51,6 +55,24 @@ class AnnNote:
             self.noteheadFill = general_note.noteheadFill
             self.noteheadParenthesis = general_note.noteheadParenthesis
             self.stemDirection = general_note.stemDirection
+
+            # set these up as if they were part of style (in stylestr)
+            if self.noteshape is not None:
+                if self.stylestr:
+                    self.stylestr += ","
+                self.stylestr += f"noteshape={self.noteshape}"
+            if self.noteheadFill is not None:
+                if self.stylestr:
+                    self.stylestr += ","
+                self.stylestr += f"noteheadFill={self.noteheadFill}"
+            if self.noteheadParenthesis is not None:
+                if self.stylestr:
+                    self.stylestr += ","
+                self.stylestr += f"noteheadParenthesis={self.noteheadParenthesis}"
+            if self.stemDirection is not None:
+                if self.stylestr:
+                    self.stylestr += ","
+                self.stylestr += f"stemDirection={self.stemDirection}"
 
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tie)
@@ -218,6 +240,9 @@ class AnnExtra:
             extra (music21.base.Music21Object): The music21 non-GeneralNote/non-Stream object to extend.
             measure (music21.stream.Measure): The music21 Measure the extra was found in.  If the extra
                 was found in a Voice, this is the Measure that the Voice was found in.
+            detail (DetailLevel): What level of detail to use during the diff.  Can be
+                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+                currently equivalent to AllObjects).
         """
         self.extra = extra.id
         self.offset: float
@@ -233,7 +258,7 @@ class AnnExtra:
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
-        self.content: str = M21Utils.extra_to_string(extra, detail)
+        self.content: str = M21Utils.extra_to_string(extra, detail) # includes any style
         self._notation_size: int = 1 # so far, always 1, but maybe some extra will be bigger someday
 
         # precomputed representations for faster comparison
@@ -270,6 +295,9 @@ class AnnVoice:
 
         Args:
             voice (music21.stream.Voice): The music21 voice to extend.
+            detail (DetailLevel): What level of detail to use during the diff.  Can be
+                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+                currently equivalent to AllObjects).
         """
         self.voice = voice.id
         note_list = M21Utils.get_notes(voice)
@@ -353,6 +381,11 @@ class AnnMeasure:
 
         Args:
             measure (music21.stream.Measure): The music21 measure to extend.
+            score (music21.stream.Score): the enclosing music21 Score.
+            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.
+            detail (DetailLevel): What level of detail to use during the diff.  Can be
+                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+                currently equivalent to AllObjects).
         """
         self.measure = measure.id
         self.voices_list = []
@@ -434,6 +467,11 @@ class AnnPart:
 
         Args:
             part (music21.stream.Part, music21.stream.PartStaff): The music21 Part/PartStaff to extend.
+            score (music21.stream.Score): the enclosing music21 Score.
+            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.
+            detail (DetailLevel): What level of detail to use during the diff.  Can be
+                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+                currently equivalent to AllObjects).
         """
         self.part = part.id
         self.bar_list = []
@@ -490,6 +528,9 @@ class AnnScore:
         The hierarchy is "score -> parts -> measures -> voices -> notes"
         Args:
             score (music21.stream.Score): The music21 score
+            detail (DetailLevel): What level of detail to use during the diff.  Can be
+                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+                currently equivalent to AllObjects).
         """
         self.score = score.id
         self.part_list = []
