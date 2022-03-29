@@ -580,8 +580,10 @@ class M21Utils:
     def textexp_to_string(textexp: m21.expressions.TextExpression,
                           detail: DetailLevel = DetailLevel.Default) -> str:
         output: str = f'TX:{textexp.content}'
-        if textexp.placement is not None:
-            output += f',placement={textexp.placement}'
+        if detail >= DetailLevel.AllObjectsWithStyle:
+            # we treat placement as if it were part of style
+            if textexp.placement is not None:
+                output += f',placement={textexp.placement}'
         stylestr: str = M21Utils.style_to_string(textexp.style, detail)
         if stylestr:
             output += f' ({stylestr})'
@@ -591,8 +593,10 @@ class M21Utils:
     def dynamic_to_string(dynamic: m21.dynamics.Dynamic,
                           detail: DetailLevel = DetailLevel.Default) -> str:
         output: str = f'DY:{dynamic.value}'
-        if dynamic.placement is not None:
-            output += f',placement={dynamic.placement}'
+        if detail >= DetailLevel.AllObjectsWithStyle:
+            # we treat placement as if it were part of style
+            if dynamic.placement is not None:
+                output += f',placement={dynamic.placement}'
         stylestr: str = M21Utils.style_to_string(dynamic.style, detail)
         if stylestr:
             output += f' ({stylestr})'
