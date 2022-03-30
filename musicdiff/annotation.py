@@ -56,24 +56,6 @@ class AnnNote:
             self.noteheadParenthesis = general_note.noteheadParenthesis
             self.stemDirection = general_note.stemDirection
 
-            # set these up as if they were part of style (in stylestr)
-            if self.noteshape is not None:
-                if self.stylestr:
-                    self.stylestr += ","
-                self.stylestr += f"noteshape={self.noteshape}"
-            if self.noteheadFill is not None:
-                if self.stylestr:
-                    self.stylestr += ","
-                self.stylestr += f"noteheadFill={self.noteheadFill}"
-            if self.noteheadParenthesis is not None:
-                if self.stylestr:
-                    self.stylestr += ","
-                self.stylestr += f"noteheadParenthesis={self.noteheadParenthesis}"
-            if self.stemDirection is not None:
-                if self.stylestr:
-                    self.stylestr += ","
-                self.stylestr += f"stemDirection={self.stemDirection}"
-
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tie)
         if general_note.isRest:
@@ -192,6 +174,16 @@ class AnnNote:
         if len(self.expressions) > 0:  # add for articulations
             for e in self.expressions:
                 string += e
+
+        if self.noteshape != 'normal':
+            string += f"noteshape={self.noteshape}"
+        if self.noteheadFill is not None:
+            string += f"noteheadFill={self.noteheadFill}"
+        if self.noteheadParenthesis:
+            string += f"noteheadParenthesis={self.noteheadParenthesis}"
+        if self.stemDirection != 'unspecified':
+            string += f"stemDirection={self.stemDirection}"
+
         if self.stylestr:
             string += self.stylestr
         return string
