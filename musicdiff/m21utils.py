@@ -421,7 +421,7 @@ class M21Utils:
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.
         for el in initialList:
-            if M21Utils.extra_to_string(el, DetailLevel.AllObjects) != '':
+            if M21Utils.extra_to_string(el) != '':
                 output.append(el)
 
         # we must add any Crescendo/Diminuendo spanners that start on GeneralNotes in this measure
@@ -455,23 +455,17 @@ class M21Utils:
         return out
 
     @staticmethod
-    def clef_to_string(clef: m21.clef.Clef,
-                       detail: DetailLevel = DetailLevel.Default) -> str:
+    def clef_to_string(clef: m21.clef.Clef) -> str:
         # sign(str), line(int), octaveChange(int == # octaves to shift up(+) or down(-))
-        stylestr: str = M21Utils.style_to_string(clef.style, detail)
         sign: str = '' if clef.sign is None else clef.sign
         line: str = '0' if clef.line is None else f'{clef.line}'
         octave: str = '' if clef.octaveChange == 0 else f'{8 * clef.octaveChange:+}'
         output: str = f'CL:{sign}{line}{octave}'
-        if stylestr:
-            return f'{output} ({stylestr})'
         return output
 
     @staticmethod
-    def timesig_to_string(timesig: m21.meter.TimeSignature,
-                       detail: DetailLevel = DetailLevel.Default) -> str:
+    def timesig_to_string(timesig: m21.meter.TimeSignature) -> str:
         output: str = ''
-        stylestr: str = M21Utils.style_to_string(timesig.style, detail)
 
         if not timesig.symbol:
             output = f'TS:{timesig.numerator}/{timesig.denominator}'
@@ -482,27 +476,19 @@ class M21Utils:
         else:
             output = f'TS:{timesig.numerator}/{timesig.denominator}'
 
-        if stylestr:
-            return f'{output} ({stylestr})'
-
         return output
 
     @staticmethod
-    def tempo_to_string(mm: m21.tempo.TempoIndication,
-                        detail: DetailLevel) -> str:
+    def tempo_to_string(mm: m21.tempo.TempoIndication) -> str:
         # pylint: disable=protected-access
         # We need direct access to mm._textExpression and mm._tempoText, to avoid
         # the extra formatting that referencing via the .text property will perform.
-        stylestr: str = M21Utils.style_to_string(mm.style, detail)
         output: str = ''
         if isinstance(mm, m21.tempo.TempoText):
             if mm._textExpression is None:
                 output = 'MM:'
             else:
-                output = f'MM:{M21Utils.extra_to_string(mm._textExpression, detail)}'
-
-            if stylestr:
-                return f'{output} ({stylestr})'
+                output = f'MM:{M21Utils.extra_to_string(mm._textExpression)}'
             return output
 
         if isinstance(mm, m21.tempo.MetricModulation):
@@ -515,9 +501,6 @@ class M21Utils:
                 output = 'MM:'
             else:
                 output = f'MM:{mm.referent.fullName}={float(mm.number)}'
-
-            if stylestr:
-                return f'{output} ({stylestr})'
             return output
 
         if mm.numberImplicit is True or mm.number is None:
@@ -525,25 +508,18 @@ class M21Utils:
                 output = 'MM:'
             else:
                 # no 'MM:' prefix, TempoText adds their own
-                output = f'{M21Utils.tempo_to_string(mm._tempoText, detail)}'
-
-            if stylestr:
-                return f'{output} ({stylestr})'
+                output = f'{M21Utils.tempo_to_string(mm._tempoText)}'
             return output
 
         # no 'MM:' prefix, TempoText adds their own
-        output = f'{M21Utils.tempo_to_string(mm._tempoText, detail)} {mm.referent.fullName}={float(mm.number)}'
-        if stylestr:
-            return f'{output} ({stylestr})'
+        output = f'{M21Utils.tempo_to_string(mm._tempoText)} {mm.referent.fullName}={float(mm.number)}'
         return output
         # pylint: enable=protected-access
 
     @staticmethod
-    def barline_to_string(barline: m21.bar.Barline,
-                          detail: DetailLevel = DetailLevel.Default) -> str:
+    def barline_to_string(barline: m21.bar.Barline) -> str:
         # for all Barlines: type, pause
         # for Repeat Barlines: direction, times
-        stylestr: str = M21Utils.style_to_string(barline.style, detail)
         pauseStr: str = ''
         if barline.pause is not None:
             if isinstance(barline.pause, m21.expressions.Fermata):
@@ -553,8 +529,6 @@ class M21Utils:
 
         output: str = f'{barline.type}{pauseStr}'
         if not isinstance(barline, m21.bar.Repeat):
-            if stylestr:
-                return f'BL:{output} ({stylestr})'
             return f'BL:{output}'
 
         # add the Repeat fields (direction, times)
@@ -562,249 +536,22 @@ class M21Utils:
             output += f' direction={barline.direction}'
         if barline.times is not None:
             output += f' times={barline.times}'
-
-        if stylestr:
-            return f'RPT:{output} ({stylestr})'
         return f'RPT:{output}'
 
     @staticmethod
-    def keysig_to_string(keysig: Union[m21.key.Key, m21.key.KeySignature],
-                         detail: DetailLevel = DetailLevel.Default) -> str:
+    def keysig_to_string(keysig: Union[m21.key.Key, m21.key.KeySignature]) -> str:
         output: str = f'KS:{keysig.sharps}'
-        stylestr: str = M21Utils.style_to_string(keysig.style, detail)
-        if stylestr:
-            output += f' ({stylestr})'
         return output
 
     @staticmethod
-    def textexp_to_string(textexp: m21.expressions.TextExpression,
-                          detail: DetailLevel = DetailLevel.Default) -> str:
+    def textexp_to_string(textexp: m21.expressions.TextExpression) -> str:
         output: str = f'TX:{textexp.content}'
-        if detail >= DetailLevel.AllObjectsWithStyle:
-            # we treat placement as if it were part of style
-            if textexp.placement is not None:
-                output += f',placement={textexp.placement}'
-        stylestr: str = M21Utils.style_to_string(textexp.style, detail)
-        if stylestr:
-            output += f' ({stylestr})'
         return output
 
     @staticmethod
-    def dynamic_to_string(dynamic: m21.dynamics.Dynamic,
-                          detail: DetailLevel = DetailLevel.Default) -> str:
+    def dynamic_to_string(dynamic: m21.dynamics.Dynamic) -> str:
         output: str = f'DY:{dynamic.value}'
-        if detail >= DetailLevel.AllObjectsWithStyle:
-            # we treat placement as if it were part of style
-            if dynamic.placement is not None:
-                output += f',placement={dynamic.placement}'
-        stylestr: str = M21Utils.style_to_string(dynamic.style, detail)
-        if stylestr:
-            output += f' ({stylestr})'
         return output
-
-    @staticmethod
-    def style_to_string(style: m21.style.Style,
-                        detail: DetailLevel = DetailLevel.Default) -> str:
-        generic: str = M21Utils.genericstyle_to_string(style, detail)
-        specific: str = M21Utils.specificstyle_to_string(style, detail)
-        if specific and generic:
-            return f'{specific},{generic}'
-        if specific:
-            return specific
-        if generic:
-            return generic
-        return ''
-
-    @staticmethod
-    def notestyle_to_string(style: m21.style.NoteStyle,
-                            detail: DetailLevel = DetailLevel.Default) -> str:
-        if detail < DetailLevel.AllObjectsWithStyle:
-            return ''
-
-        output: str = ''
-        stem: str = ''
-        accidental: str = ''
-        size: str = ''
-
-        if style.stemStyle is not None:
-            stem = f'stemstyle=({M21Utils.genericstyle_to_string(style.stemStyle)})'
-            if output:
-                output += ','
-            output += stem
-
-        if style.accidentalStyle is not None:
-            accidental = f'accidstyle=({M21Utils.genericstyle_to_string(style.accidentalStyle)})'
-            if output:
-                output += ','
-            output += accidental
-
-        if style.noteSize:
-            size = f'size={style.noteSize}'
-            if output:
-                output += ','
-            output += size
-
-        return output
-
-    @staticmethod
-    def textstyle_to_string(style: m21.style.TextStyle,
-                            detail: DetailLevel = DetailLevel.Default) -> str:
-        if detail < DetailLevel.AllObjectsWithStyle:
-            return ''
-
-        output: str = ''
-        placement: str = ''     # None/string ('above', etc)
-                                #   (only exists in TextStylePlacement)
-        fontFamily: str = ''    # None or list of strings (font names)
-        fontSize: str = ''      # None/int/float/str(CSS font size)
-        fontStyle: str = ''     # None/'normal'/'italic'/'bold'/'bolditalic'
-        fontWeight: str = ''    # None/'normal'/'bold'
-        letterSpacing: str = '' # None/'normal'/float
-        lineHeight: str = ''
-        textDirection: str = ''
-        textRotation: str = ''
-        language: str = ''
-        textDecoration: str = ''
-        justify: str = ''
-        alignHorizontal: str = ''
-        alignVertical: str = ''
-
-        if isinstance(style, m21.style.TextStylePlacement) and style.placement:
-            placement = f'placement={style.placement}'
-            if output:
-                output += ','
-            output += placement
-        if style.fontFamily:
-            fontFamily = f'fontFamily={style.fontFamily}'
-            if output:
-                output += ','
-            output += fontFamily
-        if style.fontSize is not None:
-            fontSize = f'fontSize={style.fontSize}'
-            if output:
-                output += ','
-            output += fontSize
-        if style.fontStyle is not None and style.fontStyle != 'normal':
-            fontStyle = f'fontStyle={style.fontStyle}'
-            if output:
-                output += ','
-            output += fontStyle
-        if style.fontWeight is not None and style.fontWeight != 'normal':
-            fontWeight = f'fontWeight={style.fontWeight}'
-            if output:
-                output += ','
-            output += fontWeight
-        if style.letterSpacing is not None and style.letterSpacing != 'normal':
-            letterSpacing = f'letterSpacing={style.letterSpacing}'
-            if output:
-                output += ','
-            output += letterSpacing
-        if style.lineHeight:
-            lineHeight = f'lineHeight={style.lineHeight}'
-            if output:
-                output += ','
-            output += lineHeight
-        if style.textDirection:
-            textDirection = f'textDirection={style.textDirection}'
-            if output:
-                output += ','
-            output += textDirection
-        if style.textRotation:
-            textRotation = f'textRotation={style.textRotation}'
-            if output:
-                output += ','
-            output += textRotation
-        if style.language:
-            language = f'language={style.language}'
-            if output:
-                output += ','
-            output += language
-        if style.textDecoration:
-            textDecoration = f'textDecoration={style.textDecoration}'
-            if output:
-                output += ','
-            output += textDecoration
-        if style.justify:
-            justify = f'justify={style.justify}'
-            if output:
-                output += ','
-            output += justify
-        if style.alignHorizontal:
-            alignHorizontal = f'alignHorizontal={style.alignHorizontal}'
-            if output:
-                output += ','
-            output += alignHorizontal
-        if style.alignVertical:
-            alignVertical = f'alignVertical={style.alignVertical}'
-            if output:
-                output += ','
-            output += alignVertical
-
-        return output
-
-    @staticmethod
-    def specificstyle_to_string(style: m21.style.Style,
-                                detail: DetailLevel = DetailLevel.Default) -> str:
-        if isinstance(style, m21.style.NoteStyle):
-            return M21Utils.notestyle_to_string(style, detail)
-        if isinstance(style, m21.style.TextStyle): # includes TextStylePlacement
-            return M21Utils.textstyle_to_string(style, detail)
-        if isinstance(style, m21.style.BezierStyle):
-            return '' # M21Utils.bezierstyle_to_string(style, detail)
-        if isinstance(style, m21.style.LineStyle):
-            return '' # M21Utils.linestyle_to_string(style, detail)
-        if isinstance(style, m21.style.BeamStyle):
-            return '' # M21Utils.beamstyle_to_string(style, detail)
-        return ''
-
-    @staticmethod
-    def genericstyle_to_string(style: m21.style.Style,
-                               detail: DetailLevel = DetailLevel.Default) -> str:
-        if detail < DetailLevel.AllObjectsWithStyle:
-            return ''
-
-        generic: str = ''
-        if style.size is not None:
-            if generic:
-                generic += ','
-            generic += f'size={style.size}'
-        if style.relativeX is not None:
-            if generic:
-                generic += ','
-            generic += f'relX={style.relativeX}'
-        if style.relativeY is not None:
-            if generic:
-                generic += ','
-            generic += f'relY={style.relativeY}'
-        if style.absoluteX is not None:
-            if generic:
-                generic += ','
-            generic += f'absX={style.absoluteX}'
-        if style.absoluteY is not None:
-            if generic:
-                generic += ','
-            generic += f'absY={style.absoluteY}'
-        if style.enclosure is not None:
-            if generic:
-                generic += ','
-            generic += f'encl={style.enclosure}'
-        if style.fontRepresentation is not None:
-            if generic:
-                generic += ','
-            generic += f'fontrep={style.fontRepresentation}'
-        if style.color is not None:
-            if generic:
-                generic += ','
-            generic += f'color={style.color}'
-        if style.units != 'tenths':
-            if generic:
-                generic += ','
-            generic += f'units={style.units}'
-        if style.hideObjectOnPrint:
-            if generic:
-                generic += ','
-            generic += 'hidden'
-        return generic
 
     @staticmethod
     def notestyle_to_dict(style: m21.style.NoteStyle,
@@ -896,6 +643,9 @@ class M21Utils:
     @staticmethod
     def specificstyle_to_dict(style: m21.style.Style,
                               detail: DetailLevel = DetailLevel.Default) -> dict:
+        if detail < DetailLevel.AllObjectsWithStyle:
+            return {}
+
         if isinstance(style, m21.style.NoteStyle):
             return M21Utils.notestyle_to_dict(style, detail)
         if isinstance(style, m21.style.TextStyle): # includes TextStylePlacement
@@ -909,18 +659,29 @@ class M21Utils:
         return {}
 
     @staticmethod
-    def style_to_dict(style: m21.style.Style,
-                      detail: DetailLevel = DetailLevel.Default) -> dict:
-        output: dict = M21Utils.genericstyle_to_dict(style, detail)
-        specific = M21Utils.specificstyle_to_dict(style, detail)
-        for k,v in specific.items():
-            output[k] = v
+    def obj_to_styledict(obj: m21.base.Music21Object,
+                         detail: DetailLevel = DetailLevel.Default) -> dict:
+        if detail < DetailLevel.AllObjectsWithStyle:
+            return {}
+
+        output: dict = {}
+        if obj.hasStyleInformation:
+            output = M21Utils.genericstyle_to_dict(obj.style, detail)
+            specific = M21Utils.specificstyle_to_dict(obj.style, detail)
+            for k,v in specific.items():
+                output[k] = v
+
+        if hasattr(obj, 'placement') and obj.placement is not None:
+            if 'placement' in output:
+                # style was a TextStylePlacement, with placement specified
+                print('placement specified twice, taking the one in .style', file=sys.stderr)
+            else:
+                output['placement'] = obj.placement
+
         return output
 
     @staticmethod
-    def dynwedge_to_string(dynwedge: m21.dynamics.DynamicWedge,
-                           detail: DetailLevel = DetailLevel.Default) -> str:
-        stylestr: str = M21Utils.style_to_string(dynwedge.style, detail)
+    def dynwedge_to_string(dynwedge: m21.dynamics.DynamicWedge) -> str:
         output: str = ''
         if isinstance(dynwedge, m21.dynamics.Crescendo):
             output = '<'
@@ -928,29 +689,32 @@ class M21Utils:
             output = '>'
         else:
             output = 'wedge'
-
-        if stylestr:
-            return f'DY:{output} ({stylestr})'
         return f'DY:{output}'
 
     @staticmethod
-    def extra_to_string(extra: m21.base.Music21Object, detail: DetailLevel = DetailLevel.Default) -> str:
+    def extra_to_string(extra: m21.base.Music21Object) -> str:
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
-            return M21Utils.keysig_to_string(extra, detail)
+            return M21Utils.keysig_to_string(extra)
         if isinstance(extra, m21.expressions.TextExpression):
-            return M21Utils.textexp_to_string(extra, detail)
+            return M21Utils.textexp_to_string(extra)
         if isinstance(extra, m21.dynamics.Dynamic):
-            return M21Utils.dynamic_to_string(extra, detail)
+            return M21Utils.dynamic_to_string(extra)
         if isinstance(extra, m21.dynamics.DynamicWedge):
-            return M21Utils.dynwedge_to_string(extra, detail)
+            return M21Utils.dynwedge_to_string(extra)
         if isinstance(extra, m21.clef.Clef):
-            return M21Utils.clef_to_string(extra, detail)
+            return M21Utils.clef_to_string(extra)
         if isinstance(extra, m21.meter.TimeSignature):
-            return M21Utils.timesig_to_string(extra, detail)
+            return M21Utils.timesig_to_string(extra)
         if isinstance(extra, m21.tempo.TempoIndication):
-            return M21Utils.tempo_to_string(extra, detail)
+            return M21Utils.tempo_to_string(extra)
         if isinstance(extra, m21.bar.Barline):
-            return M21Utils.barline_to_string(extra, detail)
+            return M21Utils.barline_to_string(extra)
 
         print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''
+
+    @staticmethod
+    def has_style(obj: m21.base.Music21Object) -> bool:
+        output: bool = hasattr(obj, 'placement') and obj.placement is not None
+        output = output or obj.hasStyleInformation
+        return output

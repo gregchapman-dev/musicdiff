@@ -42,10 +42,8 @@ class AnnNote:
 
         self.stylestr: str = ''
         self.styledict: dict = {}
-        if detail >= DetailLevel.AllObjectsWithStyle and general_note.hasStyleInformation:
-            self.stylestr = M21Utils.style_to_string(general_note.style)
-            # styledict is for visualization details only.  Comparison is done with stylestr.
-            self.styledict = M21Utils.style_to_dict(general_note.style)
+        if M21Utils.has_style(general_note):
+            self.styledict = M21Utils.obj_to_styledict(general_note, detail)
         self.noteshape: str = 'normal'
         self.noteheadFill: Optional[bool] = None
         self.noteheadParenthesis: bool = False
@@ -124,7 +122,7 @@ class AnnNote:
         # does consider the MEI id!
         return (f"{self.pitches},{self.note_head},{self.dots},{self.beamings}," +
                 f"{self.tuplets},{self.general_note},{self.articulations},{self.expressions}" +
-                f"{self.stylestr}")
+                f"{self.styledict}")
 
     def __str__(self):
         """
@@ -184,8 +182,12 @@ class AnnNote:
         if self.stemDirection != 'unspecified':
             string += f"stemDirection={self.stemDirection}"
 
-        if self.stylestr:
-            string += self.stylestr
+        # and then the style fields
+        for i, (k, v) in enumerate(self.styledict.items()):
+            if i > 0:
+                string += ","
+            string += f"{k}={v}"
+
         return string
 
     def get_note_ids(self):
@@ -250,7 +252,10 @@ class AnnExtra:
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
-        self.content: str = M21Utils.extra_to_string(extra, detail) # includes any style
+        self.content: str = M21Utils.extra_to_string(extra)
+        self.styledict: str = {}
+        if M21Utils.has_style(extra):
+            self.styledict = M21Utils.obj_to_styledict(extra, detail) # includes extra.placement if present
         self._notation_size: int = 1 # so far, always 1, but maybe some extra will be bigger someday
 
         # precomputed representations for faster comparison
@@ -273,7 +278,11 @@ class AnnExtra:
         Returns:
             str: the compared representation of the AnnExtra. Does not consider music21 id.
         """
-        return f'[{self.content},off={self.offset},dur={self.duration}]'
+        string = f'{self.content},off={self.offset},dur={self.duration}'
+        # and then any style fields
+        for k, v in self.styledict.items():
+            string += f",{k}={v}"
+        return string
 
     def __eq__(self, other):
         # equality does not consider the MEI id!

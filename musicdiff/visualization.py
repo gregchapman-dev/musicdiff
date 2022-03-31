@@ -221,6 +221,43 @@ class Visualization:
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
 
+            elif op[0] == "extrastyleedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                sd1 = op[1].styledict
+                sd2 = op[2].styledict
+                changedStr: str = ""
+                for k1, v1 in sd1.items():
+                    if k1 not in sd2 or sd2[k1] != v1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k1
+
+                # one last thing: check for keys in sd2 that aren't in sd1
+                for k2 in sd2:
+                    if k2 not in sd1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k2
+
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)
+                extra2 = score2.recurse().getElementById(op[2].extra)
+
+                textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} {changedStr}")
+                textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} {changedStr}")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                    insertionPoint2 = extra2.getFirst()
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                else:
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+
             # note
             elif op[0] == "noteins":
                 assert isinstance(op[2], AnnNote)
@@ -489,7 +526,6 @@ class Visualization:
                         if changedStr:
                             changedStr += ","
                         changedStr += k2
-
 
                 note1 = score1.recurse().getElementById(op[1].general_note)
                 note1.style.color = Visualization.CHANGED_COLOR
