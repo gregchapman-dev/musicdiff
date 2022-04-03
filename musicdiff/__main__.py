@@ -16,10 +16,10 @@ import sys
 import argparse
 
 from musicdiff import diff
+from musicdiff import DetailLevel
 
 # To use the new Humdrum importer from converter21 in place of the one in music21:
-# git clone https://github.com/gregchapman-dev/converter21.git
-# pip install converter21   # or pip install -e converter21 if you want it "editable"
+# pip install converter21
 # Then uncomment all lines in this file marked "# c21"
 # import music21 as m21 # c21
 # from converter21 import HumdrumConverter # c21
@@ -43,11 +43,24 @@ if __name__ == "__main__":
                         help="first music score file to compare (any format music21 can parse)")
     parser.add_argument("file2",
                         help="second music score file to compare (any format music21 can parse)")
+    parser.add_argument("-d", "--detail", default="Default",
+                        choices=["GeneralNotesOnly", "AllObjects", "AllObjectsWithStyle", "Default"],
+                        help="set detail level")
     args = parser.parse_args()
+
+    detail: DetailLevel = DetailLevel.Default
+    if args.detail == "GeneralNotesOnly":
+        detail = DetailLevel.GeneralNotesOnly
+    elif args.detail == "AllObjects":
+        detail = DetailLevel.AllObjects
+    elif args.detail == "AllObjectsWithStyle":
+        detail = DetailLevel.AllObjectsWithStyle
+    elif args.detail == "Default":
+        detail = DetailLevel.Default
 
     # Note that diff() can take a music21 Score instead of a file, for either
     # or both arguments.
     # Note also that diff() can take str or pathlib.Path for files.
-    numDiffs: int = diff(args.file1, args.file2)
+    numDiffs: int = diff(args.file1, args.file2, detail=detail)
     if numDiffs is not None and numDiffs == 0:
         print(f'Scores in {args.file1} and {args.file2} are identical.', file=sys.stderr)

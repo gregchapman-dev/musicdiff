@@ -221,6 +221,43 @@ class Visualization:
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
 
+            elif op[0] == "extrastyleedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                sd1 = op[1].styledict
+                sd2 = op[2].styledict
+                changedStr: str = ""
+                for k1, v1 in sd1.items():
+                    if k1 not in sd2 or sd2[k1] != v1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k1
+
+                # one last thing: check for keys in sd2 that aren't in sd1
+                for k2 in sd2:
+                    if k2 not in sd1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k2
+
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)
+                extra2 = score2.recurse().getElementById(op[2].extra)
+
+                textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} {changedStr}")
+                textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} {changedStr}")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                    insertionPoint2 = extra2.getFirst()
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                else:
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+
             # note
             elif op[0] == "noteins":
                 assert isinstance(op[2], AnnNote)
@@ -408,6 +445,97 @@ class Visualization:
                             Visualization.CHANGED_COLOR
                         )  # this apparently does nothing
                 textExp = m21.expressions.TextExpression("changed flags")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editnoteshape":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note shape")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note shape")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editnoteheadfill":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head fill")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head fill")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editnoteheadparenthesis":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head paren")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note head paren")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editstemdirection":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed stem direction")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed stem direction")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "editstyle":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                sd1 = op[1].styledict
+                sd2 = op[2].styledict
+                changedStr: str = ""
+                for k1, v1 in sd1.items():
+                    if k1 not in sd2 or sd2[k1] != v1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k1
+
+                # one last thing: check for keys in sd2 that aren't in sd1
+                for k2 in sd2:
+                    if k2 not in sd1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k2
+
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression(f"changed note {changedStr}")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression(f"changed note {changedStr}")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
