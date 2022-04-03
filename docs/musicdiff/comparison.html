@@ -79,14 +79,26 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">difflib</span> <span class="kn">import</span> <span class="n">ndiff</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">musicdiff.annotation</span> <span class="kn">import</span> <span class="n">AnnScore</span><span class="p">,</span> <span class="n">AnnNote</span>
+<span class="kn">from</span> <span class="nn">musicdiff.annotation</span> <span class="kn">import</span> <span class="n">AnnScore</span><span class="p">,</span> <span class="n">AnnNote</span><span class="p">,</span> <span class="n">AnnVoice</span><span class="p">,</span> <span class="n">AnnExtra</span>
 <span class="kn">from</span> <span class="nn">musicdiff</span> <span class="kn">import</span> <span class="n">M21Utils</span>
 
 <span class="c1"># memoizers to speed up the recursive computation</span>
 <span class="k">def</span> <span class="nf">_memoize_inside_bars_diff_lin</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="n">mem</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">memoizer</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">original</span><span class="p">)</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">compare_to</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mem</span><span class="p">:</span>
+            <span class="n">mem</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">mem</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">memoizer</span>
+
+<span class="k">def</span> <span class="nf">_memoize_extras_diff_lin</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
     <span class="n">mem</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span> <span class="nf">memoizer</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">):</span>
@@ -432,20 +444,135 @@
         <span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="p">):</span>  <span class="c1"># to avoid perform the _inside_bars_diff_lin if it&#39;s not needed</span>
+        <span class="p">):</span>  <span class="c1"># to avoid performing the _voices_coupling_recursive if it&#39;s not needed</span>
             <span class="n">inside_bar_op_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">inside_bar_cost</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># run the voice coupling algorithm</span>
+            <span class="c1"># diff the bar extras (like _inside_bars_diff_lin, but with lists of AnnExtras</span>
+            <span class="c1"># instead of lists of AnnNotes)</span>
+            <span class="n">extras_op_list</span><span class="p">,</span> <span class="n">extras_cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+                <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extras_list</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extras_list</span>
+            <span class="p">)</span>
+
+            <span class="c1"># run the voice coupling algorithm, and add to inside_bar_op_list and inside_bar_cost</span>
             <span class="n">inside_bar_op_list</span><span class="p">,</span> <span class="n">inside_bar_cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_voices_coupling_recursive</span><span class="p">(</span>
                 <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">voices_list</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">voices_list</span>
             <span class="p">)</span>
+            <span class="n">inside_bar_op_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extras_op_list</span><span class="p">)</span>
+            <span class="n">inside_bar_cost</span> <span class="o">+=</span> <span class="n">extras_cost</span>
         <span class="n">cost_dict</span><span class="p">[</span><span class="s2">&quot;editbar&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">inside_bar_cost</span>
         <span class="n">op_list_dict</span><span class="p">[</span><span class="s2">&quot;editbar&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">inside_bar_op_list</span><span class="p">)</span>
         <span class="c1"># compute the minimum of the possibilities</span>
         <span class="n">min_key</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cost_dict</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">cost_dict</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">op_list_dict</span><span class="p">[</span><span class="n">min_key</span><span class="p">],</span> <span class="n">cost_dict</span><span class="p">[</span><span class="n">min_key</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">out</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@_memoize_extras_diff_lin</span>
+    <span class="k">def</span> <span class="nf">_extras_diff_lin</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">):</span>
+        <span class="c1"># original and compare to are two lists of AnnExtra</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">original</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">compare_to</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[],</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">original</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extrains&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">compare_to</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span><span class="n">original</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">compare_to</span><span class="p">)</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extradel&quot;</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
+
+        <span class="c1"># compute the cost and the op_list for the many possibilities of recursion</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">op_list</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># extradel</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+            <span class="n">original</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">compare_to</span>
+        <span class="p">)</span>
+        <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span><span class="s2">&quot;extradel&quot;</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="c1"># extrains</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+            <span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">)</span>
+        <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span><span class="s2">&quot;extrains&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="c1"># extrasub</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+            <span class="n">original</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">):</span>  <span class="c1"># avoid call another function if they are equal</span>
+            <span class="n">extrasub_op</span><span class="p">,</span> <span class="n">extrasub_cost</span> <span class="o">=</span> <span class="p">[],</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">extrasub_op</span><span class="p">,</span> <span class="n">extrasub_cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_annotated_extra_diff</span><span class="p">(</span><span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">extrasub_cost</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extrasub_op</span><span class="p">)</span>
+        <span class="c1"># compute the minimum of the possibilities</span>
+        <span class="n">min_key</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">cost</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">op_list</span><span class="p">[</span><span class="n">min_key</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="n">min_key</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_strings_leveinshtein_distance</span><span class="p">(</span><span class="n">str1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str2</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">counter</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;+&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="n">distance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">edit_code</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">ndiff</span><span class="p">(</span><span class="n">str1</span><span class="p">,</span> <span class="n">str2</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">edit_code</span> <span class="o">==</span> <span class="s2">&quot; &quot;</span><span class="p">:</span>
+                <span class="n">distance</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="n">counter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;+&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">counter</span><span class="p">[</span><span class="n">edit_code</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">distance</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">distance</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_annotated_extra_diff</span><span class="p">(</span><span class="n">annExtra1</span><span class="p">:</span> <span class="n">AnnExtra</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">:</span> <span class="n">AnnExtra</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;compute the differences between two annotated extras</span>
+<span class="sd">        Each annotated extra consists of three values: content, offset, and duration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">op_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># add for the content</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">content</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">content</span><span class="p">:</span>
+            <span class="n">content_cost</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_strings_leveinshtein_distance</span><span class="p">(</span>
+                                            <span class="n">annExtra1</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">content_cost</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extracontentedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="n">content_cost</span><span class="p">))</span>
+
+        <span class="c1"># add for the offset</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">offset</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">offset</span><span class="p">:</span>
+            <span class="c1"># offset is in quarter-notes, so let&#39;s make the cost in quarter-notes as well.</span>
+            <span class="c1"># min cost is 1, though, don&#39;t round down to zero.</span>
+            <span class="n">offset_cost</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">annExtra1</span><span class="o">.</span><span class="n">duration</span> <span class="o">-</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">duration</span><span class="p">))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">offset_cost</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extraoffsetedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="n">offset_cost</span><span class="p">))</span>
+
+        <span class="c1"># add for the duration</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">duration</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+            <span class="c1"># duration is in quarter-notes, so let&#39;s make the cost in quarter-notes as well.</span>
+            <span class="n">duration_cost</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">annExtra1</span><span class="o">.</span><span class="n">duration</span> <span class="o">-</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">duration</span><span class="p">))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">duration_cost</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extradurationedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="n">duration_cost</span><span class="p">))</span>
+
+        <span class="c1"># add for the style</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">styledict</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extrastyleedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
 
     <span class="nd">@staticmethod</span>
     <span class="nd">@_memoize_inside_bars_diff_lin</span>
@@ -573,6 +700,26 @@
             <span class="p">)</span>
             <span class="n">op_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">expr_op_list</span><span class="p">)</span>
             <span class="n">cost</span> <span class="o">+=</span> <span class="n">expr_cost</span>
+        <span class="c1"># add for noteshape</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">noteshape</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">noteshape</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editnoteshape&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for noteheadFill</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">noteheadFill</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">noteheadFill</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editnoteheadfill&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for noteheadParenthesis</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">noteheadParenthesis</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editnoteheadparenthesis&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for stemDirection</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">stemDirection</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">stemDirection</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editstemdirection&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for the styledict</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">styledict</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editstyle&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
 
@@ -705,7 +852,7 @@
         <span class="k">return</span> <span class="n">out</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_voices_coupling_recursive</span><span class="p">(</span><span class="n">original</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_voices_coupling_recursive</span><span class="p">(</span><span class="n">original</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnnVoice</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnnVoice</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;compare all the possible voices permutations, considering also deletion and insertion (equation on office lens)</span>
 <span class="sd">        original [list] -- a list of Voice</span>
 <span class="sd">        compare_to [list] -- a list of Voice</span>
@@ -1091,20 +1238,135 @@
         <span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="p">):</span>  <span class="c1"># to avoid perform the _inside_bars_diff_lin if it&#39;s not needed</span>
+        <span class="p">):</span>  <span class="c1"># to avoid performing the _voices_coupling_recursive if it&#39;s not needed</span>
             <span class="n">inside_bar_op_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">inside_bar_cost</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># run the voice coupling algorithm</span>
+            <span class="c1"># diff the bar extras (like _inside_bars_diff_lin, but with lists of AnnExtras</span>
+            <span class="c1"># instead of lists of AnnNotes)</span>
+            <span class="n">extras_op_list</span><span class="p">,</span> <span class="n">extras_cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+                <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extras_list</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extras_list</span>
+            <span class="p">)</span>
+
+            <span class="c1"># run the voice coupling algorithm, and add to inside_bar_op_list and inside_bar_cost</span>
             <span class="n">inside_bar_op_list</span><span class="p">,</span> <span class="n">inside_bar_cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_voices_coupling_recursive</span><span class="p">(</span>
                 <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">voices_list</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">voices_list</span>
             <span class="p">)</span>
+            <span class="n">inside_bar_op_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extras_op_list</span><span class="p">)</span>
+            <span class="n">inside_bar_cost</span> <span class="o">+=</span> <span class="n">extras_cost</span>
         <span class="n">cost_dict</span><span class="p">[</span><span class="s2">&quot;editbar&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">inside_bar_cost</span>
         <span class="n">op_list_dict</span><span class="p">[</span><span class="s2">&quot;editbar&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">inside_bar_op_list</span><span class="p">)</span>
         <span class="c1"># compute the minimum of the possibilities</span>
         <span class="n">min_key</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cost_dict</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">cost_dict</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">op_list_dict</span><span class="p">[</span><span class="n">min_key</span><span class="p">],</span> <span class="n">cost_dict</span><span class="p">[</span><span class="n">min_key</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">out</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@_memoize_extras_diff_lin</span>
+    <span class="k">def</span> <span class="nf">_extras_diff_lin</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">):</span>
+        <span class="c1"># original and compare to are two lists of AnnExtra</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">original</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">compare_to</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[],</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">original</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extrains&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">compare_to</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span><span class="n">original</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">compare_to</span><span class="p">)</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extradel&quot;</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
+
+        <span class="c1"># compute the cost and the op_list for the many possibilities of recursion</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">op_list</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># extradel</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+            <span class="n">original</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">compare_to</span>
+        <span class="p">)</span>
+        <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extradel&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span><span class="s2">&quot;extradel&quot;</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="c1"># extrains</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+            <span class="n">original</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">)</span>
+        <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrains&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span><span class="s2">&quot;extrains&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notation_size</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="c1"># extrasub</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_extras_diff_lin</span><span class="p">(</span>
+            <span class="n">original</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">):</span>  <span class="c1"># avoid call another function if they are equal</span>
+            <span class="n">extrasub_op</span><span class="p">,</span> <span class="n">extrasub_cost</span> <span class="o">=</span> <span class="p">[],</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">extrasub_op</span><span class="p">,</span> <span class="n">extrasub_cost</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_annotated_extra_diff</span><span class="p">(</span><span class="n">original</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">cost</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">extrasub_cost</span>
+        <span class="n">op_list</span><span class="p">[</span><span class="s2">&quot;extrasub&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extrasub_op</span><span class="p">)</span>
+        <span class="c1"># compute the minimum of the possibilities</span>
+        <span class="n">min_key</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">cost</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">op_list</span><span class="p">[</span><span class="n">min_key</span><span class="p">],</span> <span class="n">cost</span><span class="p">[</span><span class="n">min_key</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_strings_leveinshtein_distance</span><span class="p">(</span><span class="n">str1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">str2</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">counter</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;+&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="n">distance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">edit_code</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">ndiff</span><span class="p">(</span><span class="n">str1</span><span class="p">,</span> <span class="n">str2</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">edit_code</span> <span class="o">==</span> <span class="s2">&quot; &quot;</span><span class="p">:</span>
+                <span class="n">distance</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="n">counter</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;+&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">counter</span><span class="p">[</span><span class="n">edit_code</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">distance</span> <span class="o">+=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">distance</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_annotated_extra_diff</span><span class="p">(</span><span class="n">annExtra1</span><span class="p">:</span> <span class="n">AnnExtra</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">:</span> <span class="n">AnnExtra</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;compute the differences between two annotated extras</span>
+<span class="sd">        Each annotated extra consists of three values: content, offset, and duration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">op_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># add for the content</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">content</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">content</span><span class="p">:</span>
+            <span class="n">content_cost</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Comparison</span><span class="o">.</span><span class="n">_strings_leveinshtein_distance</span><span class="p">(</span>
+                                            <span class="n">annExtra1</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">content_cost</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extracontentedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="n">content_cost</span><span class="p">))</span>
+
+        <span class="c1"># add for the offset</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">offset</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">offset</span><span class="p">:</span>
+            <span class="c1"># offset is in quarter-notes, so let&#39;s make the cost in quarter-notes as well.</span>
+            <span class="c1"># min cost is 1, though, don&#39;t round down to zero.</span>
+            <span class="n">offset_cost</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">annExtra1</span><span class="o">.</span><span class="n">duration</span> <span class="o">-</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">duration</span><span class="p">))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">offset_cost</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extraoffsetedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="n">offset_cost</span><span class="p">))</span>
+
+        <span class="c1"># add for the duration</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">duration</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+            <span class="c1"># duration is in quarter-notes, so let&#39;s make the cost in quarter-notes as well.</span>
+            <span class="n">duration_cost</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">annExtra1</span><span class="o">.</span><span class="n">duration</span> <span class="o">-</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">duration</span><span class="p">))</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="n">duration_cost</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extradurationedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="n">duration_cost</span><span class="p">))</span>
+
+        <span class="c1"># add for the style</span>
+        <span class="k">if</span> <span class="n">annExtra1</span><span class="o">.</span><span class="n">styledict</span> <span class="o">!=</span> <span class="n">annExtra2</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;extrastyleedit&quot;</span><span class="p">,</span> <span class="n">annExtra1</span><span class="p">,</span> <span class="n">annExtra2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
 
     <span class="nd">@staticmethod</span>
     <span class="nd">@_memoize_inside_bars_diff_lin</span>
@@ -1232,6 +1494,26 @@
             <span class="p">)</span>
             <span class="n">op_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">expr_op_list</span><span class="p">)</span>
             <span class="n">cost</span> <span class="o">+=</span> <span class="n">expr_cost</span>
+        <span class="c1"># add for noteshape</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">noteshape</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">noteshape</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editnoteshape&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for noteheadFill</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">noteheadFill</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">noteheadFill</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editnoteheadfill&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for noteheadParenthesis</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">noteheadParenthesis</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editnoteheadparenthesis&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for stemDirection</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">stemDirection</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">stemDirection</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editstemdirection&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># add for the styledict</span>
+        <span class="k">if</span> <span class="n">annNote1</span><span class="o">.</span><span class="n">styledict</span> <span class="o">!=</span> <span class="n">annNote2</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span>
+            <span class="n">cost</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">op_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot;editstyle&quot;</span><span class="p">,</span> <span class="n">annNote1</span><span class="p">,</span> <span class="n">annNote2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">op_list</span><span class="p">,</span> <span class="n">cost</span>
 
@@ -1364,7 +1646,7 @@
         <span class="k">return</span> <span class="n">out</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_voices_coupling_recursive</span><span class="p">(</span><span class="n">original</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">compare_to</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_voices_coupling_recursive</span><span class="p">(</span><span class="n">original</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnnVoice</span><span class="p">],</span> <span class="n">compare_to</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnnVoice</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;compare all the possible voices permutations, considering also deletion and insertion (equation on office lens)</span>
 <span class="sd">        original [list] -- a list of Voice</span>
 <span class="sd">        compare_to [list] -- a list of Voice</span>

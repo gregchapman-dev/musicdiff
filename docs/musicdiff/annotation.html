@@ -46,6 +46,18 @@
 
             </li>
             <li>
+                    <a class="class" href="#AnnExtra">AnnExtra</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#AnnExtra.__init__">AnnExtra</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#AnnExtra.notation_size">notation_size</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
                     <a class="class" href="#AnnVoice">AnnVoice</a>
                             <ul class="memberlist">
                         <li>
@@ -141,14 +153,15 @@
 <span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;google&quot;</span>
 
 <span class="kn">from</span> <span class="nn">fractions</span> <span class="kn">import</span> <span class="n">Fraction</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">import</span> <span class="nn">music21</span> <span class="k">as</span> <span class="nn">m21</span>
 
 <span class="kn">from</span> <span class="nn">musicdiff</span> <span class="kn">import</span> <span class="n">M21Utils</span>
-
+<span class="kn">from</span> <span class="nn">musicdiff</span> <span class="kn">import</span> <span class="n">DetailLevel</span>
 
 <span class="k">class</span> <span class="nc">AnnNote</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">general_note</span><span class="p">,</span> <span class="n">enhanced_beam_list</span><span class="p">,</span> <span class="n">tuplet_list</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">general_note</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span><span class="p">,</span> <span class="n">enhanced_beam_list</span><span class="p">,</span> <span class="n">tuplet_list</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 GeneralNote with some precomputed, easily compared information about it.</span>
 
@@ -156,27 +169,51 @@
 <span class="sd">            general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.</span>
 <span class="sd">            enhanced_beam_list (list): A list of beaming information about this GeneralNote.</span>
 <span class="sd">            tuplet_list (list): A list of tuplet info about this GeneralNote.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">general_note</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beamings</span> <span class="o">=</span> <span class="n">enhanced_beam_list</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tuplets</span> <span class="o">=</span> <span class="n">tuplet_list</span>
-        <span class="c1">##compute the representaiton of NoteNode as in the paper</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stylestr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">has_style</span><span class="p">(</span><span class="n">general_note</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">obj_to_styledict</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;normal&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;unspecified&#39;</span>
+        <span class="k">if</span> <span class="n">detail</span> <span class="o">&gt;=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">AllObjectsWithStyle</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">NotRest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">notehead</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">noteheadFill</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">noteheadParenthesis</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">stemDirection</span>
+
+        <span class="c1"># compute the representation of NoteNode as in the paper</span>
         <span class="c1"># pitches is a list  of elements, each one is (pitchposition, accidental, tie)</span>
         <span class="k">if</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isRest</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">(</span><span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
             <span class="p">]</span>  <span class="c1"># accidental and tie are automaticaly set for rests</span>
-        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isChord</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isChord</span> <span class="ow">or</span> <span class="s2">&quot;ChordBase&quot;</span> <span class="ow">in</span> <span class="n">general_note</span><span class="o">.</span><span class="n">classSet</span><span class="p">:</span>
+            <span class="c1"># ChordBase/PercussionChord is new in v7, so I am being careful to use</span>
+            <span class="c1"># it only as a string so v6 will still work.</span>
+            <span class="n">noteList</span><span class="p">:</span> <span class="p">[</span><span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span><span class="p">]</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">notes</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="s2">&quot;sortDiatonicAscending&quot;</span><span class="p">):</span> <span class="c1"># PercussionChords don&#39;t have this</span>
+                <span class="n">noteList</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">sortDiatonicAscending</span><span class="p">()</span><span class="o">.</span><span class="n">notes</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">general_note</span><span class="o">.</span><span class="n">sortDiatonicAscending</span><span class="p">()</span><span class="o">.</span><span class="n">notes</span>
+                <span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">noteList</span>
             <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isNote</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isNote</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">Unpitched</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span><span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">general_note</span><span class="p">)]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;The generalNote must be a Chord, a Rest or a Note&quot;</span><span class="p">)</span>
         <span class="c1"># note head</span>
         <span class="n">type_number</span> <span class="o">=</span> <span class="n">Fraction</span><span class="p">(</span>
-            <span class="n">m21</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">convertTypeToNumber</span><span class="p">(</span><span class="n">general_note</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+            <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_type_num</span><span class="p">(</span><span class="n">general_note</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">type_number</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">note_head</span> <span class="o">=</span> <span class="mi">4</span>
@@ -222,7 +259,8 @@
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># does consider the MEI id!</span>
         <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pitches</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">note_head</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dots</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">beamings</span><span class="si">}</span><span class="s2">,&quot;</span> <span class="o">+</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tuplets</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">general_note</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">articulations</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tuplets</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">general_note</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">articulations</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -272,6 +310,22 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># add for articulations</span>
             <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">:</span>
                 <span class="n">string</span> <span class="o">+=</span> <span class="n">e</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span> <span class="o">!=</span> <span class="s1">&#39;normal&#39;</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;noteshape=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;noteheadFill=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;noteheadParenthesis=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span> <span class="o">!=</span> <span class="s1">&#39;unspecified&#39;</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;stemDirection=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># and then the style fields</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;,&quot;</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span>
+
         <span class="k">return</span> <span class="n">string</span>
 
     <span class="k">def</span> <span class="nf">get_note_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -308,34 +362,102 @@
         <span class="c1">#     return True</span>
 
 
+<span class="k">class</span> <span class="nc">AnnExtra</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">extra</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">Music21Object</span><span class="p">,</span> <span class="n">measure</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Measure</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.</span>
+<span class="sd">        Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            extra (music21.base.Music21Object): The music21 non-GeneralNote/non-Stream object to extend.</span>
+<span class="sd">            measure (music21.stream.Measure): The music21 Measure the extra was found in.  If the extra</span>
+<span class="sd">                was found in a Voice, this is the Measure that the Voice was found in.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">:</span> <span class="nb">float</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">Spanner</span><span class="p">):</span>
+            <span class="n">firstNote</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">getFirst</span><span class="p">()</span>
+            <span class="n">lastNote</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">getLast</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">firstNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">measure</span><span class="p">))</span>
+            <span class="c1"># to compute duration we need to use offset-in-score, since the end note might be in another Measure</span>
+            <span class="n">startOffsetInScore</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">firstNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">score</span><span class="p">))</span>
+            <span class="n">endOffsetInScore</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lastNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">score</span><span class="p">)</span> <span class="o">+</span> <span class="n">lastNote</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">quarterLength</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">endOffsetInScore</span> <span class="o">-</span> <span class="n">startOffsetInScore</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extra</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">measure</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extra</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">quarterLength</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">extra_to_string</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">has_style</span><span class="p">(</span><span class="n">extra</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">obj_to_styledict</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span> <span class="c1"># includes extra.placement if present</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notation_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># so far, always 1, but maybe some extra will be bigger someday</span>
+
+        <span class="c1"># precomputed representations for faster comparison</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">notation_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute a measure of how many symbols are displayed in the score for this `AnnExtra`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The notation size of the annotated extra</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notation_size</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: the compared representation of the AnnExtra. Does not consider music21 id.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="si">}</span><span class="s1">,off=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="si">}</span><span class="s1">,dur=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="c1"># and then any style fields</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;,</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># equality does not consider the MEI id!</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">precomputed_str</span>
+
+
 <span class="k">class</span> <span class="nc">AnnVoice</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voice</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voice</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Voice</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Voice with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            voice (music21.stream.Voice): The music21 voice to extend.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">voice</span> <span class="o">=</span> <span class="n">voice</span><span class="o">.</span><span class="n">id</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">:</span>
+        <span class="n">note_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">note_list</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_enhance_beamings</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span>
+                <span class="n">note_list</span>
             <span class="p">)</span>  <span class="c1"># beams and type (type for note shorter than quarter notes)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_type</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span>
+                <span class="n">note_list</span>
             <span class="p">)</span>  <span class="c1"># corrected tuplets (with &quot;start&quot; and &quot;continue&quot;)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_info</span><span class="p">(</span><span class="n">note_list</span><span class="p">)</span>
             <span class="c1"># create a list of notes with beaming and tuplets information attached</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">note_list</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">AnnNote</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">AnnNote</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">detail</span><span class="p">)</span>
                 <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span><span class="p">)</span>
@@ -389,34 +511,54 @@
 
 
 <span class="k">class</span> <span class="nc">AnnMeasure</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">measure</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">measure</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Measure</span><span class="p">,</span>
+                       <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span>
+                       <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span><span class="p">,</span>
+                       <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Measure with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            measure (music21.stream.Measure): The music21 measure to extend.</span>
+<span class="sd">            score (music21.stream.Score): the enclosing music21 Score.</span>
+<span class="sd">            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">=</span> <span class="n">measure</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">measure</span><span class="o">.</span><span class="n">voices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
         <span class="p">):</span>  <span class="c1"># there is a single AnnVoice ( == for the library there are no voices)</span>
-            <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">measure</span><span class="p">)</span>
+            <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ann_voice</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_voice</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># there are multiple voices (or an array with just one voice)</span>
             <span class="k">for</span> <span class="n">voice</span> <span class="ow">in</span> <span class="n">measure</span><span class="o">.</span><span class="n">voices</span><span class="p">:</span>
-                <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
+                <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">ann_voice</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_voice</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_voices</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">detail</span> <span class="o">&gt;=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">AllObjects</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">extra</span> <span class="ow">in</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_extras</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AnnExtra</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">measure</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">detail</span><span class="p">))</span>
+
+            <span class="c1"># For correct comparison, sort the extras_list, so that any list slices</span>
+            <span class="c1"># that all have the same offset are sorted alphabetically.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span> <span class="n">e</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="p">))</span>
 
         <span class="c1"># precomputed values to speed up the computation. As they start to be long, they are hashed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_repr</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39; Extras:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39; Extras:&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># equality does not consider MEI id!</span>
@@ -424,6 +566,9 @@
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">voices_list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">extras_list</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">precomputed_str</span>
@@ -436,10 +581,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            int: The notation size of the annotated measure</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span>
-
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">([</span><span class="n">e</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">get_note_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -455,17 +597,25 @@
 
 
 <span class="k">class</span> <span class="nc">AnnPart</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">part</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">part</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Part</span><span class="p">,</span>
+                       <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span>
+                       <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span><span class="p">,</span>
+                       <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Part/PartStaff with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            part (music21.stream.Part, music21.stream.PartStaff): The music21 Part/PartStaff to extend.</span>
+<span class="sd">            score (music21.stream.Score): the enclosing music21 Score.</span>
+<span class="sd">            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">part</span> <span class="o">=</span> <span class="n">part</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">measure</span> <span class="ow">in</span> <span class="n">part</span><span class="o">.</span><span class="n">getElementsByClass</span><span class="p">(</span><span class="s2">&quot;Measure&quot;</span><span class="p">):</span>
-            <span class="n">ann_bar</span> <span class="o">=</span> <span class="n">AnnMeasure</span><span class="p">(</span><span class="n">measure</span><span class="p">)</span>  <span class="c1"># create the bar objects</span>
+            <span class="n">ann_bar</span> <span class="o">=</span> <span class="n">AnnMeasure</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>  <span class="c1"># create the bar objects</span>
             <span class="k">if</span> <span class="n">ann_bar</span><span class="o">.</span><span class="n">n_of_voices</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_bar</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_bars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span><span class="p">)</span>
@@ -511,18 +661,22 @@
 
 
 <span class="k">class</span> <span class="nc">AnnScore</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Take a music21 score and store it as a sequence of Full Trees.</span>
 <span class="sd">        The hierarchy is &quot;score -&gt; parts -&gt; measures -&gt; voices -&gt; notes&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            score (music21.stream.Score): The music21 score</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">part_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">spannerBundle</span>
         <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">score</span><span class="o">.</span><span class="n">parts</span><span class="o">.</span><span class="n">stream</span><span class="p">():</span>
             <span class="c1"># create and add the AnnPart object to part_list</span>
-            <span class="n">ann_part</span> <span class="o">=</span> <span class="n">AnnPart</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+            <span class="n">ann_part</span> <span class="o">=</span> <span class="n">AnnPart</span><span class="p">(</span><span class="n">part</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ann_part</span><span class="o">.</span><span class="n">n_of_bars</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">part_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_part</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_parts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">part_list</span><span class="p">)</span>
@@ -586,7 +740,7 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">AnnNote</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">general_note</span><span class="p">,</span> <span class="n">enhanced_beam_list</span><span class="p">,</span> <span class="n">tuplet_list</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">general_note</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span><span class="p">,</span> <span class="n">enhanced_beam_list</span><span class="p">,</span> <span class="n">tuplet_list</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 GeneralNote with some precomputed, easily compared information about it.</span>
 
@@ -594,27 +748,51 @@
 <span class="sd">            general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.</span>
 <span class="sd">            enhanced_beam_list (list): A list of beaming information about this GeneralNote.</span>
 <span class="sd">            tuplet_list (list): A list of tuplet info about this GeneralNote.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">general_note</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beamings</span> <span class="o">=</span> <span class="n">enhanced_beam_list</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tuplets</span> <span class="o">=</span> <span class="n">tuplet_list</span>
-        <span class="c1">##compute the representaiton of NoteNode as in the paper</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stylestr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">has_style</span><span class="p">(</span><span class="n">general_note</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">obj_to_styledict</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;normal&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;unspecified&#39;</span>
+        <span class="k">if</span> <span class="n">detail</span> <span class="o">&gt;=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">AllObjectsWithStyle</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">NotRest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">notehead</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">noteheadFill</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">noteheadParenthesis</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">stemDirection</span>
+
+        <span class="c1"># compute the representation of NoteNode as in the paper</span>
         <span class="c1"># pitches is a list  of elements, each one is (pitchposition, accidental, tie)</span>
         <span class="k">if</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isRest</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">(</span><span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
             <span class="p">]</span>  <span class="c1"># accidental and tie are automaticaly set for rests</span>
-        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isChord</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isChord</span> <span class="ow">or</span> <span class="s2">&quot;ChordBase&quot;</span> <span class="ow">in</span> <span class="n">general_note</span><span class="o">.</span><span class="n">classSet</span><span class="p">:</span>
+            <span class="c1"># ChordBase/PercussionChord is new in v7, so I am being careful to use</span>
+            <span class="c1"># it only as a string so v6 will still work.</span>
+            <span class="n">noteList</span><span class="p">:</span> <span class="p">[</span><span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span><span class="p">]</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">notes</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="s2">&quot;sortDiatonicAscending&quot;</span><span class="p">):</span> <span class="c1"># PercussionChords don&#39;t have this</span>
+                <span class="n">noteList</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">sortDiatonicAscending</span><span class="p">()</span><span class="o">.</span><span class="n">notes</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">general_note</span><span class="o">.</span><span class="n">sortDiatonicAscending</span><span class="p">()</span><span class="o">.</span><span class="n">notes</span>
+                <span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">noteList</span>
             <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isNote</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isNote</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">Unpitched</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span><span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">general_note</span><span class="p">)]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;The generalNote must be a Chord, a Rest or a Note&quot;</span><span class="p">)</span>
         <span class="c1"># note head</span>
         <span class="n">type_number</span> <span class="o">=</span> <span class="n">Fraction</span><span class="p">(</span>
-            <span class="n">m21</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">convertTypeToNumber</span><span class="p">(</span><span class="n">general_note</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+            <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_type_num</span><span class="p">(</span><span class="n">general_note</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">type_number</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">note_head</span> <span class="o">=</span> <span class="mi">4</span>
@@ -660,7 +838,8 @@
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># does consider the MEI id!</span>
         <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pitches</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">note_head</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dots</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">beamings</span><span class="si">}</span><span class="s2">,&quot;</span> <span class="o">+</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tuplets</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">general_note</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">articulations</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tuplets</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">general_note</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">articulations</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -710,6 +889,22 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># add for articulations</span>
             <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">:</span>
                 <span class="n">string</span> <span class="o">+=</span> <span class="n">e</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span> <span class="o">!=</span> <span class="s1">&#39;normal&#39;</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;noteshape=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;noteheadFill=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;noteheadParenthesis=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span> <span class="o">!=</span> <span class="s1">&#39;unspecified&#39;</span><span class="p">:</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;stemDirection=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># and then the style fields</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;,&quot;</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span>
+
         <span class="k">return</span> <span class="n">string</span>
 
     <span class="k">def</span> <span class="nf">get_note_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -754,12 +949,17 @@
                                         <div class="attr function"><a class="headerlink" href="#AnnNote.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">AnnNote</span><span class="signature">(general_note, enhanced_beam_list, tuplet_list)</span>
+            <span class="name">AnnNote</span><span class="signature">(
+    general_note: music21.note.GeneralNote,
+    enhanced_beam_list,
+    tuplet_list,
+    detail: <a href="../musicdiff.html#m21utils.DetailLevel">musicdiff.m21utils.DetailLevel</a> = &lt;DetailLevel.AllObjects: 2&gt;
+)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">general_note</span><span class="p">,</span> <span class="n">enhanced_beam_list</span><span class="p">,</span> <span class="n">tuplet_list</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">general_note</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span><span class="p">,</span> <span class="n">enhanced_beam_list</span><span class="p">,</span> <span class="n">tuplet_list</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 GeneralNote with some precomputed, easily compared information about it.</span>
 
@@ -767,27 +967,51 @@
 <span class="sd">            general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.</span>
 <span class="sd">            enhanced_beam_list (list): A list of beaming information about this GeneralNote.</span>
 <span class="sd">            tuplet_list (list): A list of tuplet info about this GeneralNote.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">general_note</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beamings</span> <span class="o">=</span> <span class="n">enhanced_beam_list</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tuplets</span> <span class="o">=</span> <span class="n">tuplet_list</span>
-        <span class="c1">##compute the representaiton of NoteNode as in the paper</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stylestr</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">has_style</span><span class="p">(</span><span class="n">general_note</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">obj_to_styledict</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;normal&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;unspecified&#39;</span>
+        <span class="k">if</span> <span class="n">detail</span> <span class="o">&gt;=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">AllObjectsWithStyle</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">NotRest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteshape</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">notehead</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteheadFill</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">noteheadFill</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">noteheadParenthesis</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">noteheadParenthesis</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stemDirection</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">stemDirection</span>
+
+        <span class="c1"># compute the representation of NoteNode as in the paper</span>
         <span class="c1"># pitches is a list  of elements, each one is (pitchposition, accidental, tie)</span>
         <span class="k">if</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isRest</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">(</span><span class="s2">&quot;R&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
             <span class="p">]</span>  <span class="c1"># accidental and tie are automaticaly set for rests</span>
-        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isChord</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isChord</span> <span class="ow">or</span> <span class="s2">&quot;ChordBase&quot;</span> <span class="ow">in</span> <span class="n">general_note</span><span class="o">.</span><span class="n">classSet</span><span class="p">:</span>
+            <span class="c1"># ChordBase/PercussionChord is new in v7, so I am being careful to use</span>
+            <span class="c1"># it only as a string so v6 will still work.</span>
+            <span class="n">noteList</span><span class="p">:</span> <span class="p">[</span><span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span><span class="p">]</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">notes</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="s2">&quot;sortDiatonicAscending&quot;</span><span class="p">):</span> <span class="c1"># PercussionChords don&#39;t have this</span>
+                <span class="n">noteList</span> <span class="o">=</span> <span class="n">general_note</span><span class="o">.</span><span class="n">sortDiatonicAscending</span><span class="p">()</span><span class="o">.</span><span class="n">notes</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">general_note</span><span class="o">.</span><span class="n">sortDiatonicAscending</span><span class="p">()</span><span class="o">.</span><span class="n">notes</span>
+                <span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">noteList</span>
             <span class="p">]</span>
-        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isNote</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">general_note</span><span class="o">.</span><span class="n">isNote</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">general_note</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">Unpitched</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pitches</span> <span class="o">=</span> <span class="p">[</span><span class="n">M21Utils</span><span class="o">.</span><span class="n">note2tuple</span><span class="p">(</span><span class="n">general_note</span><span class="p">)]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;The generalNote must be a Chord, a Rest or a Note&quot;</span><span class="p">)</span>
         <span class="c1"># note head</span>
         <span class="n">type_number</span> <span class="o">=</span> <span class="n">Fraction</span><span class="p">(</span>
-            <span class="n">m21</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">convertTypeToNumber</span><span class="p">(</span><span class="n">general_note</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+            <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_type_num</span><span class="p">(</span><span class="n">general_note</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">type_number</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">note_head</span> <span class="o">=</span> <span class="mi">4</span>
@@ -818,6 +1042,9 @@
 <li><strong>general_note (music21.note.GeneralNote):</strong>  The music21 note/chord/rest to extend.</li>
 <li><strong>enhanced_beam_list (list):</strong>  A list of beaming information about this GeneralNote.</li>
 <li><strong>tuplet_list (list):</strong>  A list of tuplet info about this GeneralNote.</li>
+<li><strong>detail (DetailLevel):</strong>  What level of detail to use during the diff.  Can be
+GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+currently equivalent to AllObjects).</li>
 </ul>
 </div>
 
@@ -906,6 +1133,190 @@ is only one GeneralNote here, this will always be a single-element list.</p>
 
                             </div>
                 </section>
+                <section id="AnnExtra">
+                                <div class="attr class">
+        <a class="headerlink" href="#AnnExtra">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">AnnExtra</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">AnnExtra</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">extra</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">Music21Object</span><span class="p">,</span> <span class="n">measure</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Measure</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.</span>
+<span class="sd">        Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            extra (music21.base.Music21Object): The music21 non-GeneralNote/non-Stream object to extend.</span>
+<span class="sd">            measure (music21.stream.Measure): The music21 Measure the extra was found in.  If the extra</span>
+<span class="sd">                was found in a Voice, this is the Measure that the Voice was found in.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">:</span> <span class="nb">float</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">Spanner</span><span class="p">):</span>
+            <span class="n">firstNote</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">getFirst</span><span class="p">()</span>
+            <span class="n">lastNote</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">getLast</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">firstNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">measure</span><span class="p">))</span>
+            <span class="c1"># to compute duration we need to use offset-in-score, since the end note might be in another Measure</span>
+            <span class="n">startOffsetInScore</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">firstNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">score</span><span class="p">))</span>
+            <span class="n">endOffsetInScore</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lastNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">score</span><span class="p">)</span> <span class="o">+</span> <span class="n">lastNote</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">quarterLength</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">endOffsetInScore</span> <span class="o">-</span> <span class="n">startOffsetInScore</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extra</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">measure</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extra</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">quarterLength</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">extra_to_string</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">has_style</span><span class="p">(</span><span class="n">extra</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">obj_to_styledict</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span> <span class="c1"># includes extra.placement if present</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notation_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># so far, always 1, but maybe some extra will be bigger someday</span>
+
+        <span class="c1"># precomputed representations for faster comparison</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">notation_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute a measure of how many symbols are displayed in the score for this `AnnExtra`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The notation size of the annotated extra</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notation_size</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: the compared representation of the AnnExtra. Does not consider music21 id.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="si">}</span><span class="s1">,off=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="si">}</span><span class="s1">,dur=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="c1"># and then any style fields</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">string</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;,</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># equality does not consider the MEI id!</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">precomputed_str</span>
+</pre></div>
+
+        </details>
+
+    
+
+                            <div id="AnnExtra.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#AnnExtra.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">AnnExtra</span><span class="signature">(
+    extra: music21.base.Music21Object,
+    measure: music21.stream.base.Measure,
+    score: music21.stream.base.Score,
+    detail: <a href="../musicdiff.html#m21utils.DetailLevel">musicdiff.m21utils.DetailLevel</a> = &lt;DetailLevel.AllObjects: 2&gt;
+)</span>
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">extra</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">Music21Object</span><span class="p">,</span> <span class="n">measure</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Measure</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.</span>
+<span class="sd">        Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            extra (music21.base.Music21Object): The music21 non-GeneralNote/non-Stream object to extend.</span>
+<span class="sd">            measure (music21.stream.Measure): The music21 Measure the extra was found in.  If the extra</span>
+<span class="sd">                was found in a Voice, this is the Measure that the Voice was found in.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">:</span> <span class="nb">float</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">Spanner</span><span class="p">):</span>
+            <span class="n">firstNote</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">getFirst</span><span class="p">()</span>
+            <span class="n">lastNote</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">note</span><span class="o">.</span><span class="n">GeneralNote</span> <span class="o">=</span> <span class="n">extra</span><span class="o">.</span><span class="n">getLast</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">firstNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">measure</span><span class="p">))</span>
+            <span class="c1"># to compute duration we need to use offset-in-score, since the end note might be in another Measure</span>
+            <span class="n">startOffsetInScore</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">firstNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">score</span><span class="p">))</span>
+            <span class="n">endOffsetInScore</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lastNote</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">score</span><span class="p">)</span> <span class="o">+</span> <span class="n">lastNote</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">quarterLength</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">endOffsetInScore</span> <span class="o">-</span> <span class="n">startOffsetInScore</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extra</span><span class="o">.</span><span class="n">getOffsetInHierarchy</span><span class="p">(</span><span class="n">measure</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">extra</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">quarterLength</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">extra_to_string</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">has_style</span><span class="p">(</span><span class="n">extra</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">styledict</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">obj_to_styledict</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span> <span class="c1"># includes extra.placement if present</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notation_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># so far, always 1, but maybe some extra will be bigger someday</span>
+
+        <span class="c1"># precomputed representations for faster comparison</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.
+Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.</p>
+
+<h6 id="args">Args</h6>
+
+<ul>
+<li><strong>extra (music21.base.Music21Object):</strong>  The music21 non-GeneralNote/non-Stream object to extend.</li>
+<li><strong>measure (music21.stream.Measure):</strong>  The music21 Measure the extra was found in.  If the extra
+was found in a Voice, this is the Measure that the Voice was found in.</li>
+<li><strong>detail (DetailLevel):</strong>  What level of detail to use during the diff.  Can be
+GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+currently equivalent to AllObjects).</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="AnnExtra.notation_size" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#AnnExtra.notation_size">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">notation_size</span><span class="signature">(self)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">notation_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute a measure of how many symbols are displayed in the score for this `AnnExtra`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The notation size of the annotated extra</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_notation_size</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Compute a measure of how many symbols are displayed in the score for this <code><a href="#AnnExtra">AnnExtra</a></code>.</p>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>int: The notation size of the annotated extra</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                </section>
                 <section id="AnnVoice">
                                 <div class="attr class">
         <a class="headerlink" href="#AnnVoice">#&nbsp;&nbsp</a>
@@ -918,33 +1329,36 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">AnnVoice</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voice</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voice</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Voice</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Voice with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            voice (music21.stream.Voice): The music21 voice to extend.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">voice</span> <span class="o">=</span> <span class="n">voice</span><span class="o">.</span><span class="n">id</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">:</span>
+        <span class="n">note_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">note_list</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_enhance_beamings</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span>
+                <span class="n">note_list</span>
             <span class="p">)</span>  <span class="c1"># beams and type (type for note shorter than quarter notes)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_type</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span>
+                <span class="n">note_list</span>
             <span class="p">)</span>  <span class="c1"># corrected tuplets (with &quot;start&quot; and &quot;continue&quot;)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_info</span><span class="p">(</span><span class="n">note_list</span><span class="p">)</span>
             <span class="c1"># create a list of notes with beaming and tuplets information attached</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">note_list</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">AnnNote</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">AnnNote</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">detail</span><span class="p">)</span>
                 <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span><span class="p">)</span>
@@ -1005,38 +1419,44 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                                         <div class="attr function"><a class="headerlink" href="#AnnVoice.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">AnnVoice</span><span class="signature">(voice)</span>
+            <span class="name">AnnVoice</span><span class="signature">(
+    voice: music21.stream.base.Voice,
+    detail: <a href="../musicdiff.html#m21utils.DetailLevel">musicdiff.m21utils.DetailLevel</a> = &lt;DetailLevel.AllObjects: 2&gt;
+)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voice</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">voice</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Voice</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Voice with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            voice (music21.stream.Voice): The music21 voice to extend.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">voice</span> <span class="o">=</span> <span class="n">voice</span><span class="o">.</span><span class="n">id</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">:</span>
+        <span class="n">note_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_notes</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">note_list</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_enhance_beamings</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span>
+                <span class="n">note_list</span>
             <span class="p">)</span>  <span class="c1"># beams and type (type for note shorter than quarter notes)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_type</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">note_list</span>
+                <span class="n">note_list</span>
             <span class="p">)</span>  <span class="c1"># corrected tuplets (with &quot;start&quot; and &quot;continue&quot;)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tuple_info</span> <span class="o">=</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_tuplets_info</span><span class="p">(</span><span class="n">note_list</span><span class="p">)</span>
             <span class="c1"># create a list of notes with beaming and tuplets information attached</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">note_list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">note_list</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">AnnNote</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">AnnNote</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">en_beam_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tuplet_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">detail</span><span class="p">)</span>
                 <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annot_notes</span><span class="p">)</span>
@@ -1051,6 +1471,9 @@ is only one GeneralNote here, this will always be a single-element list.</p>
 
 <ul>
 <li><strong>voice (music21.stream.Voice):</strong>  The music21 voice to extend.</li>
+<li><strong>detail (DetailLevel):</strong>  What level of detail to use during the diff.  Can be
+GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+currently equivalent to AllObjects).</li>
 </ul>
 </div>
 
@@ -1135,34 +1558,54 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">AnnMeasure</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">measure</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">measure</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Measure</span><span class="p">,</span>
+                       <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span>
+                       <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span><span class="p">,</span>
+                       <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Measure with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            measure (music21.stream.Measure): The music21 measure to extend.</span>
+<span class="sd">            score (music21.stream.Score): the enclosing music21 Score.</span>
+<span class="sd">            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">=</span> <span class="n">measure</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">measure</span><span class="o">.</span><span class="n">voices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
         <span class="p">):</span>  <span class="c1"># there is a single AnnVoice ( == for the library there are no voices)</span>
-            <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">measure</span><span class="p">)</span>
+            <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ann_voice</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_voice</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># there are multiple voices (or an array with just one voice)</span>
             <span class="k">for</span> <span class="n">voice</span> <span class="ow">in</span> <span class="n">measure</span><span class="o">.</span><span class="n">voices</span><span class="p">:</span>
-                <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
+                <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">ann_voice</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_voice</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_voices</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">detail</span> <span class="o">&gt;=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">AllObjects</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">extra</span> <span class="ow">in</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_extras</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AnnExtra</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">measure</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">detail</span><span class="p">))</span>
+
+            <span class="c1"># For correct comparison, sort the extras_list, so that any list slices</span>
+            <span class="c1"># that all have the same offset are sorted alphabetically.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span> <span class="n">e</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="p">))</span>
 
         <span class="c1"># precomputed values to speed up the computation. As they start to be long, they are hashed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_repr</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39; Extras:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39; Extras:&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="c1"># equality does not consider MEI id!</span>
@@ -1170,6 +1613,9 @@ is only one GeneralNote here, this will always be a single-element list.</p>
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">voices_list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">extras_list</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">precomputed_str</span>
@@ -1182,10 +1628,7 @@ is only one GeneralNote here, this will always be a single-element list.</p>
 <span class="sd">        Returns:</span>
 <span class="sd">            int: The notation size of the annotated measure</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span>
-
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">([</span><span class="n">e</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">get_note_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1208,32 +1651,54 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                                         <div class="attr function"><a class="headerlink" href="#AnnMeasure.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">AnnMeasure</span><span class="signature">(measure)</span>
+            <span class="name">AnnMeasure</span><span class="signature">(
+    measure: music21.stream.base.Measure,
+    score: music21.stream.base.Score,
+    spannerBundle: music21.spanner.SpannerBundle,
+    detail: <a href="../musicdiff.html#m21utils.DetailLevel">musicdiff.m21utils.DetailLevel</a> = &lt;DetailLevel.AllObjects: 2&gt;
+)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">measure</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">measure</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Measure</span><span class="p">,</span>
+                       <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span>
+                       <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span><span class="p">,</span>
+                       <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Measure with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            measure (music21.stream.Measure): The music21 measure to extend.</span>
+<span class="sd">            score (music21.stream.Score): the enclosing music21 Score.</span>
+<span class="sd">            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">measure</span> <span class="o">=</span> <span class="n">measure</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">measure</span><span class="o">.</span><span class="n">voices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
         <span class="p">):</span>  <span class="c1"># there is a single AnnVoice ( == for the library there are no voices)</span>
-            <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">measure</span><span class="p">)</span>
+            <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ann_voice</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_voice</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># there are multiple voices (or an array with just one voice)</span>
             <span class="k">for</span> <span class="n">voice</span> <span class="ow">in</span> <span class="n">measure</span><span class="o">.</span><span class="n">voices</span><span class="p">:</span>
-                <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">)</span>
+                <span class="n">ann_voice</span> <span class="o">=</span> <span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">ann_voice</span><span class="o">.</span><span class="n">n_of_notes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AnnVoice</span><span class="p">(</span><span class="n">voice</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_voice</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_voices</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">detail</span> <span class="o">&gt;=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">AllObjects</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">extra</span> <span class="ow">in</span> <span class="n">M21Utils</span><span class="o">.</span><span class="n">get_extras</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AnnExtra</span><span class="p">(</span><span class="n">extra</span><span class="p">,</span> <span class="n">measure</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">detail</span><span class="p">))</span>
+
+            <span class="c1"># For correct comparison, sort the extras_list, so that any list slices</span>
+            <span class="c1"># that all have the same offset are sorted alphabetically.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span> <span class="n">e</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="p">))</span>
 
         <span class="c1"># precomputed values to speed up the computation. As they start to be long, they are hashed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">precomputed_str</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">())</span>
@@ -1248,6 +1713,11 @@ is only one GeneralNote here, this will always be a single-element list.</p>
 
 <ul>
 <li><strong>measure (music21.stream.Measure):</strong>  The music21 measure to extend.</li>
+<li><strong>score (music21.stream.Score):</strong>  the enclosing music21 Score.</li>
+<li><strong>spannerBundle (music21.spanner.SpannerBundle):</strong>  a bundle of all the spanners in the score.</li>
+<li><strong>detail (DetailLevel):</strong>  What level of detail to use during the diff.  Can be
+GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+currently equivalent to AllObjects).</li>
 </ul>
 </div>
 
@@ -1270,7 +1740,7 @@ is only one GeneralNote here, this will always be a single-element list.</p>
 <span class="sd">        Returns:</span>
 <span class="sd">            int: The notation size of the annotated measure</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">voices_list</span><span class="p">])</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">([</span><span class="n">e</span><span class="o">.</span><span class="n">notation_size</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras_list</span><span class="p">])</span>
 </pre></div>
 
         </details>
@@ -1335,17 +1805,25 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">AnnPart</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">part</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">part</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Part</span><span class="p">,</span>
+                       <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span>
+                       <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span><span class="p">,</span>
+                       <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Part/PartStaff with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            part (music21.stream.Part, music21.stream.PartStaff): The music21 Part/PartStaff to extend.</span>
+<span class="sd">            score (music21.stream.Score): the enclosing music21 Score.</span>
+<span class="sd">            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">part</span> <span class="o">=</span> <span class="n">part</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">measure</span> <span class="ow">in</span> <span class="n">part</span><span class="o">.</span><span class="n">getElementsByClass</span><span class="p">(</span><span class="s2">&quot;Measure&quot;</span><span class="p">):</span>
-            <span class="n">ann_bar</span> <span class="o">=</span> <span class="n">AnnMeasure</span><span class="p">(</span><span class="n">measure</span><span class="p">)</span>  <span class="c1"># create the bar objects</span>
+            <span class="n">ann_bar</span> <span class="o">=</span> <span class="n">AnnMeasure</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>  <span class="c1"># create the bar objects</span>
             <span class="k">if</span> <span class="n">ann_bar</span><span class="o">.</span><span class="n">n_of_voices</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_bar</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_bars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span><span class="p">)</span>
@@ -1398,22 +1876,35 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                                         <div class="attr function"><a class="headerlink" href="#AnnPart.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">AnnPart</span><span class="signature">(part)</span>
+            <span class="name">AnnPart</span><span class="signature">(
+    part: music21.stream.base.Part,
+    score: music21.stream.base.Score,
+    spannerBundle: music21.spanner.SpannerBundle,
+    detail: <a href="../musicdiff.html#m21utils.DetailLevel">musicdiff.m21utils.DetailLevel</a> = &lt;DetailLevel.AllObjects: 2&gt;
+)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">part</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">part</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Part</span><span class="p">,</span>
+                       <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span>
+                       <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span><span class="p">,</span>
+                       <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extend music21 Part/PartStaff with some precomputed, easily compared information about it.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            part (music21.stream.Part, music21.stream.PartStaff): The music21 Part/PartStaff to extend.</span>
+<span class="sd">            score (music21.stream.Score): the enclosing music21 Score.</span>
+<span class="sd">            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">part</span> <span class="o">=</span> <span class="n">part</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">measure</span> <span class="ow">in</span> <span class="n">part</span><span class="o">.</span><span class="n">getElementsByClass</span><span class="p">(</span><span class="s2">&quot;Measure&quot;</span><span class="p">):</span>
-            <span class="n">ann_bar</span> <span class="o">=</span> <span class="n">AnnMeasure</span><span class="p">(</span><span class="n">measure</span><span class="p">)</span>  <span class="c1"># create the bar objects</span>
+            <span class="n">ann_bar</span> <span class="o">=</span> <span class="n">AnnMeasure</span><span class="p">(</span><span class="n">measure</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>  <span class="c1"># create the bar objects</span>
             <span class="k">if</span> <span class="n">ann_bar</span><span class="o">.</span><span class="n">n_of_voices</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_bar</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_bars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bar_list</span><span class="p">)</span>
@@ -1429,6 +1920,11 @@ is only one GeneralNote here, this will always be a single-element list.</p>
 
 <ul>
 <li><strong>part (music21.stream.Part, music21.stream.PartStaff):</strong>  The music21 Part/PartStaff to extend.</li>
+<li><strong>score (music21.stream.Score):</strong>  the enclosing music21 Score.</li>
+<li><strong>spannerBundle (music21.spanner.SpannerBundle):</strong>  a bundle of all the spanners in the score.</li>
+<li><strong>detail (DetailLevel):</strong>  What level of detail to use during the diff.  Can be
+GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+currently equivalent to AllObjects).</li>
 </ul>
 </div>
 
@@ -1516,18 +2012,22 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">AnnScore</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Take a music21 score and store it as a sequence of Full Trees.</span>
 <span class="sd">        The hierarchy is &quot;score -&gt; parts -&gt; measures -&gt; voices -&gt; notes&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            score (music21.stream.Score): The music21 score</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">part_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">spannerBundle</span>
         <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">score</span><span class="o">.</span><span class="n">parts</span><span class="o">.</span><span class="n">stream</span><span class="p">():</span>
             <span class="c1"># create and add the AnnPart object to part_list</span>
-            <span class="n">ann_part</span> <span class="o">=</span> <span class="n">AnnPart</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+            <span class="n">ann_part</span> <span class="o">=</span> <span class="n">AnnPart</span><span class="p">(</span><span class="n">part</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ann_part</span><span class="o">.</span><span class="n">n_of_bars</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">part_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_part</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_parts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">part_list</span><span class="p">)</span>
@@ -1584,23 +2084,30 @@ is only one GeneralNote here, this will always be a single-element list.</p>
                                         <div class="attr function"><a class="headerlink" href="#AnnScore.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">AnnScore</span><span class="signature">(score)</span>
+            <span class="name">AnnScore</span><span class="signature">(
+    score: music21.stream.base.Score,
+    detail: <a href="../musicdiff.html#m21utils.DetailLevel">musicdiff.m21utils.DetailLevel</a> = &lt;DetailLevel.AllObjects: 2&gt;
+)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">Score</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Take a music21 score and store it as a sequence of Full Trees.</span>
 <span class="sd">        The hierarchy is &quot;score -&gt; parts -&gt; measures -&gt; voices -&gt; notes&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            score (music21.stream.Score): The music21 score</span>
+<span class="sd">            detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">                currently equivalent to AllObjects).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">part_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">spannerBundle</span><span class="p">:</span> <span class="n">m21</span><span class="o">.</span><span class="n">spanner</span><span class="o">.</span><span class="n">SpannerBundle</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">spannerBundle</span>
         <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">score</span><span class="o">.</span><span class="n">parts</span><span class="o">.</span><span class="n">stream</span><span class="p">():</span>
             <span class="c1"># create and add the AnnPart object to part_list</span>
-            <span class="n">ann_part</span> <span class="o">=</span> <span class="n">AnnPart</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+            <span class="n">ann_part</span> <span class="o">=</span> <span class="n">AnnPart</span><span class="p">(</span><span class="n">part</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">spannerBundle</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ann_part</span><span class="o">.</span><span class="n">n_of_bars</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">part_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ann_part</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_of_parts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">part_list</span><span class="p">)</span>
@@ -1615,6 +2122,9 @@ The hierarchy is "score -> parts -> measures -> voices -> notes"</p>
 
 <ul>
 <li><strong>score (music21.stream.Score):</strong>  The music21 score</li>
+<li><strong>detail (DetailLevel):</strong>  What level of detail to use during the diff.  Can be
+GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+currently equivalent to AllObjects).</li>
 </ul>
 </div>
 

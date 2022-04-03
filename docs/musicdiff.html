@@ -75,6 +75,7 @@ musicdiff    </h1>
 <span class="kn">import</span> <span class="nn">music21</span> <span class="k">as</span> <span class="nn">m21</span>
 
 <span class="kn">from</span> <span class="nn">musicdiff.m21utils</span> <span class="kn">import</span> <span class="n">M21Utils</span>
+<span class="kn">from</span> <span class="nn">musicdiff.m21utils</span> <span class="kn">import</span> <span class="n">DetailLevel</span>
 <span class="kn">from</span> <span class="nn">musicdiff.annotation</span> <span class="kn">import</span> <span class="n">AnnScore</span>
 <span class="kn">from</span> <span class="nn">musicdiff.comparison</span> <span class="kn">import</span> <span class="n">Comparison</span>
 <span class="kn">from</span> <span class="nn">musicdiff.visualization</span> <span class="kn">import</span> <span class="n">Visualization</span>
@@ -103,6 +104,7 @@ musicdiff    </h1>
          <span class="n">out_path2</span><span class="p">:</span>  <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
          <span class="n">force_parse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
          <span class="n">visualize_diffs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+         <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Compare two musical scores and optionally save/display the differences as two marked-up</span>
@@ -127,6 +129,9 @@ musicdiff    </h1>
 <span class="sd">        visualize_diffs (bool): Whether or not to render diffs as marked up PDFs. If False,</span>
 <span class="sd">            the only result of the call will be the return value (the number of differences).</span>
 <span class="sd">            (default is True)</span>
+<span class="sd">        detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">            GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">            currently equivalent to AllObjects).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        int: The number of differences found (0 means the scores were identical, None means the diff failed)</span>
@@ -192,8 +197,8 @@ musicdiff    </h1>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="c1"># scan each score, producing an annotated wrapper</span>
-    <span class="n">annotated_score1</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score1</span><span class="p">)</span>
-    <span class="n">annotated_score2</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score2</span><span class="p">)</span>
+    <span class="n">annotated_score1</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score1</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
+    <span class="n">annotated_score2</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score2</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
 
     <span class="n">diff_list</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_cost</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
@@ -230,7 +235,8 @@ musicdiff    </h1>
     out_path1: Union[str, pathlib.Path] = None,
     out_path2: Union[str, pathlib.Path] = None,
     force_parse: bool = True,
-    visualize_diffs: bool = True
+    visualize_diffs: bool = True,
+    detail: <a href="#m21utils.DetailLevel">musicdiff.m21utils.DetailLevel</a> = &lt;DetailLevel.AllObjects: 2&gt;
 ) -&gt; int</span>:
     </div>
 
@@ -242,6 +248,7 @@ musicdiff    </h1>
          <span class="n">out_path2</span><span class="p">:</span>  <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
          <span class="n">force_parse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
          <span class="n">visualize_diffs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+         <span class="n">detail</span><span class="p">:</span> <span class="n">DetailLevel</span> <span class="o">=</span> <span class="n">DetailLevel</span><span class="o">.</span><span class="n">Default</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Compare two musical scores and optionally save/display the differences as two marked-up</span>
@@ -266,6 +273,9 @@ musicdiff    </h1>
 <span class="sd">        visualize_diffs (bool): Whether or not to render diffs as marked up PDFs. If False,</span>
 <span class="sd">            the only result of the call will be the return value (the number of differences).</span>
 <span class="sd">            (default is True)</span>
+<span class="sd">        detail (DetailLevel): What level of detail to use during the diff.  Can be</span>
+<span class="sd">            GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is</span>
+<span class="sd">            currently equivalent to AllObjects).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        int: The number of differences found (0 means the scores were identical, None means the diff failed)</span>
@@ -331,8 +341,8 @@ musicdiff    </h1>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="c1"># scan each score, producing an annotated wrapper</span>
-    <span class="n">annotated_score1</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score1</span><span class="p">)</span>
-    <span class="n">annotated_score2</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score2</span><span class="p">)</span>
+    <span class="n">annotated_score1</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score1</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
+    <span class="n">annotated_score2</span><span class="p">:</span> <span class="n">AnnScore</span> <span class="o">=</span> <span class="n">AnnScore</span><span class="p">(</span><span class="n">score2</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
 
     <span class="n">diff_list</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_cost</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
@@ -381,6 +391,9 @@ previously.
 <li><strong>visualize_diffs (bool):</strong>  Whether or not to render diffs as marked up PDFs. If False,
 the only result of the call will be the return value (the number of differences).
 (default is True)</li>
+<li><strong>detail (DetailLevel):</strong>  What level of detail to use during the diff.  Can be
+GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
+currently equivalent to AllObjects).</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
