@@ -768,7 +768,7 @@ class Comparison:
             original, compare_to[1:], note1, note2, which
         )
         cost["ins" + which] += 1
-        op_list["ins" + which].append(("ins" + which, None, compare_to[0], 1))
+        op_list["ins" + which].append(("ins" + which, note1, note2, 1))
         # edit-pitch
         op_list["edit" + which], cost["edit" + which] = Comparison._generic_leveinsthein_diff(
             original[1:], compare_to[1:], note1, note2, which
