@@ -13,7 +13,7 @@
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '1.0.1'
+musicdiffversion = '1.1.0'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
         python_requires='>=3.7',
 
         install_requires=[
-            'music21>=7.1',
+            'music21>=7.2',
             'numpy',
         ],
 

@@ -4,7 +4,7 @@ rm -r musicdiff/__pycache__
 rm -r dist build
 
 # Build dist and wheel:
-python3 -m build # builds dist and wheel
+python3 -m build
 
 # Check for malformed README URLs:
 python3 -m twine check dist/*
