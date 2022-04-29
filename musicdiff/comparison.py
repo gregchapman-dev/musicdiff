@@ -637,6 +637,18 @@ class Comparison:
             )
             op_list.extend(expr_op_list)
             cost += expr_cost
+        # add for the lyrics
+        if annNote1.lyrics != annNote2.lyrics:
+            lyr_op_list, lyr_cost = Comparison._generic_leveinsthein_diff(
+                annNote1.lyrics,
+                annNote2.lyrics,
+                annNote1,
+                annNote2,
+                "lyric",
+            )
+            op_list.extend(lyr_op_list)
+            cost += lyr_cost
+
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:
             cost += 1
