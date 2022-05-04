@@ -15,7 +15,7 @@
 __docformat__ = "google"
 
 from fractions import Fraction
-from typing import Optional
+from typing import Optional, List
 
 import music21 as m21
 
@@ -92,6 +92,23 @@ class AnnNote:
         if self.expressions:
             self.expressions.sort()
 
+        # lyrics
+        self.lyrics: List[str] = []
+        for lyric in general_note.lyrics:
+            lyricStr: str = ""
+            if lyric.number is not None:
+                lyricStr += f"number={lyric.number}"
+            if lyric._identifier is not None:
+                lyricStr += f" identifier={lyric._identifier}"
+            if lyric.syllabic is not None:
+                lyricStr += f" syllabic={lyric.syllabic}"
+            if lyric.text is not None:
+                lyricStr += f" text={lyric.text}"
+            lyricStr += f" rawText={lyric.rawText}"
+            if M21Utils.has_style(lyric):
+                lyricStr += f" style={M21Utils.obj_to_styledict(lyric, detail)}"
+            self.lyrics.append(lyricStr)
+
         # precomputed representations for faster comparison
         self.precomputed_str = self.__str__()
 
@@ -116,13 +133,15 @@ class AnnNote:
         size += len(self.articulations)
         # add for the expressions
         size += len(self.expressions)
+        # add for the lyrics
+        size += len(self.lyrics)
         return size
 
     def __repr__(self):
         # does consider the MEI id!
         return (f"{self.pitches},{self.note_head},{self.dots},{self.beamings}," +
-                f"{self.tuplets},{self.general_note},{self.articulations},{self.expressions}" +
-                f"{self.styledict}")
+                f"{self.tuplets},{self.general_note},{self.articulations},{self.expressions}," +
+                f"{self.lyrics},{self.styledict}")
 
     def __str__(self):
         """
@@ -172,6 +191,9 @@ class AnnNote:
         if len(self.expressions) > 0:  # add for articulations
             for e in self.expressions:
                 string += e
+        if len(self.lyrics) > 0:  # add for lyrics
+            for lyric in self.lyrics:
+                string += lyric
 
         if self.noteshape != 'normal':
             string += f"noteshape={self.noteshape}"
