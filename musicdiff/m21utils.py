@@ -424,14 +424,17 @@ class M21Utils:
             if M21Utils.extra_to_string(el) != '':
                 output.append(el)
 
-        # we must add any Crescendo/Diminuendo spanners that start on GeneralNotes in this measure
+        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos that start
+        # on GeneralNotes in this measure
         for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
-            dwList: List[m21.dynamics.DynamicWedge] = gn.getSpannerSites(m21.dynamics.DynamicWedge)
-            for dw in dwList:
-                if dw not in spannerBundle:
+            spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(
+                (m21.expressions.ArpeggioMarkSpanner, m21.dynamics.DynamicWedge)
+            )
+            for sp in spannerList:
+                if sp not in spannerBundle:
                     continue
-                if dw.isFirst(gn):
-                    output.append(dw)
+                if sp.isFirst(gn):
+                    output.append(sp)
 
         return output
 
