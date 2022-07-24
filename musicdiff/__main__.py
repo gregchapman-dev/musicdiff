@@ -18,11 +18,8 @@ import argparse
 from musicdiff import diff
 from musicdiff import DetailLevel
 
-# To use the new Humdrum importer from converter21 in place of the one in music21:
-# pip install converter21
-# Then uncomment all lines in this file marked "# c21"
-# import music21 as m21 # c21
-# from converter21 import HumdrumConverter # c21
+import music21 as m21
+from converter21 import HumdrumConverter
 
 # ------------------------------------------------------------------------------
 
@@ -31,10 +28,10 @@ from musicdiff import DetailLevel
 '''
 if __name__ == "__main__":
 
-    # to use the new Humdrum importer from converter21 in place of the one in music21...
-    # m21.converter.unregisterSubconverter(m21.converter.subConverters.ConverterHumdrum) # c21
-    # m21.converter.registerSubconverter(HumdrumConverter)                               # c21
-    # print('registered converter21 humdrum importer', file=sys.stderr)                  # c21
+    # Use the new Humdrum importer from converter21 in place of the one in music21...
+    # Comment out these two lines to go back to music21's built-in Humdrum importer.
+    m21.converter.unregisterSubconverter(m21.converter.subConverters.ConverterHumdrum)
+    m21.converter.registerSubconverter(HumdrumConverter)
 
     parser = argparse.ArgumentParser(
                 prog='python3 -m musicdiff',
