@@ -1,6 +1,8 @@
 # Clean up previous stuff:
 rm -r __pycache__
 rm -r musicdiff/__pycache__
+rm -r tests/__pycache__
+rm -r musicdiff.egg-info
 rm -r dist build
 
 # Build dist and wheel:
