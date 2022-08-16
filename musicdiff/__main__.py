@@ -15,11 +15,11 @@
 import sys
 import argparse
 
-from musicdiff import diff
-from musicdiff import DetailLevel
-
 import music21 as m21
 from converter21 import HumdrumConverter
+
+from musicdiff import diff
+from musicdiff import DetailLevel
 
 # ------------------------------------------------------------------------------
 
