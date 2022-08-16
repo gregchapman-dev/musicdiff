@@ -424,14 +424,20 @@ class M21Utils:
             if M21Utils.extra_to_string(el) != '':
                 output.append(el)
 
-        # we must add any Crescendo/Diminuendo spanners that start on GeneralNotes in this measure
+        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos that start
+        # on GeneralNotes in this measure
+        if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
+            spanner_types = (m21.expressions.ArpeggioMarkSpanner, m21.dynamics.DynamicWedge)
+        else:
+            spanner_types = (m21.dynamics.DynamicWedge,)
+
         for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
-            dwList: List[m21.dynamics.DynamicWedge] = gn.getSpannerSites(m21.dynamics.DynamicWedge)
-            for dw in dwList:
-                if dw not in spannerBundle:
+            spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+            for sp in spannerList:
+                if sp not in spannerBundle:
                     continue
-                if dw.isFirst(gn):
-                    output.append(dw)
+                if sp.isFirst(gn):
+                    output.append(sp)
 
         return output
 
@@ -692,6 +698,17 @@ class M21Utils:
         return f'DY:{output}'
 
     @staticmethod
+    def arpeggiomark_to_string(
+        arp: m21.expressions.Expression) -> str:
+        if hasattr(m21.expressions, 'ArpeggioMark'):
+            if isinstance(arp, m21.expressions.ArpeggioMark):
+                return f'ARP:{arp.type}'
+        if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
+            if isinstance(arp, m21.expressions.ArpeggioMarkSpanner):
+                return f'ARPS:{arp.type}:len={len(arp)}'
+        return ''
+
+    @staticmethod
     def extra_to_string(extra: m21.base.Music21Object) -> str:
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
             return M21Utils.keysig_to_string(extra)
@@ -709,6 +726,10 @@ class M21Utils:
             return M21Utils.tempo_to_string(extra)
         if isinstance(extra, m21.bar.Barline):
             return M21Utils.barline_to_string(extra)
+        if (hasattr(m21.expressions, 'ArpeggioMark')
+                and hasattr(m21.expressions, 'ArpeggioMarkSpanner')):
+            if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
+                return M21Utils.arpeggiomark_to_string(extra)
 
         print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''

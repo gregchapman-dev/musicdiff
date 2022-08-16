@@ -263,7 +263,9 @@ class AnnExtra:
         self.extra = extra.id
         self.offset: float
         self.duration: float
+        self.numNotes: int = 1
         if isinstance(extra, m21.spanner.Spanner):
+            self.numNotes = len(extra)
             firstNote: m21.note.GeneralNote = extra.getFirst()
             lastNote: m21.note.GeneralNote = extra.getLast()
             self.offset = float(firstNote.getOffsetInHierarchy(measure))
@@ -301,6 +303,8 @@ class AnnExtra:
             str: the compared representation of the AnnExtra. Does not consider music21 id.
         """
         string = f'{self.content},off={self.offset},dur={self.duration}'
+        if self.numNotes != 1:
+            string += f',numNotes={self.numNotes}'
         # and then any style fields
         for k, v in self.styledict.items():
             string += f",{k}={v}"
