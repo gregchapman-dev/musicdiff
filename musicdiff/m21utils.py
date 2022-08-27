@@ -439,6 +439,14 @@ class M21Utils:
                 if sp.isFirst(gn):
                     output.append(sp)
 
+        # Add any RepeatBracket spanners that start on this measure
+        rbList: List[m21.spanner.Spanner] = measure.getSpannerSites(m21.spanner.RepeatBracket)
+        for rb in rbList:
+            if rb not in spannerBundle:
+                continue
+            if rb.isFirst(measure):
+                output.append(rb)
+
         return output
 
     @staticmethod
@@ -709,6 +717,10 @@ class M21Utils:
         return ''
 
     @staticmethod
+    def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
+        return f'END:{rb.number}:len={len(rb)}'
+
+    @staticmethod
     def extra_to_string(extra: m21.base.Music21Object) -> str:
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
             return M21Utils.keysig_to_string(extra)
@@ -726,6 +738,8 @@ class M21Utils:
             return M21Utils.tempo_to_string(extra)
         if isinstance(extra, m21.bar.Barline):
             return M21Utils.barline_to_string(extra)
+        if isinstance(extra, m21.spanner.RepeatBracket):
+            return M21Utils.repeatbracket_to_string(extra)
         if (hasattr(m21.expressions, 'ArpeggioMark')
                 and hasattr(m21.expressions, 'ArpeggioMarkSpanner')):
             if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
