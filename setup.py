@@ -13,7 +13,7 @@
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '1.3.0'
+musicdiffversion = '1.4.0'
 
 here = pathlib.Path(__file__).parent.resolve()
 

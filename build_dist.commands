@@ -1,3 +1,6 @@
+# FIRST edit setup.py to change version number and maybe dependencies.
+# MAYBE README, too, if dependencies changed.
+
 # Clean up previous stuff:
 rm -r __pycache__
 rm -r musicdiff/__pycache__
