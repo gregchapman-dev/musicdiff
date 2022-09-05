@@ -136,7 +136,10 @@ class Visualization:
                 extra1 = score1.recurse().getElementById(op[1].extra)
                 textExp = m21.expressions.TextExpression(f"deleted {extra1.classes[0]}")
                 textExp.style.color = Visualization.DELETED_COLOR
-                if isinstance(extra1, m21.spanner.Spanner):
+                if isinstance(extra1, m21.dynamics.DynamicWedge) and extra1.hasOffsetAndDuration:
+                    # extra1 is not being treated as a spanner, put the textExp right next to it.
+                    extra1.activeSite.insert(extra1.offset, textExp)
+                elif isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint = extra1.getFirst()
                     if isinstance(insertionPoint, m21.stream.Measure):
                         # insertionPoint is a measure, put the textExp at offset 0
@@ -166,7 +169,11 @@ class Visualization:
                     textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]}")
                 textExp1.style.color = Visualization.CHANGED_COLOR
                 textExp2.style.color = Visualization.CHANGED_COLOR
-                if isinstance(extra1, m21.spanner.Spanner):
+                if isinstance(extra1, m21.dynamics.DynamicWedge) and extra1.hasOffsetAndDuration:
+                    # extra is not being treated as a spanner, put the textExp right next to it.
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+                elif isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
                     insertionPoint2 = extra2.getFirst()
                     if isinstance(insertionPoint1, m21.stream.Measure):
@@ -199,7 +206,11 @@ class Visualization:
                 textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} text")
                 textExp1.style.color = Visualization.CHANGED_COLOR
                 textExp2.style.color = Visualization.CHANGED_COLOR
-                if isinstance(extra1, m21.spanner.Spanner):
+                if isinstance(extra1, m21.dynamics.DynamicWedge) and extra1.hasOffsetAndDuration:
+                    # extra is not being treated as a spanner, put the textExp right next to it.
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+                elif isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
                     insertionPoint2 = extra2.getFirst()
                     insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
@@ -219,7 +230,11 @@ class Visualization:
                 textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} offset")
                 textExp1.style.color = Visualization.CHANGED_COLOR
                 textExp2.style.color = Visualization.CHANGED_COLOR
-                if isinstance(extra1, m21.spanner.Spanner):
+                if isinstance(extra1, m21.dynamics.DynamicWedge) and extra1.hasOffsetAndDuration:
+                    # extra is not being treated as a spanner, put the textExp right next to it.
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+                elif isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
                     insertionPoint2 = extra2.getFirst()
                     insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
@@ -239,7 +254,11 @@ class Visualization:
                 textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} duration")
                 textExp1.style.color = Visualization.CHANGED_COLOR
                 textExp2.style.color = Visualization.CHANGED_COLOR
-                if isinstance(extra1, m21.spanner.Spanner):
+                if isinstance(extra1, m21.dynamics.DynamicWedge) and extra1.hasOffsetAndDuration:
+                    # extra is not being treated as a spanner, put the textExp right next to it.
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+                elif isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
                     insertionPoint2 = extra2.getFirst()
                     insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
@@ -276,7 +295,11 @@ class Visualization:
                 textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} {changedStr}")
                 textExp1.style.color = Visualization.CHANGED_COLOR
                 textExp2.style.color = Visualization.CHANGED_COLOR
-                if isinstance(extra1, m21.spanner.Spanner):
+                if isinstance(extra1, m21.dynamics.DynamicWedge) and extra1.hasOffsetAndDuration:
+                    # extra is not being treated as a spanner, put the textExp right next to it.
+                    extra1.activeSite.insert(extra1.offset, textExp1)
+                    extra2.activeSite.insert(extra2.offset, textExp2)
+                elif isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
                     insertionPoint2 = extra2.getFirst()
                     insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)

@@ -266,13 +266,21 @@ class AnnExtra:
         self.numNotes: int = 1
         if isinstance(extra, m21.spanner.Spanner):
             self.numNotes = len(extra)
-            firstNote: m21.note.GeneralNote = extra.getFirst()
-            lastNote: m21.note.GeneralNote = extra.getLast()
-            self.offset = float(firstNote.getOffsetInHierarchy(measure))
-            # to compute duration we need to use offset-in-score, since the end note might be in another Measure
-            startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
-            endOffsetInScore: float = float(lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength)
-            self.duration = endOffsetInScore - startOffsetInScore
+            if (isinstance(extra, m21.dynamics.DynamicWedge)
+                    and hasattr(extra, 'hasOffsetAndDuration')
+                    and extra.hasOffsetAndDuration):
+                # New DynamicWedge feature in music21 v8
+                # hasattr(extra, 'hasOffsetAndDuration') is the check for feature presence
+                self.offset = float(extra.getOffsetInHierarchy(measure))
+                self.duration = float(extra.duration.quarterLength)
+            else:
+                firstNote: m21.note.GeneralNote = extra.getFirst()
+                lastNote: m21.note.GeneralNote = extra.getLast()
+                self.offset = float(firstNote.getOffsetInHierarchy(measure))
+                # to compute duration we need to use offset-in-score, since the end note might be in another Measure
+                startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
+                endOffsetInScore: float = float(lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength)
+                self.duration = endOffsetInScore - startOffsetInScore
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
