@@ -83,6 +83,16 @@ class AnnNote:
             self.note_head = type_number
         # dots
         self.dots = general_note.duration.dots
+        # graceness
+        if isinstance(general_note.duration, m21.duration.AppoggiaturaDuration):
+            self.graceType = 'acc'
+            self.graceSlash = general_note.duration.slash
+        elif isinstance(general_note.duration, m21.duration.GraceDuration):
+            self.graceType = 'nonacc'
+            self.graceSlash = general_note.duration.slash
+        else:
+            self.graceType = ''
+            self.graceSlash = False
         # articulations
         self.articulations = [a.name for a in general_note.articulations]
         if self.articulations:
@@ -161,6 +171,10 @@ class AnnNote:
         string += str(self.note_head)  # add for notehead
         for _ in range(self.dots):  # add for dots
             string += "*"
+        if self.graceType:
+            string += self.graceType
+            if self.graceSlash:
+                string += '/'
         if len(self.beamings) > 0:  # add for beaming
             string += "B"
             for b in self.beamings:

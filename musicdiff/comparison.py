@@ -601,6 +601,12 @@ class Comparison:
                 op_list.append(("dotdel", annNote1, annNote2, dots_diff))
             else:
                 op_list.append(("dotins", annNote1, annNote2, dots_diff))
+        if annNote1.graceType != annNote2.graceType:
+            cost += 1
+            op_list.append(("graceedit", annNote1, annNote2, 1))
+        if annNote1.graceSlash != annNote2.graceSlash:
+            cost += 1
+            op_list.append(("graceslashedit", annNote1, annNote2, 1))
         # add for the beamings
         if annNote1.beamings != annNote2.beamings:
             beam_op_list, beam_cost = Comparison._beamtuplet_leveinsthein_diff(

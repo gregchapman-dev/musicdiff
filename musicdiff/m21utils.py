@@ -407,8 +407,8 @@ class M21Utils:
     @staticmethod
     def get_extras(measure: m21.stream.Measure, spannerBundle: m21.spanner.SpannerBundle) -> List[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
-        # substreams/Voices), skipping any Streams, GeneralNotes (which are returned from
-        # get_notes/get_notes_and_gracenotes), and Barlines.  We're looking for things
+        # substreams/Voices), skipping any Streams, layout stuff, and GeneralNotes (which
+        # are returned from get_notes/get_notes_and_gracenotes).  We're looking for things
         # like Clefs, TextExpressions, and Dynamics...
         output: List[m21.base.Music21Object] = []
 
@@ -419,10 +419,17 @@ class M21Utils:
                  m21.layout.LayoutBase) ) )
 
         # loop over the initialList, filtering out (and complaining about) things we
-        # don't recognize.
+        # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
+        # barlines of type 'none' (also not printed).
         for el in initialList:
-            if M21Utils.extra_to_string(el) != '':
-                output.append(el)
+            # we ignore hidden extras
+            if el.hasStyleInformation and el.style.hideObjectOnPrint:
+                continue
+            if isinstance(el, m21.bar.Barline) and el.type == 'none':
+                continue
+            if M21Utils.extra_to_string(el) == '':
+                continue
+            output.append(el)
 
         # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos that start
         # on GeneralNotes in this measure

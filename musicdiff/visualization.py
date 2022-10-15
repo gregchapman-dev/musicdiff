@@ -396,6 +396,38 @@ class Visualization:
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
+            elif op[0] == "graceedit":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                # color the changed note/rest/chord (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed grace note")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed grace note")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "graceslashedit":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                # color the changed note/rest/chord (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].general_note)
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed grace note slash")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed grace note slash")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
             # beam
             elif op[0] == "insbeam":
                 assert isinstance(op[1], AnnNote)
