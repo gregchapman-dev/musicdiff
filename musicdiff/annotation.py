@@ -341,7 +341,7 @@ class AnnVoice:
                 currently equivalent to AllObjects).
         """
         self.voice = voice.id
-        note_list = M21Utils.get_notes(voice)
+        note_list = M21Utils.get_notes_and_gracenotes(voice)
         if not note_list:
             self.en_beam_list = []
             self.tuplet_list = []
