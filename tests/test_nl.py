@@ -7,7 +7,7 @@ def test_annotNote1():
     n1.id = 344
     # create annotated note
     anote = AnnNote(n1, [], [])
-    assert anote.__repr__() == "[('D5', 'sharp', False)],4,0,[],[],344,[],[]"
+    assert anote.__repr__() == "[('D5', 'sharp', False)],4,0,[],[],344,[],[],[],{}"
     assert str(anote) == "[D5sharp]4"
 
 
@@ -17,7 +17,7 @@ def test_annotNote2():
     # create annotated note
     anote = AnnNote(n1, ["start"], ["start"])
     assert (
-        anote.__repr__() == "[('E5', 'sharp', False)],4,0,['start'],['start'],344,[],[]"
+        anote.__repr__() == "[('E5', 'sharp', False)],4,0,['start'],['start'],344,[],[],[],{}"
     )
     assert str(anote) == "[E5sharp]4BsrTsr"
 
@@ -28,7 +28,7 @@ def test_annotNote3():
     n1.tie = m21.tie.Tie("stop")
     # create annotated note
     anote = AnnNote(n1, [], [])
-    assert anote.__repr__() == "[('D5', 'None', True)],2,0,[],[],344,[],[]"
+    assert anote.__repr__() == "[('D5', 'None', True)],2,0,[],[],344,[],[],[],{}"
     assert str(anote) == "[D5T]2"
 
 
