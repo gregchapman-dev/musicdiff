@@ -411,12 +411,20 @@ class M21Utils:
         # are returned from get_notes/get_notes_and_gracenotes).  We're looking for things
         # like Clefs, TextExpressions, and Dynamics...
         output: List[m21.base.Music21Object] = []
-
-        initialList: List[m21.base.Music21Object] = list(
-            measure.recurse().getElementsNotOfClass(
-                (m21.note.GeneralNote,
-                 m21.stream.Stream,
-                 m21.layout.LayoutBase) ) )
+        initialList: List[m21.base.Music21Object]
+        if hasattr(m21.spanner, 'SpannerAnchor'):
+            initialList = list(
+                measure.recurse().getElementsNotOfClass(
+                    (m21.note.GeneralNote,
+                     m21.spanner.SpannerAnchor,
+                     m21.stream.Stream,
+                     m21.layout.LayoutBase) ) )
+        else:
+            initialList = list(
+                measure.recurse().getElementsNotOfClass(
+                    (m21.note.GeneralNote,
+                     m21.stream.Stream,
+                     m21.layout.LayoutBase) ) )
 
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
@@ -432,19 +440,30 @@ class M21Utils:
             output.append(el)
 
         # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos that start
-        # on GeneralNotes in this measure
+        # on GeneralNotes/SpannerAnchors in this measure
         if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
             spanner_types = (m21.expressions.ArpeggioMarkSpanner, m21.dynamics.DynamicWedge)
         else:
             spanner_types = (m21.dynamics.DynamicWedge,)
 
-        for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
-            spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
-            for sp in spannerList:
-                if sp not in spannerBundle:
-                    continue
-                if sp.isFirst(gn):
-                    output.append(sp)
+        if hasattr(m21.spanner, 'SpannerAnchor'):
+            for gn in measure.recurse().getElementsByClass(
+                (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
+            ):
+                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+                for sp in spannerList:
+                    if sp not in spannerBundle:
+                        continue
+                    if sp.isFirst(gn):
+                        output.append(sp)
+        else:
+            for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
+                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+                for sp in spannerList:
+                    if sp not in spannerBundle:
+                        continue
+                    if sp.isFirst(gn):
+                        output.append(sp)
 
         # Add any RepeatBracket spanners that start on this measure
         rbList: List[m21.spanner.Spanner] = measure.getSpannerSites(m21.spanner.RepeatBracket)
