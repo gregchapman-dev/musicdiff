@@ -407,37 +407,63 @@ class M21Utils:
     @staticmethod
     def get_extras(measure: m21.stream.Measure, spannerBundle: m21.spanner.SpannerBundle) -> List[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
-        # substreams/Voices), skipping any Streams, GeneralNotes (which are returned from
-        # get_notes/get_notes_and_gracenotes), and Barlines.  We're looking for things
+        # substreams/Voices), skipping any Streams, layout stuff, and GeneralNotes (which
+        # are returned from get_notes/get_notes_and_gracenotes).  We're looking for things
         # like Clefs, TextExpressions, and Dynamics...
         output: List[m21.base.Music21Object] = []
-
-        initialList: List[m21.base.Music21Object] = list(
-            measure.recurse().getElementsNotOfClass(
-                (m21.note.GeneralNote,
-                 m21.stream.Stream,
-                 m21.layout.LayoutBase) ) )
+        initialList: List[m21.base.Music21Object]
+        if hasattr(m21.spanner, 'SpannerAnchor'):
+            initialList = list(
+                measure.recurse().getElementsNotOfClass(
+                    (m21.note.GeneralNote,
+                     m21.spanner.SpannerAnchor,
+                     m21.stream.Stream,
+                     m21.layout.LayoutBase) ) )
+        else:
+            initialList = list(
+                measure.recurse().getElementsNotOfClass(
+                    (m21.note.GeneralNote,
+                     m21.stream.Stream,
+                     m21.layout.LayoutBase) ) )
 
         # loop over the initialList, filtering out (and complaining about) things we
-        # don't recognize.
+        # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
+        # barlines of type 'none' (also not printed).
         for el in initialList:
-            if M21Utils.extra_to_string(el) != '':
-                output.append(el)
+            # we ignore hidden extras
+            if el.hasStyleInformation and el.style.hideObjectOnPrint:
+                continue
+            if isinstance(el, m21.bar.Barline) and el.type == 'none':
+                continue
+            if M21Utils.extra_to_string(el) == '':
+                continue
+            output.append(el)
 
         # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos that start
-        # on GeneralNotes in this measure
+        # on GeneralNotes/SpannerAnchors in this measure
         if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
             spanner_types = (m21.expressions.ArpeggioMarkSpanner, m21.dynamics.DynamicWedge)
         else:
             spanner_types = (m21.dynamics.DynamicWedge,)
 
-        for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
-            spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
-            for sp in spannerList:
-                if sp not in spannerBundle:
-                    continue
-                if sp.isFirst(gn):
-                    output.append(sp)
+        if hasattr(m21.spanner, 'SpannerAnchor'):
+            for gn in measure.recurse().getElementsByClass(
+                (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
+            ):
+                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+                for sp in spannerList:
+                    if sp not in spannerBundle:
+                        continue
+                    if sp.isFirst(gn):
+                        output.append(sp)
+        else:
+            for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
+                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+                for sp in spannerList:
+                    if sp not in spannerBundle:
+                        continue
+                    if sp.isFirst(gn):
+                        output.append(sp)
 
         # Add any RepeatBracket spanners that start on this measure
         rbList: List[m21.spanner.Spanner] = measure.getSpannerSites(m21.spanner.RepeatBracket)

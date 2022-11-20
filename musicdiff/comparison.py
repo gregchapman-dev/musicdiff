@@ -475,6 +475,16 @@ class Comparison:
         return distance
 
     @staticmethod
+    def _areDifferentEnough(flt1: float, flt2: float) -> bool:
+        diff: float = flt1 - flt2
+        if diff < 0:
+            diff = -diff
+
+        if diff > 0.0001:
+            return True
+        return False
+
+    @staticmethod
     def _annotated_extra_diff(annExtra1: AnnExtra, annExtra2: AnnExtra):
         """compute the differences between two annotated extras
         Each annotated extra consists of three values: content, offset, and duration
@@ -490,17 +500,21 @@ class Comparison:
             op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
 
         # add for the offset
-        if annExtra1.offset != annExtra2.offset:
+        # Note: offset here is a float, and some file formats have only four
+        # decimal places of precision.  So we should not compare exactly here.
+        if Comparison._areDifferentEnough(annExtra1.offset, annExtra2.offset):
             # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
             # min cost is 1, though, don't round down to zero.
-            offset_cost: int = min(1, abs(annExtra1.duration - annExtra2.duration))
+            offset_cost: int = int(min(1, abs(annExtra1.offset - annExtra2.offset)))
             cost += offset_cost
             op_list.append(("extraoffsetedit", annExtra1, annExtra2, offset_cost))
 
         # add for the duration
-        if annExtra1.duration != annExtra2.duration:
+        # Note: duration here is a float, and some file formats have only four
+        # decimal places of precision.  So we should not compare exactly here.
+        if Comparison._areDifferentEnough(annExtra1.duration, annExtra2.duration):
             # duration is in quarter-notes, so let's make the cost in quarter-notes as well.
-            duration_cost = min(1, abs(annExtra1.duration - annExtra2.duration))
+            duration_cost = int(min(1, abs(annExtra1.duration - annExtra2.duration)))
             cost += duration_cost
             op_list.append(("extradurationedit", annExtra1, annExtra2, duration_cost))
 
@@ -601,6 +615,12 @@ class Comparison:
                 op_list.append(("dotdel", annNote1, annNote2, dots_diff))
             else:
                 op_list.append(("dotins", annNote1, annNote2, dots_diff))
+        if annNote1.graceType != annNote2.graceType:
+            cost += 1
+            op_list.append(("graceedit", annNote1, annNote2, 1))
+        if annNote1.graceSlash != annNote2.graceSlash:
+            cost += 1
+            op_list.append(("graceslashedit", annNote1, annNote2, 1))
         # add for the beamings
         if annNote1.beamings != annNote2.beamings:
             beam_op_list, beam_cost = Comparison._beamtuplet_leveinsthein_diff(
