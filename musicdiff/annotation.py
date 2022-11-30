@@ -576,6 +576,11 @@ class AnnScore:
         self.score = score.id
         self.part_list = []
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
+
+        # before we start, transpose all notes to written pitch, both for transposing
+        # instruments and Ottavas (and both, if necessary).
+        score.toWrittenPitch(inPlace=True)
+
         for part in score.parts.stream():
             # create and add the AnnPart object to part_list
             ann_part = AnnPart(part, score, spannerBundle, detail)
