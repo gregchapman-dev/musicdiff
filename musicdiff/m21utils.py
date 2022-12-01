@@ -14,7 +14,7 @@
 from fractions import Fraction
 import math
 import sys
-from typing import List, Union
+from typing import List, Union, Optional
 from enum import IntEnum, auto
 
 # import sys
@@ -35,6 +35,15 @@ class DetailLevel(IntEnum):
 
 
 class M21Utils:
+    _cachedM21SupportsInheritAccidentalDisplay: Optional[bool] = None
+    @staticmethod
+    def m21SupportsInheritAccidentalDisplay() -> bool:
+        if M21Utils._cachedM21SupportsInheritAccidentalDisplay is None:
+            M21Utils._cachedM21SupportsInheritAccidentalDisplay = (
+                hasattr(m21.spanner.Spanner, 'fillIntermediateSpannedElements')
+            )
+        return M21Utils._cachedM21SupportsInheritAccidentalDisplay
+
     @staticmethod
     def get_beamings(note_list):
         _beam_list = []

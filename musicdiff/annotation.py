@@ -578,8 +578,12 @@ class AnnScore:
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
 
         # before we start, transpose all notes to written pitch, both for transposing
-        # instruments and Ottavas (and both, if necessary).
-        score.toWrittenPitch(inPlace=True)
+        # instruments and Ottavas (and both, if necessary).  Be careful to NOT lose
+        # any accidental display choices that have been made.
+        if M21Utils.m21SupportsInheritAccidentalDisplay():
+            score.toWrittenPitch(inPlace=True, inheritAccidentalDisplay=True)
+        else:
+            score.toWrittenPitch(inPlace=True)
 
         for part in score.parts.stream():
             # create and add the AnnPart object to part_list
