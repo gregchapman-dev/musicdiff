@@ -19,6 +19,7 @@ from enum import IntEnum, auto
 
 # import sys
 import music21 as m21
+from music21.common.types import OffsetQL
 
 class DetailLevel(IntEnum):
     # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
@@ -35,14 +36,20 @@ class DetailLevel(IntEnum):
 
 
 class M21Utils:
-    _cachedM21SupportsInheritAccidentalDisplay: Optional[bool] = None
+    # inheritAccidentalDisplay and fillIntermediateSpannedElements started being
+    # supported in music21 at the same time.
     @staticmethod
     def m21SupportsInheritAccidentalDisplay() -> bool:
-        if M21Utils._cachedM21SupportsInheritAccidentalDisplay is None:
-            M21Utils._cachedM21SupportsInheritAccidentalDisplay = (
+        return M21Utils.m21SupportsFillIntermediateSpannedElements()
+
+    _cachedM21SupportsFillIntermediateSpannedElements: Optional[bool] = None
+    @staticmethod
+    def m21SupportsFillIntermediateSpannedElements() -> bool:
+        if M21Utils._cachedM21SupportsFillIntermediateSpannedElements is None:
+            M21Utils._cachedM21SupportsFillIntermediateSpannedElements = (
                 hasattr(m21.spanner.Spanner, 'fillIntermediateSpannedElements')
             )
-        return M21Utils._cachedM21SupportsInheritAccidentalDisplay
+        return M21Utils._cachedM21SupportsFillIntermediateSpannedElements
 
     @staticmethod
     def get_beamings(note_list):
@@ -414,7 +421,11 @@ class M21Utils:
         return out
 
     @staticmethod
-    def get_extras(measure: m21.stream.Measure, spannerBundle: m21.spanner.SpannerBundle) -> List[m21.base.Music21Object]:
+    def get_extras(
+        measure: m21.stream.Measure,
+        part: m21.stream.Part,
+        spannerBundle: m21.spanner.SpannerBundle
+    ) -> List[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
         # substreams/Voices), skipping any Streams, layout stuff, and GeneralNotes (which
         # are returned from get_notes/get_notes_and_gracenotes).  We're looking for things
@@ -427,13 +438,15 @@ class M21Utils:
                     (m21.note.GeneralNote,
                      m21.spanner.SpannerAnchor,
                      m21.stream.Stream,
-                     m21.layout.LayoutBase) ) )
+                     m21.layout.LayoutBase,
+                     m21.spanner.Spanner) ) )
         else:
             initialList = list(
                 measure.recurse().getElementsNotOfClass(
                     (m21.note.GeneralNote,
                      m21.stream.Stream,
-                     m21.layout.LayoutBase) ) )
+                     m21.layout.LayoutBase,
+                     m21.spanner.Spanner) ) )
 
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
@@ -448,31 +461,43 @@ class M21Utils:
                 continue
             output.append(el)
 
-        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos that start
+        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos/Ottavas that start
         # on GeneralNotes/SpannerAnchors in this measure
         if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
-            spanner_types = (m21.expressions.ArpeggioMarkSpanner, m21.dynamics.DynamicWedge)
+            spanner_types = (
+                m21.expressions.ArpeggioMarkSpanner,
+                m21.dynamics.DynamicWedge,
+                m21.spanner.Ottava
+            )
         else:
-            spanner_types = (m21.dynamics.DynamicWedge,)
+            spanner_types = (
+                m21.dynamics.DynamicWedge,
+                m21.spanner.Ottava
+            )
 
+        spannerElementClasses = (m21.note.GeneralNote,)
         if hasattr(m21.spanner, 'SpannerAnchor'):
-            for gn in measure.recurse().getElementsByClass(
-                (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
-            ):
-                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
-                for sp in spannerList:
-                    if sp not in spannerBundle:
+            spannerElementClasses = (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
+
+        for gn in measure.recurse().getElementsByClass(spannerElementClasses):
+            spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+            for sp in spannerList:
+                if sp not in spannerBundle:
+                    continue
+                if sp.isFirst(gn):
+                    output.append(sp)
+                    if not isinstance(sp, m21.spanner.Ottava):
                         continue
-                    if sp.isFirst(gn):
-                        output.append(sp)
-        else:
-            for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
-                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
-                for sp in spannerList:
-                    if sp not in spannerBundle:
-                        continue
-                    if sp.isFirst(gn):
-                        output.append(sp)
+                    # Transpose all the notes/chords in the Ottava
+                    # to written pitch (for ease of comparison).
+                    if M21Utils.m21SupportsFillIntermediateSpannedElements():
+                        # we already transposed the whole score to written pitch
+                        pass
+                    else:
+                        # music21 doesn't support fillIntermediateSpannedElements,
+                        # so we call our own version instead.
+                        M21Utils.fillIntermediateSpannedElements(sp, part)
+                        sp.undoTransposition()
 
         # Add any RepeatBracket spanners that start on this measure
         rbList: List[m21.spanner.Spanner] = measure.getSpannerSites(m21.spanner.RepeatBracket)
@@ -485,13 +510,83 @@ class M21Utils:
         return output
 
     @staticmethod
+    def fillIntermediateSpannedElements(
+        ottava: m21.spanner.Ottava,
+        searchStream: m21.stream.Stream,
+        *,
+        includeEndBoundary: bool = False,
+        mustFinishInSpan: bool = False,
+        mustBeginInSpan: bool = True,
+        includeElementsThatEndAtStart: bool = False
+    ):
+        if hasattr(ottava, 'filledStatus') and ottava.filledStatus is True:  # type: ignore
+            # Don't fill twice.
+            return
+
+        if ottava.getFirst() is None:
+            # no spanned elements?  Nothing to fill.
+            return
+
+        endElement: m21.base.Music21Object | None = None
+        if len(ottava) > 1:
+            # Start and end elements are different, we can't just append everything, we need
+            # to save off the end element, remove it, add everything, then add the end element
+            # again.  Note that if there are actually more than 2 elements before we start
+            # filling, the new intermediate elements will come after the existing ones,
+            # regardless of offset.  But first and last will still be the same two elements
+            # as before, which is the most important thing.
+            endElement = ottava.getLast()
+            ottava.spannerStorage.remove(endElement)
+
+        try:
+            startOffsetInHierarchy: OffsetQL = ottava.getFirst().getOffsetInHierarchy(searchStream)
+        except m21.sites.SitesException:
+            # print('start element not in searchStream')
+            if endElement is not None:
+                ottava.addSpannedElements(endElement)
+            return
+
+        endOffsetInHierarchy: OffsetQL
+        if endElement is not None:
+            try:
+                endOffsetInHierarchy = (
+                    endElement.getOffsetInHierarchy(searchStream) + endElement.quarterLength
+                )
+            except m21.sites.SitesException:
+                # print('end element not in searchStream')
+                ottava.addSpannedElements(endElement)
+                return
+        else:
+            endOffsetInHierarchy = (
+                ottava.getLast().getOffsetInHierarchy(searchStream) + ottava.getLast().quarterLength
+            )
+
+        for foundElement in (searchStream
+                .recurse()
+                .getElementsByOffsetInHierarchy(
+                    startOffsetInHierarchy,
+                    endOffsetInHierarchy,
+                    includeEndBoundary=includeEndBoundary,
+                    mustFinishInSpan=mustFinishInSpan,
+                    mustBeginInSpan=mustBeginInSpan,
+                    includeElementsThatEndAtStart=includeElementsThatEndAtStart)
+                .getElementsByClass(m21.note.NotRest)):
+            if endElement is None or foundElement is not endElement:
+                ottava.addSpannedElements(foundElement)
+
+        if endElement is not None:
+            # add it back in as the end element
+            ottava.addSpannedElements(endElement)
+
+        ottava.filledStatus = True  # type: ignore
+
+    @staticmethod
     def note_to_string(note):
         if note.isRest:
             _str = "R"
         else:
             _str = "N"
         return _str
-
 
     @staticmethod
     def safe_get(indexable, idx):
@@ -586,6 +681,11 @@ class M21Utils:
         if barline.times is not None:
             output += f' times={barline.times}'
         return f'RPT:{output}'
+
+    @staticmethod
+    def ottava_to_string(ottava: m21.spanner.Ottava) -> str:
+        output: str = f'OTT:{ottava.type}'
+        return output
 
     @staticmethod
     def keysig_to_string(keysig: Union[m21.key.Key, m21.key.KeySignature]) -> str:
@@ -773,6 +873,8 @@ class M21Utils:
             return M21Utils.tempo_to_string(extra)
         if isinstance(extra, m21.bar.Barline):
             return M21Utils.barline_to_string(extra)
+        if isinstance(extra, m21.spanner.Ottava):
+            return M21Utils.ottava_to_string(extra)
         if isinstance(extra, m21.spanner.RepeatBracket):
             return M21Utils.repeatbracket_to_string(extra)
         if (hasattr(m21.expressions, 'ArpeggioMark')

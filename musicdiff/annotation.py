@@ -414,6 +414,7 @@ class AnnVoice:
 
 class AnnMeasure:
     def __init__(self, measure: m21.stream.Measure,
+                       part: m21.stream.Part,
                        score: m21.stream.Score,
                        spannerBundle: m21.spanner.SpannerBundle,
                        detail: DetailLevel = DetailLevel.Default):
@@ -421,7 +422,8 @@ class AnnMeasure:
         Extend music21 Measure with some precomputed, easily compared information about it.
 
         Args:
-            measure (music21.stream.Measure): The music21 measure to extend.
+            measure (music21.stream.Measure): The music21 Measure to extend.
+            part (music21.stream.Part): the enclosing music21 Part
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.
             detail (DetailLevel): What level of detail to use during the diff.  Can be
@@ -445,7 +447,7 @@ class AnnMeasure:
 
         self.extras_list = []
         if detail >= DetailLevel.AllObjects:
-            for extra in M21Utils.get_extras(measure, spannerBundle):
+            for extra in M21Utils.get_extras(measure, part, spannerBundle):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
             # For correct comparison, sort the extras_list, so that any list slices
@@ -517,7 +519,7 @@ class AnnPart:
         self.part = part.id
         self.bar_list = []
         for measure in part.getElementsByClass("Measure"):
-            ann_bar = AnnMeasure(measure, score, spannerBundle, detail)  # create the bar objects
+            ann_bar = AnnMeasure(measure, part, score, spannerBundle, detail)  # create the bar objects
             if ann_bar.n_of_voices > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars = len(self.bar_list)
@@ -583,7 +585,11 @@ class AnnScore:
         if M21Utils.m21SupportsInheritAccidentalDisplay():
             score.toWrittenPitch(inPlace=True, inheritAccidentalDisplay=True)
         else:
-            score.toWrittenPitch(inPlace=True)
+            # transposition loses accidental display info, so minimize that (transpose
+            # only the ottavas to written pitch).  But we will need to do that as
+            # we run into the first note in each ottava (deep in AnnPart), so we
+            # can search the correct Part for itermediate notes.
+            pass
 
         for part in score.parts.stream():
             # create and add the AnnPart object to part_list
