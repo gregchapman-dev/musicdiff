@@ -38,18 +38,14 @@ class DetailLevel(IntEnum):
 class M21Utils:
     # inheritAccidentalDisplay and fillIntermediateSpannedElements started being
     # supported in music21 at the same time.
+    _cacheM21SupportsInheritAccidentalDisplayAndSpannerFill: Optional[bool] = None
     @staticmethod
-    def m21SupportsInheritAccidentalDisplay() -> bool:
-        return M21Utils.m21SupportsFillIntermediateSpannedElements()
-
-    _cachedM21SupportsFillIntermediateSpannedElements: Optional[bool] = None
-    @staticmethod
-    def m21SupportsFillIntermediateSpannedElements() -> bool:
-        if M21Utils._cachedM21SupportsFillIntermediateSpannedElements is None:
-            M21Utils._cachedM21SupportsFillIntermediateSpannedElements = (
+    def m21SupportsInheritAccidentalDisplayAndSpannerFill() -> bool:
+        if M21Utils._cacheM21SupportsInheritAccidentalDisplayAndSpannerFill is None:
+            M21Utils._cacheM21SupportsInheritAccidentalDisplayAndSpannerFill = (
                 hasattr(m21.spanner.Spanner, 'fillIntermediateSpannedElements')
             )
-        return M21Utils._cachedM21SupportsFillIntermediateSpannedElements
+        return M21Utils._cacheM21SupportsInheritAccidentalDisplayAndSpannerFill
 
     @staticmethod
     def get_beamings(note_list):
@@ -490,7 +486,7 @@ class M21Utils:
                         continue
                     # Transpose all the notes/chords in the Ottava
                     # to written pitch (for ease of comparison).
-                    if M21Utils.m21SupportsFillIntermediateSpannedElements():
+                    if M21Utils.m21SupportsInheritAccidentalDisplayAndSpannerFill():
                         # we already transposed the whole score to written pitch
                         pass
                     else:
