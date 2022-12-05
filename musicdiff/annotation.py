@@ -283,10 +283,19 @@ class AnnExtra:
             firstNote: m21.note.GeneralNote = M21Utils.getPrimarySpannerElement(extra)
             lastNote: m21.note.GeneralNote = extra.getLast()
             self.offset = float(firstNote.getOffsetInHierarchy(measure))
-            # to compute duration we need to use offset-in-score, since the end note might be in another Measure
-            startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
-            endOffsetInScore: float = float(lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength)
-            self.duration = endOffsetInScore - startOffsetInScore
+            # to compute duration we need to use offset-in-score, since the end note might
+            # be in another Measure.  Except for ArpeggioMarkSpanners, where the duration
+            # doesn't matter, so we just set it to 0, rather than figuring out the longest
+            # duration in all the notes/chords in the arpeggio.
+            if (hasattr(m21.expressions, 'ArpeggioMarkSpanner')
+                    and isinstance(extra, m21.expressions.ArpeggioMarkSpanner)):
+                self.duration = 0.
+            else:
+                startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
+                endOffsetInScore: float = float(
+                    lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength
+                )
+                self.duration = endOffsetInScore - startOffsetInScore
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
