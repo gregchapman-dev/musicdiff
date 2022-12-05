@@ -280,7 +280,7 @@ class AnnExtra:
         self.numNotes: int = 1
         if isinstance(extra, m21.spanner.Spanner):
             self.numNotes = len(extra)
-            firstNote: m21.note.GeneralNote = extra.getFirst()
+            firstNote: m21.note.GeneralNote = M21Utils.getPrimarySpannerElement(extra)
             lastNote: m21.note.GeneralNote = extra.getLast()
             self.offset = float(firstNote.getOffsetInHierarchy(measure))
             # to compute duration we need to use offset-in-score, since the end note might be in another Measure

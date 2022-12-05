@@ -14,6 +14,7 @@
 from fractions import Fraction
 import math
 import sys
+import copy
 from typing import List, Union, Optional
 from enum import IntEnum, auto
 
@@ -417,6 +418,44 @@ class M21Utils:
         return out
 
     @staticmethod
+    def getHighestDiatonicNoteOrChord(
+        arpeggio: m21.expressions.ArpeggioMarkSpanner
+    ) -> m21.note.NotRest:
+        if hasattr(arpeggio, 'musicdiff_cached_highest_diatonic_element'):
+            return arpeggio.musicdiff_cached_highest_diatonic_element  # type: ignore
+
+        origSpannedList: t.List[m21.note.NotRest] = arpeggio.getSpannedElements()
+        nrList = copy.deepcopy(origSpannedList)
+        highestNoteOrChord: m21.note.NotRest
+        highestNote: m21.note.Note
+        for i, (nr, origSpanned) in enumerate(zip(nrList, origSpannedList)):
+            currentNote: m21.note.Note
+            if isinstance(nr, m21.chord.Chord):
+                # set currentNote to the highest diatonic note in the chord
+                nr.sortDiatonicAscending()
+                currentNote = nr.notes[-1]
+            else:
+                currentNote = nr
+            if (i == 0
+                    or currentNote.pitch.diatonicNoteNum > highestNote.pitch.diatonicNoteNum):
+                highestNote = currentNote
+                highestNoteOrChord = origSpanned
+
+        arpeggio.musicdiff_cached_highest_diatonic_element = highestNoteOrChord  # type: ignore
+        return highestNoteOrChord
+
+    @staticmethod
+    def getPrimarySpannerElement(sp: m21.spanner.Spanner) -> m21.base.Music21Object:
+        # returns sp.getFirst() except if the spanner is ArpeggioMarkSpanner, in
+        # which case it returns the element that contains the highest diatonic
+        # pitch.
+        if not hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
+            return sp.getFirst()
+        if not isinstance(sp, m21.expressions.ArpeggioMarkSpanner):  # type: ignore
+            return sp.getFirst()
+        return M21Utils.getHighestDiatonicNoteOrChord(sp)
+
+    @staticmethod
     def get_extras(
         measure: m21.stream.Measure,
         part: m21.stream.Part,
@@ -480,7 +519,7 @@ class M21Utils:
             for sp in spannerList:
                 if sp not in spannerBundle:
                     continue
-                if sp.isFirst(gn):
+                if M21Utils.getPrimarySpannerElement(sp) is gn:
                     output.append(sp)
                     if not isinstance(sp, m21.spanner.Ottava):
                         continue
