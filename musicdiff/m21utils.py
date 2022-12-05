@@ -424,8 +424,8 @@ class M21Utils:
         if hasattr(arpeggio, 'musicdiff_cached_highest_diatonic_element'):
             return arpeggio.musicdiff_cached_highest_diatonic_element  # type: ignore
 
-        origSpannedList: t.List[m21.note.NotRest] = arpeggio.getSpannedElements()
-        nrList = copy.deepcopy(origSpannedList)
+        origSpannedList: List[m21.note.NotRest] = arpeggio.getSpannedElements()
+        nrList: List[m21.note.NotRest] = copy.deepcopy(origSpannedList)
         highestNoteOrChord: m21.note.NotRest
         highestNote: m21.note.Note
         for i, (nr, origSpanned) in enumerate(zip(nrList, origSpannedList)):
@@ -436,8 +436,10 @@ class M21Utils:
                 currentNote = nr.notes[-1]
             else:
                 currentNote = nr
-            if (i == 0
-                    or currentNote.pitch.diatonicNoteNum > highestNote.pitch.diatonicNoteNum):
+            if i == 0:
+                highestNote = currentNote
+                highestNoteOrChord = origSpanned
+            elif currentNote.pitch.diatonicNoteNum > highestNote.pitch.diatonicNoteNum:
                 highestNote = currentNote
                 highestNoteOrChord = origSpanned
 
