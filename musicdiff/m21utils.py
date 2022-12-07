@@ -458,6 +458,25 @@ class M21Utils:
         return M21Utils.getHighestDiatonicNoteOrChord(sp)
 
     @staticmethod
+    def clefs_are_equivalent(
+        clef1: Optional[m21.clef.Clef],
+        clef2: Optional[m21.clef.Clef]
+    ) -> bool:
+        if not isinstance(clef1, m21.clef.Clef):
+            return False
+        if not isinstance(clef2, m21.clef.Clef):
+            return False
+
+        if clef1.sign != clef2.sign:
+            return False
+        if clef1.line != clef2.line:
+            return False
+        if clef1.octaveChange != clef2.octaveChange:
+            return False
+
+        return True
+
+    @staticmethod
     def get_extras(
         measure: m21.stream.Measure,
         part: m21.stream.Part,
@@ -488,6 +507,8 @@ class M21Utils:
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
         # barlines of type 'none' (also not printed).
+        # We also try to de-duplicate redundant clefs.
+        mostRecentClef: t.Optional[m21.clef.Clef] = None
         for el in initialList:
             # we ignore hidden extras
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
@@ -496,6 +517,21 @@ class M21Utils:
                 continue
             if M21Utils.extra_to_string(el) == '':
                 continue
+            if isinstance(el, m21.clef.Clef):
+                # If this clef is the same as the most recent clef seen in this
+                # measure (i.e. with no different clef between them), ignore
+                # this one.  It not, use this one, and make a note of it as the
+                # most recent clef.
+
+                # Clef __eq__ compares class, sign, line, and octaveShift.
+                # I don't want to include class in this, since I would like
+                # clef.TrebleClef() == clef.GClef(line=2) to evaluate to True.
+                if M21Utils.clefs_are_equivalent(el, mostRecentClef):
+                    # ignore this clef
+                    continue
+
+                mostRecentClef = el
+
             output.append(el)
 
         # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos/Ottavas that start
