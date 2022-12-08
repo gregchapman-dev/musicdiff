@@ -504,11 +504,18 @@ class M21Utils:
                      m21.layout.LayoutBase,
                      m21.spanner.Spanner) ) )
 
+        # Sort the initialList by offset in measure, so we can see which clefs are
+        # duplicates from different voices.
+        if len(initialList) > 1:
+            for el in initialList:
+                el.musicdiff_offset_in_measure = el.getOffsetInHierarchy(measure)  # type: ignore
+            initialList.sort(key=lambda el: el.musicdiff_offset_in_measure)  # type: ignore
+
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
         # barlines of type 'none' (also not printed).
         # We also try to de-duplicate redundant clefs.
-        mostRecentClef: t.Optional[m21.clef.Clef] = None
+        mostRecentClef: Optional[m21.clef.Clef] = None
         for el in initialList:
             # we ignore hidden extras
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
