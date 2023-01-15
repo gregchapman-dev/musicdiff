@@ -16,7 +16,7 @@ import sys
 import argparse
 
 import music21 as m21
-from converter21 import HumdrumConverter
+import converter21
 
 from musicdiff import diff
 from musicdiff import DetailLevel
@@ -30,8 +30,14 @@ if __name__ == "__main__":
 
     # Use the new Humdrum importer from converter21 in place of the one in music21...
     # Comment out these two lines to go back to music21's built-in Humdrum importer.
-    m21.converter.unregisterSubconverter(m21.converter.subConverters.ConverterHumdrum)
-    m21.converter.registerSubconverter(HumdrumConverter)
+    if hasattr(converter21, 'register'):
+        # if converter21 has the new "register" API, call it to register every converter
+        # it has (currently includes both humdrum and MEI converters)
+        converter21.register()
+    else:
+        # the old way, and in those old times there is only converter21's Humdrum converter
+        m21.converter.unregisterSubconverter(m21.converter.subConverters.ConverterHumdrum)
+        m21.converter.registerSubconverter(converter21.HumdrumConverter)
 
     parser = argparse.ArgumentParser(
                 prog='python3 -m musicdiff',
