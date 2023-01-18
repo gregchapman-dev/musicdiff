@@ -15,9 +15,6 @@
 import sys
 import argparse
 
-import music21 as m21
-from converter21 import HumdrumConverter
-
 from musicdiff import diff
 from musicdiff import DetailLevel
 
@@ -27,11 +24,6 @@ from musicdiff import DetailLevel
     main entry point (parse arguments and do conversion)
 '''
 if __name__ == "__main__":
-
-    # Use the new Humdrum importer from converter21 in place of the one in music21...
-    # Comment out these two lines to go back to music21's built-in Humdrum importer.
-    m21.converter.unregisterSubconverter(m21.converter.subConverters.ConverterHumdrum)
-    m21.converter.registerSubconverter(HumdrumConverter)
 
     parser = argparse.ArgumentParser(
                 prog='python3 -m musicdiff',
