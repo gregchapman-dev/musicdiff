@@ -83,15 +83,8 @@ def diff(score1: Union[str, Path, m21.stream.Score],
         int: The number of differences found (0 means the scores were identical, None means the diff failed)
     '''
     # Use the new Humdrum/MEI importers from converter21 in place of the ones in music21...
-    # Comment out these lines to go back to music21's built-in Humdrum/MEI importers.
-    if hasattr(converter21, 'register'):
-        # If converter21 has the new "register" API, call it to register every importer
-        # it has (currently includes both Humdrum and MEI importer).
-        converter21.register()
-    else:
-        # the old way, and in those old times converter21 only had a Humdrum importer
-        m21.converter.unregisterSubconverter(m21.converter.subConverters.ConverterHumdrum)
-        m21.converter.registerSubconverter(converter21.HumdrumConverter)
+    # Comment out this line to go back to music21's built-in Humdrum/MEI importers.
+    converter21.register()
 
     badArg1: bool = False
     badArg2: bool = False

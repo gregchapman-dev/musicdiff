@@ -13,7 +13,7 @@
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '1.4.0'
+musicdiffversion = '2.0.0'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -56,12 +56,12 @@ if __name__ == '__main__':
 
         packages=find_packages(),
 
-        python_requires='>=3.7',
+        python_requires='>=3.9',
 
         install_requires=[
-            'music21>=7.2',
+            'music21>=8.2',
             'numpy',
-            'converter21>=1.2'
+            'converter21>=2.0'
         ],
 
         project_urls={
