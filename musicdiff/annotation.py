@@ -589,15 +589,15 @@ class AnnScore:
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
 
         # before we start, transpose all notes to written pitch, both for transposing
-        # instruments and Ottavas (and both, if necessary).  Be careful to NOT lose
-        # any accidental display choices that have been made.
-        if M21Utils.m21SupportsInheritAccidentalDisplayAndSpannerFill():
-            score.toWrittenPitch(inPlace=True, inheritAccidentalDisplay=True)
+        # instruments and Ottavas (and both, if necessary).
+        if M21Utils.m21SupportsSpannerFill():
+            score.toWrittenPitch(inPlace=True)
         else:
-            # transposition loses accidental display info, so minimize that (transpose
-            # only the ottavas to written pitch).  But we will need to do that as
-            # we run into the first note in each ottava (deep in AnnPart), so we
-            # can search the correct Part for itermediate notes.
+            # transposition (pre-spannerfill-support) loses accidental display info,
+            # so minimize that (transpose only the ottavas to written pitch).  But
+            # we will need to do that as we run into the first note in each ottava
+            # (deep in AnnPart), so we can search the correct Part for itermediate
+            # notes.
             pass
 
         for part in score.parts.stream():
