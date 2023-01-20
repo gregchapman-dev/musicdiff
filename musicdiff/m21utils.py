@@ -962,7 +962,7 @@ class M21Utils:
             if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
                 return M21Utils.arpeggiomark_to_string(extra)
 
-        print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
+        # print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''
 
     @staticmethod

@@ -7,7 +7,7 @@ musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/mu
     by [Francesco Foscarin](https://github.com/fosfrancesco).
 
 ## Setup
-Depends on [music21](https://pypi.org/project/music21) (version 7.2+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21). You also will need to configure music21 (instructions [here](https://web.mit.edu/music21/doc/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).
+Depends on [music21](https://pypi.org/project/music21) (version 8.1+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21) (version 2.0+). You also will need to configure music21 (instructions [here](https://web.mit.edu/music21/doc/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).
 
 ## Usage
 On the command line:
@@ -22,7 +22,7 @@ The source for that command-line tool, which calls musicdiff's high-level diff()
 
 A google colab notebook is available [here](examples/musicdiff_demo.ipynb).
 
-If you are interested in calling lower-level musicdiff APIs to do more complicated things than just visualization in PDFs, the source for musicdiff's high-level diff() API (found [here](musicdiff/__init__.py)) is good example code to read.
+If you are interested in calling lower-level musicdiff APIs to do more complicated things than just visualization in PDFs, the source for musicdiff's high-level diff() API (found [here](musicdiff/__init__.py)) is good example code to read.  Note particularly how diff() calls converter21.register() to register converter21's Humdrum and MEI parsers for use by music21.  If you call lower-level APIs than diff(), you will need to do this yourself.
 
 ## Documentation
 You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).
