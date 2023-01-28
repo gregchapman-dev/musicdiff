@@ -42,7 +42,7 @@ class M21Utils:
     def m21SupportsSpannerFill() -> bool:
         if M21Utils._cacheM21SupportsSpannerFill is None:
             M21Utils._cacheM21SupportsSpannerFill = (
-                hasattr(m21.spanner.Spanner, 'fillIntermediateSpannedElements')
+                hasattr(m21.spanner.Spanner, 'fill')
             )
         return M21Utils._cacheM21SupportsSpannerFill
 
@@ -572,9 +572,9 @@ class M21Utils:
                         # we already transposed the whole score to written pitch
                         pass
                     else:
-                        # music21 doesn't support fillIntermediateSpannedElements,
+                        # music21 doesn't support spanner fill,
                         # so we call our own version instead.
-                        M21Utils.fillIntermediateSpannedElements(sp, part)
+                        M21Utils.fillOttava(sp, part)
                         sp.undoTransposition()
 
         # Add any RepeatBracket spanners that start on this measure
@@ -588,7 +588,7 @@ class M21Utils:
         return output
 
     @staticmethod
-    def fillIntermediateSpannedElements(
+    def fillOttava(
         ottava: m21.spanner.Ottava,
         searchStream: m21.stream.Stream,
         *,
