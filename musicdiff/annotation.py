@@ -591,7 +591,7 @@ class AnnScore:
         # before we start, transpose all notes to written pitch, both for transposing
         # instruments and Ottavas (and both, if necessary).
         if M21Utils.m21SupportsSpannerFill():
-            score.toWrittenPitch(inPlace=True)
+            score.toWrittenPitch(inPlace=True, preserveAccidentalDisplay=True)
         else:
             # transposition (pre-spannerfill-support) loses accidental display info,
             # so minimize that (transpose only the ottavas to written pitch).  But
