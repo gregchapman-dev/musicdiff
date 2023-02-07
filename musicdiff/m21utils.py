@@ -46,6 +46,15 @@ class M21Utils:
             )
         return M21Utils._cacheM21SupportsSpannerFill
 
+    _cacheM21SupportsDelayedTurns: Optional[bool] = None
+    @staticmethod
+    def m21SupportsDelayedTurns() -> bool:
+        if M21Utils._cacheM21SupportsDelayedTurns is None:
+            M21Utils._cacheM21SupportsDelayedTurns = (
+                hasattr(m21.expressions.Turn, 'isDelayed')
+            )
+        return M21Utils._cacheM21SupportsDelayedTurns
+
     @staticmethod
     def get_beamings(note_list):
         _beam_list = []
