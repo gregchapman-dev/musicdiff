@@ -280,13 +280,22 @@ class AnnExtra:
         self.numNotes: int = 1
         if isinstance(extra, m21.spanner.Spanner):
             self.numNotes = len(extra)
-            firstNote: m21.note.GeneralNote = extra.getFirst()
+            firstNote: m21.note.GeneralNote = M21Utils.getPrimarySpannerElement(extra)
             lastNote: m21.note.GeneralNote = extra.getLast()
             self.offset = float(firstNote.getOffsetInHierarchy(measure))
-            # to compute duration we need to use offset-in-score, since the end note might be in another Measure
-            startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
-            endOffsetInScore: float = float(lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength)
-            self.duration = endOffsetInScore - startOffsetInScore
+            # to compute duration we need to use offset-in-score, since the end note might
+            # be in another Measure.  Except for ArpeggioMarkSpanners, where the duration
+            # doesn't matter, so we just set it to 0, rather than figuring out the longest
+            # duration in all the notes/chords in the arpeggio.
+            if (hasattr(m21.expressions, 'ArpeggioMarkSpanner')
+                    and isinstance(extra, m21.expressions.ArpeggioMarkSpanner)):
+                self.duration = 0.
+            else:
+                startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
+                endOffsetInScore: float = float(
+                    lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength
+                )
+                self.duration = endOffsetInScore - startOffsetInScore
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
@@ -414,6 +423,7 @@ class AnnVoice:
 
 class AnnMeasure:
     def __init__(self, measure: m21.stream.Measure,
+                       part: m21.stream.Part,
                        score: m21.stream.Score,
                        spannerBundle: m21.spanner.SpannerBundle,
                        detail: DetailLevel = DetailLevel.Default):
@@ -421,7 +431,8 @@ class AnnMeasure:
         Extend music21 Measure with some precomputed, easily compared information about it.
 
         Args:
-            measure (music21.stream.Measure): The music21 measure to extend.
+            measure (music21.stream.Measure): The music21 Measure to extend.
+            part (music21.stream.Part): the enclosing music21 Part
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.
             detail (DetailLevel): What level of detail to use during the diff.  Can be
@@ -445,7 +456,7 @@ class AnnMeasure:
 
         self.extras_list = []
         if detail >= DetailLevel.AllObjects:
-            for extra in M21Utils.get_extras(measure, spannerBundle):
+            for extra in M21Utils.get_extras(measure, part, spannerBundle):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
             # For correct comparison, sort the extras_list, so that any list slices
@@ -517,7 +528,7 @@ class AnnPart:
         self.part = part.id
         self.bar_list = []
         for measure in part.getElementsByClass("Measure"):
-            ann_bar = AnnMeasure(measure, score, spannerBundle, detail)  # create the bar objects
+            ann_bar = AnnMeasure(measure, part, score, spannerBundle, detail)  # create the bar objects
             if ann_bar.n_of_voices > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars = len(self.bar_list)
@@ -576,6 +587,19 @@ class AnnScore:
         self.score = score.id
         self.part_list = []
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
+
+        # before we start, transpose all notes to written pitch, both for transposing
+        # instruments and Ottavas (and both, if necessary).
+        if M21Utils.m21SupportsSpannerFill():
+            score.toWrittenPitch(inPlace=True, preserveAccidentalDisplay=True)
+        else:
+            # transposition (pre-spannerfill-support) loses accidental display info,
+            # so minimize that (transpose only the ottavas to written pitch).  But
+            # we will need to do that as we run into the first note in each ottava
+            # (deep in AnnPart), so we can search the correct Part for itermediate
+            # notes.
+            pass
+
         for part in score.parts.stream():
             # create and add the AnnPart object to part_list
             ann_part = AnnPart(part, score, spannerBundle, detail)

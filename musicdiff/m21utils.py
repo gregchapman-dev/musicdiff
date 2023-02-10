@@ -14,11 +14,13 @@
 from fractions import Fraction
 import math
 import sys
-from typing import List, Union
+import copy
+from typing import List, Union, Optional
 from enum import IntEnum, auto
 
 # import sys
 import music21 as m21
+from music21.common.types import OffsetQL
 
 class DetailLevel(IntEnum):
     # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
@@ -35,6 +37,24 @@ class DetailLevel(IntEnum):
 
 
 class M21Utils:
+    _cacheM21SupportsSpannerFill: Optional[bool] = None
+    @staticmethod
+    def m21SupportsSpannerFill() -> bool:
+        if M21Utils._cacheM21SupportsSpannerFill is None:
+            M21Utils._cacheM21SupportsSpannerFill = (
+                hasattr(m21.spanner.Spanner, 'fill')
+            )
+        return M21Utils._cacheM21SupportsSpannerFill
+
+    _cacheM21SupportsDelayedTurns: Optional[bool] = None
+    @staticmethod
+    def m21SupportsDelayedTurns() -> bool:
+        if M21Utils._cacheM21SupportsDelayedTurns is None:
+            M21Utils._cacheM21SupportsDelayedTurns = (
+                hasattr(m21.expressions.Turn, 'isDelayed')
+            )
+        return M21Utils._cacheM21SupportsDelayedTurns
+
     @staticmethod
     def get_beamings(note_list):
         _beam_list = []
@@ -405,7 +425,70 @@ class M21Utils:
         return out
 
     @staticmethod
-    def get_extras(measure: m21.stream.Measure, spannerBundle: m21.spanner.SpannerBundle) -> List[m21.base.Music21Object]:
+    def getHighestDiatonicNoteOrChord(
+        arpeggio: m21.expressions.ArpeggioMarkSpanner
+    ) -> m21.note.NotRest:
+        if hasattr(arpeggio, 'musicdiff_cached_highest_diatonic_element'):
+            return arpeggio.musicdiff_cached_highest_diatonic_element  # type: ignore
+
+        origSpannedList: List[m21.note.NotRest] = arpeggio.getSpannedElements()
+        nrList: List[m21.note.NotRest] = copy.deepcopy(origSpannedList)
+        highestNoteOrChord: m21.note.NotRest
+        highestNote: m21.note.Note
+        for i, (nr, origSpanned) in enumerate(zip(nrList, origSpannedList)):
+            currentNote: m21.note.Note
+            if isinstance(nr, m21.chord.Chord):
+                # set currentNote to the highest diatonic note in the chord
+                nr.sortDiatonicAscending()
+                currentNote = nr.notes[-1]
+            else:
+                currentNote = nr
+            if i == 0:
+                highestNote = currentNote
+                highestNoteOrChord = origSpanned
+            elif currentNote.pitch.diatonicNoteNum > highestNote.pitch.diatonicNoteNum:
+                highestNote = currentNote
+                highestNoteOrChord = origSpanned
+
+        arpeggio.musicdiff_cached_highest_diatonic_element = highestNoteOrChord  # type: ignore
+        return highestNoteOrChord
+
+    @staticmethod
+    def getPrimarySpannerElement(sp: m21.spanner.Spanner) -> m21.base.Music21Object:
+        # returns sp.getFirst() except if the spanner is ArpeggioMarkSpanner, in
+        # which case it returns the element that contains the highest diatonic
+        # pitch.
+        if not hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
+            return sp.getFirst()
+        if not isinstance(sp, m21.expressions.ArpeggioMarkSpanner):  # type: ignore
+            return sp.getFirst()
+        return M21Utils.getHighestDiatonicNoteOrChord(sp)
+
+    @staticmethod
+    def clefs_are_equivalent(
+        clef1: Optional[m21.clef.Clef],
+        clef2: Optional[m21.clef.Clef]
+    ) -> bool:
+        if not isinstance(clef1, m21.clef.Clef):
+            return False
+        if not isinstance(clef2, m21.clef.Clef):
+            return False
+
+        if clef1.sign != clef2.sign:
+            return False
+        if clef1.line != clef2.line:
+            return False
+        if clef1.octaveChange != clef2.octaveChange:
+            return False
+
+        return True
+
+    @staticmethod
+    def get_extras(
+        measure: m21.stream.Measure,
+        part: m21.stream.Part,
+        spannerBundle: m21.spanner.SpannerBundle
+    ) -> List[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
         # substreams/Voices), skipping any Streams, layout stuff, and GeneralNotes (which
         # are returned from get_notes/get_notes_and_gracenotes).  We're looking for things
@@ -418,17 +501,28 @@ class M21Utils:
                     (m21.note.GeneralNote,
                      m21.spanner.SpannerAnchor,
                      m21.stream.Stream,
-                     m21.layout.LayoutBase) ) )
+                     m21.layout.LayoutBase,
+                     m21.spanner.Spanner) ) )
         else:
             initialList = list(
                 measure.recurse().getElementsNotOfClass(
                     (m21.note.GeneralNote,
                      m21.stream.Stream,
-                     m21.layout.LayoutBase) ) )
+                     m21.layout.LayoutBase,
+                     m21.spanner.Spanner) ) )
+
+        # Sort the initialList by offset in measure, so we can see which clefs are
+        # duplicates from different voices.
+        if len(initialList) > 1:
+            for el in initialList:
+                el.musicdiff_offset_in_measure = el.getOffsetInHierarchy(measure)  # type: ignore
+            initialList.sort(key=lambda el: el.musicdiff_offset_in_measure)  # type: ignore
 
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
         # barlines of type 'none' (also not printed).
+        # We also try to de-duplicate redundant clefs.
+        mostRecentClef: Optional[m21.clef.Clef] = None
         for el in initialList:
             # we ignore hidden extras
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
@@ -437,33 +531,60 @@ class M21Utils:
                 continue
             if M21Utils.extra_to_string(el) == '':
                 continue
+            if isinstance(el, m21.clef.Clef):
+                # If this clef is the same as the most recent clef seen in this
+                # measure (i.e. with no different clef between them), ignore
+                # this one.  It not, use this one, and make a note of it as the
+                # most recent clef.
+
+                # Clef __eq__ compares class, sign, line, and octaveShift.
+                # I don't want to include class in this, since I would like
+                # clef.TrebleClef() == clef.GClef(line=2) to evaluate to True.
+                if M21Utils.clefs_are_equivalent(el, mostRecentClef):
+                    # ignore this clef
+                    continue
+
+                mostRecentClef = el
+
             output.append(el)
 
-        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos that start
+        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos/Ottavas that start
         # on GeneralNotes/SpannerAnchors in this measure
         if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
-            spanner_types = (m21.expressions.ArpeggioMarkSpanner, m21.dynamics.DynamicWedge)
+            spanner_types = (
+                m21.expressions.ArpeggioMarkSpanner,
+                m21.dynamics.DynamicWedge,
+                m21.spanner.Ottava
+            )
         else:
-            spanner_types = (m21.dynamics.DynamicWedge,)
+            spanner_types = (
+                m21.dynamics.DynamicWedge,
+                m21.spanner.Ottava
+            )
 
+        spannerElementClasses = (m21.note.GeneralNote,)
         if hasattr(m21.spanner, 'SpannerAnchor'):
-            for gn in measure.recurse().getElementsByClass(
-                (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
-            ):
-                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
-                for sp in spannerList:
-                    if sp not in spannerBundle:
+            spannerElementClasses = (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
+
+        for gn in measure.recurse().getElementsByClass(spannerElementClasses):
+            spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+            for sp in spannerList:
+                if sp not in spannerBundle:
+                    continue
+                if M21Utils.getPrimarySpannerElement(sp) is gn:
+                    output.append(sp)
+                    if not isinstance(sp, m21.spanner.Ottava):
                         continue
-                    if sp.isFirst(gn):
-                        output.append(sp)
-        else:
-            for gn in measure.recurse().getElementsByClass(m21.note.GeneralNote):
-                spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
-                for sp in spannerList:
-                    if sp not in spannerBundle:
-                        continue
-                    if sp.isFirst(gn):
-                        output.append(sp)
+                    # Transpose all the notes/chords in the Ottava
+                    # to written pitch (for ease of comparison).
+                    if M21Utils.m21SupportsSpannerFill():
+                        # we already transposed the whole score to written pitch
+                        pass
+                    else:
+                        # music21 doesn't support spanner fill,
+                        # so we call our own version instead.
+                        M21Utils.fillOttava(sp, part)
+                        sp.undoTransposition()
 
         # Add any RepeatBracket spanners that start on this measure
         rbList: List[m21.spanner.Spanner] = measure.getSpannerSites(m21.spanner.RepeatBracket)
@@ -476,13 +597,83 @@ class M21Utils:
         return output
 
     @staticmethod
+    def fillOttava(
+        ottava: m21.spanner.Ottava,
+        searchStream: m21.stream.Stream,
+        *,
+        includeEndBoundary: bool = False,
+        mustFinishInSpan: bool = False,
+        mustBeginInSpan: bool = True,
+        includeElementsThatEndAtStart: bool = False
+    ):
+        if hasattr(ottava, 'filledStatus') and ottava.filledStatus is True:  # type: ignore
+            # Don't fill twice.
+            return
+
+        if ottava.getFirst() is None:
+            # no spanned elements?  Nothing to fill.
+            return
+
+        endElement: m21.base.Music21Object | None = None
+        if len(ottava) > 1:
+            # Start and end elements are different, we can't just append everything, we need
+            # to save off the end element, remove it, add everything, then add the end element
+            # again.  Note that if there are actually more than 2 elements before we start
+            # filling, the new intermediate elements will come after the existing ones,
+            # regardless of offset.  But first and last will still be the same two elements
+            # as before, which is the most important thing.
+            endElement = ottava.getLast()
+            ottava.spannerStorage.remove(endElement)
+
+        try:
+            startOffsetInHierarchy: OffsetQL = ottava.getFirst().getOffsetInHierarchy(searchStream)
+        except m21.sites.SitesException:
+            # print('start element not in searchStream')
+            if endElement is not None:
+                ottava.addSpannedElements(endElement)
+            return
+
+        endOffsetInHierarchy: OffsetQL
+        if endElement is not None:
+            try:
+                endOffsetInHierarchy = (
+                    endElement.getOffsetInHierarchy(searchStream) + endElement.quarterLength
+                )
+            except m21.sites.SitesException:
+                # print('end element not in searchStream')
+                ottava.addSpannedElements(endElement)
+                return
+        else:
+            endOffsetInHierarchy = (
+                ottava.getLast().getOffsetInHierarchy(searchStream) + ottava.getLast().quarterLength
+            )
+
+        for foundElement in (searchStream
+                .recurse()
+                .getElementsByOffsetInHierarchy(
+                    startOffsetInHierarchy,
+                    endOffsetInHierarchy,
+                    includeEndBoundary=includeEndBoundary,
+                    mustFinishInSpan=mustFinishInSpan,
+                    mustBeginInSpan=mustBeginInSpan,
+                    includeElementsThatEndAtStart=includeElementsThatEndAtStart)
+                .getElementsByClass(m21.note.NotRest)):
+            if endElement is None or foundElement is not endElement:
+                ottava.addSpannedElements(foundElement)
+
+        if endElement is not None:
+            # add it back in as the end element
+            ottava.addSpannedElements(endElement)
+
+        ottava.filledStatus = True  # type: ignore
+
+    @staticmethod
     def note_to_string(note):
         if note.isRest:
             _str = "R"
         else:
             _str = "N"
         return _str
-
 
     @staticmethod
     def safe_get(indexable, idx):
@@ -577,6 +768,11 @@ class M21Utils:
         if barline.times is not None:
             output += f' times={barline.times}'
         return f'RPT:{output}'
+
+    @staticmethod
+    def ottava_to_string(ottava: m21.spanner.Ottava) -> str:
+        output: str = f'OTT:{ottava.type}'
+        return output
 
     @staticmethod
     def keysig_to_string(keysig: Union[m21.key.Key, m21.key.KeySignature]) -> str:
@@ -764,6 +960,8 @@ class M21Utils:
             return M21Utils.tempo_to_string(extra)
         if isinstance(extra, m21.bar.Barline):
             return M21Utils.barline_to_string(extra)
+        if isinstance(extra, m21.spanner.Ottava):
+            return M21Utils.ottava_to_string(extra)
         if isinstance(extra, m21.spanner.RepeatBracket):
             return M21Utils.repeatbracket_to_string(extra)
         if (hasattr(m21.expressions, 'ArpeggioMark')
