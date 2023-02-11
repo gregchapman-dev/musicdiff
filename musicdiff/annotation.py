@@ -299,7 +299,7 @@ class AnnExtra:
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
-        self.content: str = M21Utils.extra_to_string(extra)
+        self.content: str = M21Utils.extra_to_string(extra, detail)
         self.styledict: str = {}
         if M21Utils.has_style(extra):
             self.styledict = M21Utils.obj_to_styledict(extra, detail) # includes extra.placement if present
@@ -456,7 +456,7 @@ class AnnMeasure:
 
         self.extras_list = []
         if detail >= DetailLevel.AllObjects:
-            for extra in M21Utils.get_extras(measure, part, spannerBundle):
+            for extra in M21Utils.get_extras(measure, part, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
             # For correct comparison, sort the extras_list, so that any list slices
