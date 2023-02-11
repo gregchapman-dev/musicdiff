@@ -487,12 +487,13 @@ class M21Utils:
     def get_extras(
         measure: m21.stream.Measure,
         part: m21.stream.Part,
-        spannerBundle: m21.spanner.SpannerBundle
+        spannerBundle: m21.spanner.SpannerBundle,
+        detail: DetailLevel = DetailLevel.Default
     ) -> List[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
-        # substreams/Voices), skipping any Streams, layout stuff, and GeneralNotes (which
-        # are returned from get_notes/get_notes_and_gracenotes).  We're looking for things
-        # like Clefs, TextExpressions, and Dynamics...
+        # substreams/Voices), skipping any Streams, and GeneralNotes (which are returned
+        # from get_notes/get_notes_and_gracenotes).  We're looking for things like Clefs,
+        # TextExpressions, and Dynamics...
         output: List[m21.base.Music21Object] = []
         initialList: List[m21.base.Music21Object]
         if hasattr(m21.spanner, 'SpannerAnchor'):
@@ -501,14 +502,12 @@ class M21Utils:
                     (m21.note.GeneralNote,
                      m21.spanner.SpannerAnchor,
                      m21.stream.Stream,
-                     m21.layout.LayoutBase,
                      m21.spanner.Spanner) ) )
         else:
             initialList = list(
                 measure.recurse().getElementsNotOfClass(
                     (m21.note.GeneralNote,
                      m21.stream.Stream,
-                     m21.layout.LayoutBase,
                      m21.spanner.Spanner) ) )
 
         # Sort the initialList by offset in measure, so we can see which clefs are
@@ -529,7 +528,7 @@ class M21Utils:
                 continue
             if isinstance(el, m21.bar.Barline) and el.type == 'none':
                 continue
-            if M21Utils.extra_to_string(el) == '':
+            if M21Utils.extra_to_string(el, detail) == '':
                 continue
             if isinstance(el, m21.clef.Clef):
                 # If this clef is the same as the most recent clef seen in this
@@ -943,7 +942,24 @@ class M21Utils:
         return f'END:{rb.number}:len={len(rb)}'
 
     @staticmethod
-    def extra_to_string(extra: m21.base.Music21Object) -> str:
+    def systemlayout_to_string(sb: m21.layout.SystemLayout) -> str:
+        if sb.isNew:
+            return 'SB'
+        return ''
+
+    @staticmethod
+    def pagelayout_to_string(pb: m21.layout.SystemLayout) -> str:
+        if pb.isNew:
+            if pb.pageNumber is not None:
+                return f'PB:num={pb.pageNumber}'
+            return 'PB'
+        return ''
+
+    @staticmethod
+    def extra_to_string(
+        extra: m21.base.Music21Object,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> str:
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
             return M21Utils.keysig_to_string(extra)
         if isinstance(extra, m21.expressions.TextExpression):
@@ -968,6 +984,15 @@ class M21Utils:
                 and hasattr(m21.expressions, 'ArpeggioMarkSpanner')):
             if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
                 return M21Utils.arpeggiomark_to_string(extra)
+
+        # Page breaks and system breaks are only paid attention to at
+        # DetailLevel.AllObjectsWithStyle, because they are entirely
+        # style, no substance.
+        if detail == DetailLevel.AllObjectsWithStyle:
+            if isinstance(extra, m21.layout.SystemLayout):
+                return M21Utils.systemlayout_to_string(extra)
+            if isinstance(extra, m21.layout.PageLayout):
+                return M21Utils.pagelayout_to_string(extra)
 
         # print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''
