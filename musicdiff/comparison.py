@@ -744,7 +744,7 @@ class Comparison:
         op_list["edit" + which], cost["edit" + which] = Comparison._beamtuplet_leveinsthein_diff(
             original[1:], compare_to[1:], note1, note2, which
         )
-        if original[0] == compare_to[0]:  # to avoid perform the pitch_diff
+        if original[0] == compare_to[0]:
             beam_diff_op_list = []
             beam_diff_cost = 0
         else:
