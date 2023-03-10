@@ -15,7 +15,7 @@ from fractions import Fraction
 import math
 import sys
 import copy
-from typing import List, Union, Optional
+from typing import List, Tuple, Union, Optional
 from enum import IntEnum, auto
 
 # import sys
@@ -346,26 +346,51 @@ class M21Utils:
 
 
     @staticmethod
-    def get_tuplets_info(note_list):
-        """create a list with the string that is on the tuplet bracket"""
+    def get_tuplets_info(
+        note_list: List[m21.note.GeneralNote],
+        detail: DetailLevel = DetailLevel.Default
+    ) -> List[List[str]]:
+        """
+        for each note return a list of tuple(str, str) with the tuplet type string and a string
+        representation of what is visible.
+        """
         str_list = []
         for n in note_list:
-            tuple_info_list_for_note = []
+            tuplet_info_list_for_note = []
             for t in n.duration.tuplets:
-                if t.tupletNormalShow in ("number", "both"): # if there is a notation like "2:3"
-                    new_info = str(t.numberNotesActual) + ":" + str(t.numberNotesNormal)
-                else:  # just a number for the tuplets
-                    new_info = str(t.numberNotesActual)
-                # if the brackets are drown explicitly, add B
-                if t.bracket:
-                    new_info = new_info + "B"
-                tuple_info_list_for_note.append(new_info)
-            str_list.append(tuple_info_list_for_note)
+                if t.type == "start":
+                    # music21 only pays attention to number and bracket visibility/placement
+                    # on the start note of a tuplet.
+                    if t.tupletActualShow in ("number", "both"):
+                        if t.tupletNormalShow in ("number", "both"):
+                            new_info = str(t.numberNotesActual) + ":" + str(t.numberNotesNormal)
+                        else:  # just a number for the tuplets
+                            new_info = str(t.numberNotesActual)
+                    else:
+                        if t.tupletNormalShow in ("number", "both"):
+                            new_info = ":" + str(t.numberNotesNormal)
+                        else:  # no number shown
+                            new_info = ""
+                    # if the brackets are drawn explicitly, add B
+                    if t.bracket:
+                        new_info = new_info + "B"
+                    # if diffing style, include placement (None, "above", "below")
+                    if detail >= DetailLevel.AllObjectsWithStyle:
+                        if t.placement is not None:
+                            new_info = new_info + t.placement
+                    tuplet_info_list_for_note.append(new_info)
+            str_list.append(tuplet_info_list_for_note)
         return str_list
 
 
     @staticmethod
-    def get_tuplets_type(note_list):
+    def get_tuplets_type(
+        note_list: List[m21.note.GeneralNote]
+    ) -> List[List[str]]:
+        """
+        for each note return a list of tuple(str, str), with the first string filled in with
+        the type of the tuplets for the note
+        """
         tuplets_list = [[t.type for t in n.duration.tuplets] for n in note_list]
         new_tuplets_list = tuplets_list.copy()
         # now correct the missing of "start" and add "continue" for clarity
@@ -373,21 +398,21 @@ class M21Utils:
         for ii in range(max_tupl_len):
             start_index = None
             # stop_index = None
-            for i, note_tuple in enumerate(tuplets_list):
-                if len(note_tuple) > ii:
-                    if note_tuple[ii] == "start":
+            for i, note_tuplets in enumerate(tuplets_list):
+                if len(note_tuplets) > ii:
+                    if note_tuplets[ii] == "start":
                         # Some medieval music has weirdly nested triplets that
                         # end up in music21 with two starts in a row.  This is
                         # OK, no need to assert here.
 #                        assert start_index is None
                         start_index = ii
-                    elif note_tuple[ii] is None:
+                    elif note_tuplets[ii] is None:
                         if start_index is None:
                             start_index = ii
                             new_tuplets_list[i][ii] = "start"
                         else:
                             new_tuplets_list[i][ii] = "continue"
-                    elif note_tuple[ii] == "stop":
+                    elif note_tuplets[ii] == "stop":
                         start_index = None
                     else:
                         raise TypeError("Invalid tuplet type")

@@ -23,7 +23,13 @@ from musicdiff import M21Utils
 from musicdiff import DetailLevel
 
 class AnnNote:
-    def __init__(self, general_note: m21.note.GeneralNote, enhanced_beam_list, tuplet_list, detail: DetailLevel = DetailLevel.Default):
+    def __init__(
+        self,
+        general_note: m21.note.GeneralNote,
+        enhanced_beam_list,
+        tuplet_list,
+        tuplet_info,
+        detail: DetailLevel = DetailLevel.Default):
         """
         Extend music21 GeneralNote with some precomputed, easily compared information about it.
 
@@ -39,6 +45,7 @@ class AnnNote:
         self.general_note = general_note.id
         self.beamings = enhanced_beam_list
         self.tuplets = tuplet_list
+        self.tuplet_info = tuplet_info
 
         self.stylestr: str = ''
         self.styledict: dict = {}
@@ -149,9 +156,11 @@ class AnnNote:
 
     def __repr__(self):
         # does consider the MEI id!
-        return (f"{self.pitches},{self.note_head},{self.dots},{self.beamings}," +
-                f"{self.tuplets},{self.general_note},{self.articulations},{self.expressions}," +
-                f"{self.lyrics},{self.styledict}")
+        return (
+            f"{self.pitches},{self.note_head},{self.dots},B:{self.beamings}," +
+            f"T:{self.tuplets},TI:{self.tuplet_info},{self.general_note}," +
+            f"{self.articulations},{self.expressions},{self.lyrics},{self.styledict}"
+        )
 
     def __str__(self):
         """
@@ -188,17 +197,21 @@ class AnnNote:
                     string += "pa"
                 else:
                     raise Exception(f"Incorrect beaming type: {b}")
+
         if len(self.tuplets) > 0:  # add for tuplets
             string += "T"
-            for t in self.tuplets:
+            for t, ti in zip(self.tuplets, self.tuplet_info):
+                if ti != "":
+                    ti = "(" + ti + ")"
                 if t == "start":
-                    string += "sr"
+                    string += "sr" + ti
                 elif t == "continue":
-                    string += "co"
+                    string += "co" + ti
                 elif t == "stop":
-                    string += "sp"
+                    string += "sp" + ti
                 else:
                     raise Exception(f"Incorrect tuplets type: {t}")
+
         if len(self.articulations) > 0:  # add for articulations
             for a in self.articulations:
                 string += a
@@ -354,7 +367,7 @@ class AnnVoice:
         if not note_list:
             self.en_beam_list = []
             self.tuplet_list = []
-            self.tuple_info = []
+            self.tuplet_info = []
             self.annot_notes = []
         else:
             self.en_beam_list = M21Utils.get_enhance_beamings(
@@ -363,12 +376,18 @@ class AnnVoice:
             self.tuplet_list = M21Utils.get_tuplets_type(
                 note_list
             )  # corrected tuplets (with "start" and "continue")
-            self.tuple_info = M21Utils.get_tuplets_info(note_list)
+            self.tuplet_info = M21Utils.get_tuplets_info(note_list)
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
             for i, n in enumerate(note_list):
                 self.annot_notes.append(
-                    AnnNote(n, self.en_beam_list[i], self.tuplet_list[i], detail)
+                    AnnNote(
+                        n,
+                        self.en_beam_list[i],
+                        self.tuplet_list[i],
+                        self.tuplet_info[i],
+                        detail
+                    )
                 )
 
         self.n_of_notes = len(self.annot_notes)
