@@ -94,6 +94,45 @@ class M21Utils:
             out_string += "*"
         return out_string
 
+    @staticmethod
+    def expression_to_string(expr: m21.expressions.Expression) -> str:
+        theName: str = ''
+
+        # we customize name a bit for Turn/Mordent/Trill, because we only want to
+        # know about printed accidentals (i.e. with displayStatus == True).
+        if isinstance(expr, m21.expressions.Turn):
+            theName = expr.__class__.__name__
+            theName = m21.common.camelCaseToHyphen(theName, replacement=' ')
+
+            if expr.delay == m21.common.enums.OrnamentDelay.DEFAULT_DELAY:
+                theName = 'delayed ' + theName
+            elif isinstance(expr.delay, (float, Fraction)):
+                theName = f'delayed(delayQL={expr.delay}) ' + theName
+
+            if ((expr.upperAccid and expr.upperAccid.displayStatus is True)
+                    or (expr.lowerAccid and expr.lowerAccid.displayStatus is True)):
+                theName += ' ('
+                if expr.upperAccid and expr.upperAccid.displayStatus is True:
+                    theName += 'upper=' + expr.upperAccid.name
+                    if expr.lowerAccid and expr.lowerAccid.displayStatus is True:
+                        theName += ', '
+                if expr.lowerAccid and expr.lowerAccid.displayStatus is True:
+                    theName += 'lower=' + expr.lowerAccid.name
+                theName += ')'
+
+            return theName
+
+        if isinstance(expr, (m21.expressions.Mordent, m21.expressions.Trill)):
+            theName = expr.__class__.__name__
+            theName = m21.common.camelCaseToHyphen(theName, replacement=' ')
+
+            if expr.accid and expr.accid.displayStatus is True:
+                theName += f' ({expr.accid.name})'
+
+            return theName
+
+        theName = expr.name
+        return theName
 
     @staticmethod
     def note2tuple(note):
@@ -111,7 +150,7 @@ class M21Utils:
             if note.pitch.accidental is None:
                 pass
             elif note.pitch.accidental.displayStatus is not None:
-                if note.pitch.accidental.displayStatus:
+                if note.pitch.accidental.displayStatus is True:
                     note_accidental = note.pitch.accidental.name
             else:
                 # note.pitch.accidental.displayStatus was not set.
