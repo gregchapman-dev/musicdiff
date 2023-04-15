@@ -94,6 +94,79 @@ class M21Utils:
             out_string += "*"
         return out_string
 
+    @staticmethod
+    def expression_to_string(expr: m21.expressions.Expression) -> str:
+        theName: str = ''
+
+        # we customize name a bit for Turn/Mordent/Trill, because we only want to
+        # know about visible accidentals (i.e. with displayStatus == True).
+        if isinstance(expr, m21.expressions.Turn):
+            theName = expr.__class__.__name__
+            theName = m21.common.camelCaseToHyphen(theName, replacement=' ')
+
+            if expr.delay == m21.common.enums.OrnamentDelay.DEFAULT_DELAY:
+                theName = 'delayed ' + theName
+            elif isinstance(expr.delay, (float, Fraction)):
+                theName = f'delayed(delayQL={expr.delay}) ' + theName
+
+            upperAccidentalIsVisible: bool = (
+                expr.upperAccidental is not None
+                    and expr.upperAccidental.displayStatus is True
+            )
+            if not upperAccidentalIsVisible:
+                # check if someone (e.g. makeAccidentals) decided it should be visible anyway
+                upperAccidentalIsVisible = (
+                    expr.upperOrnamentalPitch is not None
+                        and expr.upperOrnamentalPitch.accidental is not None
+                        and expr.upperOrnamentalPitch.accidental.displayStatus is True
+            )
+
+            lowerAccidentalIsVisible: bool = (
+                expr.lowerAccidental is not None
+                    and expr.lowerAccidental.displayStatus is True
+            )
+            if not lowerAccidentalIsVisible:
+                # check if someone (e.g. makeAccidentals) decided it should be visible anyway
+                lowerAccidentalIsVisible = (
+                    expr.lowerOrnamentalPitch is not None
+                        and expr.lowerOrnamentalPitch.accidental is not None
+                        and expr.lowerOrnamentalPitch.accidental.displayStatus is True
+            )
+
+            if upperAccidentalIsVisible or lowerAccidentalIsVisible:
+                theName += ' ('
+                if upperAccidentalIsVisible:
+                    theName += 'upper=' + expr.upperAccidental.name
+                    if lowerAccidentalIsVisible:
+                        theName += ', '
+                if lowerAccidentalIsVisible:
+                    theName += 'lower=' + expr.lowerAccidental.name
+                theName += ')'
+
+            return theName
+
+        if isinstance(expr, (m21.expressions.Mordent, m21.expressions.Trill)):
+            theName = expr.__class__.__name__
+            theName = m21.common.camelCaseToHyphen(theName, replacement=' ')
+
+            accidentalIsVisible: bool = (
+                expr.accidental and expr.accidental.displayStatus is True
+            )
+            if not accidentalIsVisible:
+                # check if someone (e.g. makeAccidentals) decided it should be visible anyway
+                accidentalIsVisible = (
+                    expr.ornamentalPitch is not None
+                        and expr.ornamentalPitch.accidental is not None
+                        and expr.ornamentalPitch.accidental.displayStatus is True
+                )
+
+            if accidentalIsVisible:
+                theName += f' ({expr.accidental.name})'
+
+            return theName
+
+        theName = expr.name
+        return theName
 
     @staticmethod
     def note2tuple(note):
