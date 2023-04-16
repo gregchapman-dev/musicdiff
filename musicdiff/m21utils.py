@@ -98,7 +98,7 @@ class M21Utils:
     def expression_to_string(expr: m21.expressions.Expression) -> str:
         theName: str = ''
 
-        # we customize name a bit for Turn/Mordent/Trill, because we only want to
+        # we customize name a bit for Turn/GeneralMordent/Trill, because we only want to
         # know about visible accidentals (i.e. with displayStatus == True).
         if isinstance(expr, m21.expressions.Turn):
             theName = expr.__class__.__name__
@@ -145,7 +145,7 @@ class M21Utils:
 
             return theName
 
-        if isinstance(expr, (m21.expressions.Mordent, m21.expressions.Trill)):
+        if isinstance(expr, (m21.expressions.GeneralMordent, m21.expressions.Trill)):
             theName = expr.__class__.__name__
             theName = m21.common.camelCaseToHyphen(theName, replacement=' ')
 
