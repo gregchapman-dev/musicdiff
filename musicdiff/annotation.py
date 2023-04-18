@@ -105,7 +105,7 @@ class AnnNote:
         if self.articulations:
             self.articulations.sort()
         # expressions
-        self.expressions = [a.name for a in general_note.expressions]
+        self.expressions = [M21Utils.expression_to_string(a) for a in general_note.expressions]
         if self.expressions:
             self.expressions.sort()
 
