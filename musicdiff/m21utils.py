@@ -487,7 +487,7 @@ class M21Utils:
         the type of the tuplets for the note
         """
         tuplets_list: list[list[str | None]] = [
-            [str(tup.type) for tup in n.duration.tuplets] for n in note_list
+            [tup.type for tup in n.duration.tuplets] for n in note_list
         ]
         new_tuplets_list = tuplets_list.copy()
 

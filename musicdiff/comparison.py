@@ -479,11 +479,11 @@ class Comparison:
         counter: dict = {"+": 0, "-": 0}
         distance: int = 0
         for edit_code in ndiff(str1, str2):
-            if edit_code == " ":
+            if edit_code[0] == " ":
                 distance += max(counter.values())
                 counter = {"+": 0, "-": 0}
             else:
-                counter[edit_code] += 1
+                counter[edit_code[0]] += 1
         distance += max(counter.values())
         return distance
 
