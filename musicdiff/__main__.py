@@ -26,15 +26,24 @@ from musicdiff import DetailLevel
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-                prog='python3 -m musicdiff',
-                description='Music score notation diff (MusicXML, MEI, Humdrum, etc)')
-    parser.add_argument("file1",
-                        help="first music score file to compare (any format music21 can parse)")
-    parser.add_argument("file2",
-                        help="second music score file to compare (any format music21 can parse)")
-    parser.add_argument("-d", "--detail", default="Default",
-                        choices=["GeneralNotesOnly", "AllObjects", "AllObjectsWithStyle", "Default"],
-                        help="set detail level")
+        prog='python3 -m musicdiff',
+        description='Music score notation diff (MusicXML, MEI, Humdrum, etc)'
+    )
+    parser.add_argument(
+        "file1",
+        help="first music score file to compare (any format music21 can parse)"
+    )
+    parser.add_argument(
+        "file2",
+        help="second music score file to compare (any format music21 can parse)"
+    )
+    parser.add_argument(
+        "-d",
+        "--detail",
+        default="Default",
+        choices=["GeneralNotesOnly", "AllObjects", "AllObjectsWithStyle", "Default"],
+        help="set detail level"
+    )
     args = parser.parse_args()
 
     detail: DetailLevel = DetailLevel.Default
@@ -50,6 +59,8 @@ if __name__ == "__main__":
     # Note that diff() can take a music21 Score instead of a file, for either
     # or both arguments.
     # Note also that diff() can take str or pathlib.Path for files.
-    numDiffs: int = diff(args.file1, args.file2, detail=detail)
-    if numDiffs is not None and numDiffs == 0:
+    numDiffs: int | None = diff(args.file1, args.file2, detail=detail)
+    if numDiffs is None:
+        print('musicdiff failed.', file=sys.stderr)
+    elif numDiffs == 0:
         print(f'Scores in {args.file1} and {args.file2} are identical.', file=sys.stderr)

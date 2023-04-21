@@ -15,7 +15,6 @@
 __docformat__ = "google"
 
 from fractions import Fraction
-from typing import Optional, List
 
 import music21 as m21
 
@@ -26,10 +25,11 @@ class AnnNote:
     def __init__(
         self,
         general_note: m21.note.GeneralNote,
-        enhanced_beam_list,
-        tuplet_list,
-        tuplet_info,
-        detail: DetailLevel = DetailLevel.Default):
+        enhanced_beam_list: list[str],
+        tuplet_list: list[str],
+        tuplet_info: list[str],
+        detail: DetailLevel = DetailLevel.Default
+    ) -> None:
         """
         Extend music21 GeneralNote with some precomputed, easily compared information about it.
 
@@ -42,17 +42,17 @@ class AnnNote:
                 currently equivalent to AllObjects).
 
         """
-        self.general_note = general_note.id
-        self.beamings = enhanced_beam_list
-        self.tuplets = tuplet_list
-        self.tuplet_info = tuplet_info
+        self.general_note: int | str = general_note.id
+        self.beamings: list[str] = enhanced_beam_list
+        self.tuplets: list[str] = tuplet_list
+        self.tuplet_info: list[str] = tuplet_info
 
         self.stylestr: str = ''
         self.styledict: dict = {}
         if M21Utils.has_style(general_note):
             self.styledict = M21Utils.obj_to_styledict(general_note, detail)
         self.noteshape: str = 'normal'
-        self.noteheadFill: Optional[bool] = None
+        self.noteheadFill: bool | None = None
         self.noteheadParenthesis: bool = False
         self.stemDirection: str = 'unspecified'
         if detail >= DetailLevel.AllObjectsWithStyle and isinstance(general_note, m21.note.NotRest):
@@ -62,38 +62,44 @@ class AnnNote:
             self.stemDirection = general_note.stemDirection
 
         # compute the representation of NoteNode as in the paper
-        # pitches is a list  of elements, each one is (pitchposition, accidental, tie)
+        # pitches is a list  of elements, each one is (pitchposition, accidental, tied)
+        self.pitches: list[tuple[str, str, bool]]
         if general_note.isRest:
             self.pitches = [
                 ("R", "None", False)
             ]  # accidental and tie are automaticaly set for rests
-        elif general_note.isChord or "ChordBase" in general_note.classSet:
-            # ChordBase/PercussionChord is new in v7, so I am being careful to use
-            # it only as a string so v6 will still work.
-            noteList: [m21.note.GeneralNote] = general_note.notes
-            if hasattr(general_note, "sortDiatonicAscending"): # PercussionChords don't have this
-                noteList = general_note.sortDiatonicAscending().notes
-            self.pitches = [
-                M21Utils.note2tuple(p) for p in noteList
-            ]
-        elif general_note.isNote or isinstance(general_note, m21.note.Unpitched):
+
+        elif isinstance(general_note, m21.chord.ChordBase):
+            notes: tuple[m21.note.NotRest, ...] = general_note.notes
+            if hasattr(general_note, "sortDiatonicAscending"):
+                # PercussionChords don't have this
+                notes = general_note.sortDiatonicAscending().notes
+            self.pitches = []
+            for p in notes:
+                if not isinstance(p, (m21.note.Note, m21.note.Unpitched)):
+                    raise TypeError("The chord must contain only Note or Unpitched")
+                self.pitches.append(M21Utils.note2tuple(p))
+
+        elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched)):
             self.pitches = [M21Utils.note2tuple(general_note)]
         else:
-            raise TypeError("The generalNote must be a Chord, a Rest or a Note")
+            raise TypeError("The generalNote must be a Chord, a Rest, a Note, or an Unpitched")
+
         # note head
         type_number = Fraction(
             M21Utils.get_type_num(general_note.duration)
         )
+        self.note_head: int | Fraction
         if type_number >= 4:
             self.note_head = 4
         else:
             self.note_head = type_number
         # dots
-        self.dots = general_note.duration.dots
+        self.dots: int = general_note.duration.dots
         # graceness
         if isinstance(general_note.duration, m21.duration.AppoggiaturaDuration):
-            self.graceType = 'acc'
-            self.graceSlash = general_note.duration.slash
+            self.graceType: str = 'acc'
+            self.graceSlash: bool | None = general_note.duration.slash
         elif isinstance(general_note.duration, m21.duration.GraceDuration):
             self.graceType = 'nonacc'
             self.graceSlash = general_note.duration.slash
@@ -101,16 +107,18 @@ class AnnNote:
             self.graceType = ''
             self.graceSlash = False
         # articulations
-        self.articulations = [a.name for a in general_note.articulations]
+        self.articulations: list[str] = [a.name for a in general_note.articulations]
         if self.articulations:
             self.articulations.sort()
         # expressions
-        self.expressions = [M21Utils.expression_to_string(a) for a in general_note.expressions]
+        self.expressions: list[str] = [
+            M21Utils.expression_to_string(a) for a in general_note.expressions
+        ]
         if self.expressions:
             self.expressions.sort()
 
         # lyrics
-        self.lyrics: List[str] = []
+        self.lyrics: list[str] = []
         for lyric in general_note.lyrics:
             lyricStr: str = ""
             if lyric.number is not None:
@@ -127,16 +135,16 @@ class AnnNote:
             self.lyrics.append(lyricStr)
 
         # precomputed representations for faster comparison
-        self.precomputed_str = self.__str__()
+        self.precomputed_str: str = self.__str__()
 
-    def notation_size(self):
+    def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnNote`.
 
         Returns:
             int: The notation size of the annotated note
         """
-        size = 0
+        size: int = 0
         # add for the pitches
         for pitch in self.pitches:
             size += M21Utils.pitch_size(pitch)
@@ -154,20 +162,20 @@ class AnnNote:
         size += len(self.lyrics)
         return size
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         # does consider the MEI id!
         return (
-            f"{self.pitches},{self.note_head},{self.dots},B:{self.beamings}," +
-            f"T:{self.tuplets},TI:{self.tuplet_info},{self.general_note}," +
-            f"{self.articulations},{self.expressions},{self.lyrics},{self.styledict}"
+            f"{self.pitches},{self.note_head},{self.dots},B:{self.beamings},"
+            + f"T:{self.tuplets},TI:{self.tuplet_info},{self.general_note},"
+            + f"{self.articulations},{self.expressions},{self.lyrics},{self.styledict}"
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Returns:
             str: the representation of the Annotated note. Does not consider MEI id
         """
-        string = "["
+        string: str = "["
         for p in self.pitches:  # add for pitches
             string += p[0]
             if p[1] != "None":
@@ -196,21 +204,21 @@ class AnnNote:
                 elif b == "partial":
                     string += "pa"
                 else:
-                    raise Exception(f"Incorrect beaming type: {b}")
+                    raise ValueError(f"Incorrect beaming type: {b}")
 
         if len(self.tuplets) > 0:  # add for tuplets
             string += "T"
-            for t, ti in zip(self.tuplets, self.tuplet_info):
+            for tup, ti in zip(self.tuplets, self.tuplet_info):
                 if ti != "":
                     ti = "(" + ti + ")"
-                if t == "start":
+                if tup == "start":
                     string += "sr" + ti
-                elif t == "continue":
+                elif tup == "continue":
                     string += "co" + ti
-                elif t == "stop":
+                elif tup == "stop":
                     string += "sp" + ti
                 else:
-                    raise Exception(f"Incorrect tuplets type: {t}")
+                    raise ValueError(f"Incorrect tuplet type: {tup}")
 
         if len(self.articulations) > 0:  # add for articulations
             for a in self.articulations:
@@ -239,7 +247,7 @@ class AnnNote:
 
         return string
 
-    def get_note_ids(self):
+    def get_note_ids(self) -> list[str | int]:
         """
         Computes a list of the GeneralNote ids for this `AnnNote`.  Since there
         is only one GeneralNote here, this will always be a single-element list.
@@ -249,7 +257,7 @@ class AnnNote:
         """
         return [self.general_note]
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         # equality does not consider the MEI id!
         return self.precomputed_str == other.precomputed_str
 
@@ -274,15 +282,25 @@ class AnnNote:
 
 
 class AnnExtra:
-    def __init__(self, extra: m21.base.Music21Object, measure: m21.stream.Measure, score: m21.stream.Score, detail: DetailLevel = DetailLevel.Default):
+    def __init__(
+        self,
+        extra: m21.base.Music21Object,
+        measure: m21.stream.Measure,
+        score: m21.stream.Score,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> None:
         """
-        Extend music21 non-GeneralNote and non-Stream objects with some precomputed, easily compared information about it.
+        Extend music21 non-GeneralNote and non-Stream objects with some precomputed,
+        easily compared information about it.
+
         Examples: TextExpression, Dynamic, Clef, Key, TimeSignature, MetronomeMark, etc.
 
         Args:
-            extra (music21.base.Music21Object): The music21 non-GeneralNote/non-Stream object to extend.
-            measure (music21.stream.Measure): The music21 Measure the extra was found in.  If the extra
-                was found in a Voice, this is the Measure that the Voice was found in.
+            extra (music21.base.Music21Object): The music21 non-GeneralNote/non-Stream
+                object to extend.
+            measure (music21.stream.Measure): The music21 Measure the extra was found in.
+                If the extra was found in a Voice, this is the Measure that the Voice was
+                found in.
             detail (DetailLevel): What level of detail to use during the diff.  Can be
                 GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
                 currently equivalent to AllObjects).
@@ -291,17 +309,21 @@ class AnnExtra:
         self.offset: float
         self.duration: float
         self.numNotes: int = 1
+
         if isinstance(extra, m21.spanner.Spanner):
             self.numNotes = len(extra)
-            firstNote: m21.note.GeneralNote = M21Utils.getPrimarySpannerElement(extra)
-            lastNote: m21.note.GeneralNote = extra.getLast()
+            firstNote: m21.note.GeneralNote | m21.spanner.SpannerAnchor = (
+                M21Utils.getPrimarySpannerElement(extra)
+            )
+            lastNote: m21.note.GeneralNote | m21.spanner.SpannerAnchor = (
+                extra.getLast()
+            )
             self.offset = float(firstNote.getOffsetInHierarchy(measure))
             # to compute duration we need to use offset-in-score, since the end note might
             # be in another Measure.  Except for ArpeggioMarkSpanners, where the duration
             # doesn't matter, so we just set it to 0, rather than figuring out the longest
             # duration in all the notes/chords in the arpeggio.
-            if (hasattr(m21.expressions, 'ArpeggioMarkSpanner')
-                    and isinstance(extra, m21.expressions.ArpeggioMarkSpanner)):
+            if isinstance(extra, m21.expressions.ArpeggioMarkSpanner):
                 self.duration = 0.
             else:
                 startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
@@ -312,16 +334,21 @@ class AnnExtra:
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
+
         self.content: str = M21Utils.extra_to_string(extra, detail)
-        self.styledict: str = {}
+        self.styledict: dict = {}
+
         if M21Utils.has_style(extra):
-            self.styledict = M21Utils.obj_to_styledict(extra, detail) # includes extra.placement if present
-        self._notation_size: int = 1 # so far, always 1, but maybe some extra will be bigger someday
+            # includes extra.placement if present
+            self.styledict = M21Utils.obj_to_styledict(extra, detail)
+
+        # so far, always 1, but maybe some extra will be bigger someday
+        self._notation_size: int = 1
 
         # precomputed representations for faster comparison
-        self.precomputed_str = self.__str__()
+        self.precomputed_str: str = self.__str__()
 
-    def notation_size(self):
+    def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnExtra`.
 
@@ -330,10 +357,10 @@ class AnnExtra:
         """
         return self._notation_size
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Returns:
             str: the compared representation of the AnnExtra. Does not consider music21 id.
@@ -346,29 +373,34 @@ class AnnExtra:
             string += f",{k}={v}"
         return string
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         # equality does not consider the MEI id!
         return self.precomputed_str == other.precomputed_str
 
 
 class AnnVoice:
-    def __init__(self, voice: m21.stream.Voice, detail: DetailLevel = DetailLevel.Default):
+    def __init__(
+        self,
+        voice: m21.stream.Voice | m21.stream.Measure,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> None:
         """
         Extend music21 Voice with some precomputed, easily compared information about it.
 
         Args:
-            voice (music21.stream.Voice): The music21 voice to extend.
+            voice (music21.stream.Voice or Measure): The music21 voice to extend. This
+                can be a Measure, but only if it contains no Voices.
             detail (DetailLevel): What level of detail to use during the diff.  Can be
                 GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
                 currently equivalent to AllObjects).
         """
-        self.voice = voice.id
-        note_list = M21Utils.get_notes_and_gracenotes(voice)
+        self.voice: int | str = voice.id
+        note_list: list[m21.note.GeneralNote] = M21Utils.get_notes_and_gracenotes(voice)
         if not note_list:
-            self.en_beam_list = []
-            self.tuplet_list = []
-            self.tuplet_info = []
-            self.annot_notes = []
+            self.en_beam_list: list[list[str]] = []
+            self.tuplet_list: list[list[str]] = []
+            self.tuplet_info: list[list[str]] = []
+            self.annot_notes: list[AnnNote] = []
         else:
             self.en_beam_list = M21Utils.get_enhance_beamings(
                 note_list
@@ -390,10 +422,10 @@ class AnnVoice:
                     )
                 )
 
-        self.n_of_notes = len(self.annot_notes)
-        self.precomputed_str = self.__str__()
+        self.n_of_notes: int = len(self.annot_notes)
+        self.precomputed_str: str = self.__str__()
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
         if not isinstance(other, AnnVoice):
             return False
@@ -406,7 +438,7 @@ class AnnVoice:
         #     [an[0] == an[1] for an in zip(self.annot_notes, other.annot_notes)]
         # )
 
-    def notation_size(self):
+    def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnVoice`.
 
@@ -415,22 +447,23 @@ class AnnVoice:
         """
         return sum([an.notation_size() for an in self.annot_notes])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.annot_notes.__repr__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         string = "["
         for an in self.annot_notes:
             string += str(an)
             string += ","
 
         if string[-1] == ",":
-            string = string[:-1] # delete the last comma
+            # delete the last comma
+            string = string[:-1]
 
         string += "]"
         return string
 
-    def get_note_ids(self):
+    def get_note_ids(self) -> list[str | int]:
         """
         Computes a list of the GeneralNote ids for this `AnnVoice`.
 
@@ -441,11 +474,14 @@ class AnnVoice:
 
 
 class AnnMeasure:
-    def __init__(self, measure: m21.stream.Measure,
-                       part: m21.stream.Part,
-                       score: m21.stream.Score,
-                       spannerBundle: m21.spanner.SpannerBundle,
-                       detail: DetailLevel = DetailLevel.Default):
+    def __init__(
+        self,
+        measure: m21.stream.Measure,
+        part: m21.stream.Part,
+        score: m21.stream.Score,
+        spannerBundle: m21.spanner.SpannerBundle,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> None:
         """
         Extend music21 Measure with some precomputed, easily compared information about it.
 
@@ -453,16 +489,17 @@ class AnnMeasure:
             measure (music21.stream.Measure): The music21 Measure to extend.
             part (music21.stream.Part): the enclosing music21 Part
             score (music21.stream.Score): the enclosing music21 Score.
-            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.
+            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
+                in the score.
             detail (DetailLevel): What level of detail to use during the diff.  Can be
                 GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
                 currently equivalent to AllObjects).
         """
-        self.measure = measure.id
-        self.voices_list = []
-        if (
-            len(measure.voices) == 0
-        ):  # there is a single AnnVoice ( == for the library there are no voices)
+        self.measure: int | str = measure.id
+        self.voices_list: list[AnnVoice] = []
+
+        if len(measure.voices) == 0:
+            # there is a single AnnVoice (i.e. in the music21 Measure there are no voices)
             ann_voice = AnnVoice(measure, detail)
             if ann_voice.n_of_notes > 0:
                 self.voices_list.append(ann_voice)
@@ -471,28 +508,32 @@ class AnnMeasure:
                 ann_voice = AnnVoice(voice, detail)
                 if ann_voice.n_of_notes > 0:
                     self.voices_list.append(ann_voice)
-        self.n_of_voices = len(self.voices_list)
+        self.n_of_voices: int = len(self.voices_list)
 
-        self.extras_list = []
+        self.extras_list: list[AnnExtra] = []
         if detail >= DetailLevel.AllObjects:
             for extra in M21Utils.get_extras(measure, part, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
             # For correct comparison, sort the extras_list, so that any list slices
             # that all have the same offset are sorted alphabetically.
-            self.extras_list.sort(key=lambda e: ( e.offset, str(e) ))
+            self.extras_list.sort(key=lambda e: (e.offset, str(e)))
 
         # precomputed values to speed up the computation. As they start to be long, they are hashed
-        self.precomputed_str = hash(self.__str__())
-        self.precomputed_repr = hash(self.__repr__())
+        self.precomputed_str: int = hash(self.__str__())
+        self.precomputed_repr: int = hash(self.__repr__())
 
-    def __str__(self):
-        return str([str(v) for v in self.voices_list]) + ' Extras:' + str([str(e) for e in self.extras_list])
+    def __str__(self) -> str:
+        return (
+            str([str(v) for v in self.voices_list])
+            + ' Extras:'
+            + str([str(e) for e in self.extras_list])
+        )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.voices_list.__repr__() + ' Extras:' + self.extras_list.__repr__()
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
         if not isinstance(other, AnnMeasure):
             return False
@@ -506,16 +547,19 @@ class AnnMeasure:
         return self.precomputed_str == other.precomputed_str
         # return all([v[0] == v[1] for v in zip(self.voices_list, other.voices_list)])
 
-    def notation_size(self):
+    def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnMeasure`.
 
         Returns:
             int: The notation size of the annotated measure
         """
-        return sum([v.notation_size() for v in self.voices_list]) + sum([e.notation_size() for e in self.extras_list])
+        return (
+            sum([v.notation_size() for v in self.voices_list])
+            + sum([e.notation_size() for e in self.extras_list])
+        )
 
-    def get_note_ids(self):
+    def get_note_ids(self) -> list[str | int]:
         """
         Computes a list of the GeneralNote ids for this `AnnMeasure`.
 
@@ -529,35 +573,42 @@ class AnnMeasure:
 
 
 class AnnPart:
-    def __init__(self, part: m21.stream.Part,
-                       score: m21.stream.Score,
-                       spannerBundle: m21.spanner.SpannerBundle,
-                       detail: DetailLevel = DetailLevel.Default):
+    def __init__(
+        self,
+        part: m21.stream.Part,
+        score: m21.stream.Score,
+        spannerBundle: m21.spanner.SpannerBundle,
+        detail: DetailLevel = DetailLevel.Default
+    ):
         """
         Extend music21 Part/PartStaff with some precomputed, easily compared information about it.
 
         Args:
-            part (music21.stream.Part, music21.stream.PartStaff): The music21 Part/PartStaff to extend.
+            part (music21.stream.Part, music21.stream.PartStaff): The music21 Part/PartStaff
+                to extend.
             score (music21.stream.Score): the enclosing music21 Score.
-            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in the score.
+            spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in
+                the score.
             detail (DetailLevel): What level of detail to use during the diff.  Can be
                 GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
                 currently equivalent to AllObjects).
         """
-        self.part = part.id
-        self.bar_list = []
+        self.part: int | str = part.id
+        self.bar_list: list[AnnMeasure] = []
         for measure in part.getElementsByClass("Measure"):
-            ann_bar = AnnMeasure(measure, part, score, spannerBundle, detail)  # create the bar objects
+            # create the bar objects
+            ann_bar = AnnMeasure(measure, part, score, spannerBundle, detail)
             if ann_bar.n_of_voices > 0:
                 self.bar_list.append(ann_bar)
-        self.n_of_bars = len(self.bar_list)
-        # precomputed str to speed up the computation. String itself start to be long, so it is hashed
-        self.precomputed_str = hash(self.__str__())
+        self.n_of_bars: int = len(self.bar_list)
+        # Precomputed str to speed up the computation.
+        # String itself is pretty long, so it is hashed
+        self.precomputed_str: int = hash(self.__str__())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str([str(b) for b in self.bar_list])
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
         if not isinstance(other, AnnPart):
             return False
@@ -567,7 +618,7 @@ class AnnPart:
 
         return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
 
-    def notation_size(self):
+    def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnPart`.
 
@@ -576,10 +627,10 @@ class AnnPart:
         """
         return sum([b.notation_size() for b in self.bar_list])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.bar_list.__repr__()
 
-    def get_note_ids(self):
+    def get_note_ids(self) -> list[str | int]:
         """
         Computes a list of the GeneralNote ids for this `AnnPart`.
 
@@ -593,7 +644,11 @@ class AnnPart:
 
 
 class AnnScore:
-    def __init__(self, score: m21.stream.Score, detail: DetailLevel = DetailLevel.Default):
+    def __init__(
+        self,
+        score: m21.stream.Score,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> None:
         """
         Take a music21 score and store it as a sequence of Full Trees.
         The hierarchy is "score -> parts -> measures -> voices -> notes"
@@ -603,30 +658,24 @@ class AnnScore:
                 GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
                 currently equivalent to AllObjects).
         """
-        self.score = score.id
-        self.part_list = []
+        self.score: int | str = score.id
+        self.part_list: list[AnnPart] = []
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
 
-        # before we start, transpose all notes to written pitch, both for transposing
-        # instruments and Ottavas (and both, if necessary).
-        if M21Utils.m21SupportsSpannerFill():
-            score.toWrittenPitch(inPlace=True, preserveAccidentalDisplay=True)
-        else:
-            # transposition (pre-spannerfill-support) loses accidental display info,
-            # so minimize that (transpose only the ottavas to written pitch).  But
-            # we will need to do that as we run into the first note in each ottava
-            # (deep in AnnPart), so we can search the correct Part for itermediate
-            # notes.
-            pass
+        # Before we start, transpose all notes to written pitch, both for transposing
+        # instruments and Ottavas. Be careful to preserve accidental.displayStatus
+        # during transposition, since we use that visibility indicator when comparing
+        # accidentals.
+        score.toWrittenPitch(inPlace=True, preserveAccidentalDisplay=True)
 
-        for part in score.parts.stream():
+        for part in score.parts:
             # create and add the AnnPart object to part_list
             ann_part = AnnPart(part, score, spannerBundle, detail)
             if ann_part.n_of_bars > 0:
                 self.part_list.append(ann_part)
-        self.n_of_parts = len(self.part_list)
+        self.n_of_parts: int = len(self.part_list)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
         if not isinstance(other, AnnScore):
             return False
@@ -636,7 +685,7 @@ class AnnScore:
 
         return all(p[0] == p[1] for p in zip(self.part_list, other.part_list))
 
-    def notation_size(self):
+    def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnScore`.
 
@@ -645,10 +694,10 @@ class AnnScore:
         """
         return sum([p.notation_size() for p in self.part_list])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.part_list.__repr__()
 
-    def get_note_ids(self):
+    def get_note_ids(self) -> list[str | int]:
         """
         Computes a list of the GeneralNote ids for this `AnnScore`.
 
@@ -661,10 +710,10 @@ class AnnScore:
         return notes_id
 
     # return the sequences of measures for a specified part
-    def _measures_from_part(self, part_number):
+    def _measures_from_part(self, part_number) -> list[AnnMeasure]:
         # only used by tests/test_scl.py
         if part_number not in range(0, len(self.part_list)):
-            raise Exception(
+            raise ValueError(
                 f"parameter 'part_number' should be between 0 and {len(self.part_list) - 1}"
             )
         return self.part_list[part_number].bar_list
