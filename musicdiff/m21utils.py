@@ -15,7 +15,7 @@ from fractions import Fraction
 import math
 import sys
 import copy
-from typing import List, Tuple, Union, Optional
+import typing as t
 from enum import IntEnum, auto
 
 # import sys
@@ -26,7 +26,8 @@ class DetailLevel(IntEnum):
     # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
     GeneralNotesOnly = auto()
 
-    # Add in Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats, TimeSignatures, TempoIndications, etc
+    # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
+    # TimeSignatures, TempoIndications, etc
     AllObjects = auto()
 
     # All of the above, plus typographical stuff: placement, stem direction,
@@ -37,31 +38,15 @@ class DetailLevel(IntEnum):
 
 
 class M21Utils:
-    _cacheM21SupportsSpannerFill: Optional[bool] = None
     @staticmethod
-    def m21SupportsSpannerFill() -> bool:
-        if M21Utils._cacheM21SupportsSpannerFill is None:
-            M21Utils._cacheM21SupportsSpannerFill = (
-                hasattr(m21.spanner.Spanner, 'fill')
-            )
-        return M21Utils._cacheM21SupportsSpannerFill
-
-    _cacheM21SupportsDelayedTurns: Optional[bool] = None
-    @staticmethod
-    def m21SupportsDelayedTurns() -> bool:
-        if M21Utils._cacheM21SupportsDelayedTurns is None:
-            M21Utils._cacheM21SupportsDelayedTurns = (
-                hasattr(m21.expressions.Turn, 'isDelayed')
-            )
-        return M21Utils._cacheM21SupportsDelayedTurns
-
-    @staticmethod
-    def get_beamings(note_list):
-        _beam_list = []
+    def get_beamings(note_list: list[m21.note.GeneralNote]):
+        _beam_list: list[list[str]] = []
         for n in note_list:
             if n.isRest:
                 _beam_list.append([])
             else:
+                if t.TYPE_CHECKING:
+                    assert isinstance(n, m21.note.NotRest)
                 _beam_list.append(n.beams.getTypes())
         return _beam_list
 
@@ -82,7 +67,8 @@ class M21Utils:
             out_string += "R"
         else:
             out_string += "N"
-        # add notehead information (4,2,1,1/2, etc...). 4 means a black note, 2 white, 1 whole etc...
+        # add notehead information (4,2,1,1/2, etc...).
+        # 4 means a black note, 2 white, 1 whole etc...
         type_number = Fraction(m21.duration.convertTypeToNumber(gn.duration.type))
         if type_number >= 4:
             out_string += "4"
@@ -111,35 +97,39 @@ class M21Utils:
 
             upperAccidentalIsVisible: bool = (
                 expr.upperAccidental is not None
-                    and expr.upperAccidental.displayStatus is True
+                and expr.upperAccidental.displayStatus is True
             )
             if not upperAccidentalIsVisible:
                 # check if someone (e.g. makeAccidentals) decided it should be visible anyway
                 upperAccidentalIsVisible = (
                     expr.upperOrnamentalPitch is not None
-                        and expr.upperOrnamentalPitch.accidental is not None
-                        and expr.upperOrnamentalPitch.accidental.displayStatus is True
-            )
+                    and expr.upperOrnamentalPitch.accidental is not None
+                    and expr.upperOrnamentalPitch.accidental.displayStatus is True
+                )
 
             lowerAccidentalIsVisible: bool = (
                 expr.lowerAccidental is not None
-                    and expr.lowerAccidental.displayStatus is True
+                and expr.lowerAccidental.displayStatus is True
             )
             if not lowerAccidentalIsVisible:
                 # check if someone (e.g. makeAccidentals) decided it should be visible anyway
                 lowerAccidentalIsVisible = (
                     expr.lowerOrnamentalPitch is not None
-                        and expr.lowerOrnamentalPitch.accidental is not None
-                        and expr.lowerOrnamentalPitch.accidental.displayStatus is True
-            )
+                    and expr.lowerOrnamentalPitch.accidental is not None
+                    and expr.lowerOrnamentalPitch.accidental.displayStatus is True
+                )
 
             if upperAccidentalIsVisible or lowerAccidentalIsVisible:
                 theName += ' ('
                 if upperAccidentalIsVisible:
+                    if t.TYPE_CHECKING:
+                        assert expr.upperAccidental is not None
                     theName += 'upper=' + expr.upperAccidental.name
                     if lowerAccidentalIsVisible:
                         theName += ', '
                 if lowerAccidentalIsVisible:
+                    if t.TYPE_CHECKING:
+                        assert expr.lowerAccidental is not None
                     theName += 'lower=' + expr.lowerAccidental.name
                 theName += ')'
 
@@ -150,17 +140,19 @@ class M21Utils:
             theName = m21.common.camelCaseToHyphen(theName, replacement=' ')
 
             accidentalIsVisible: bool = (
-                expr.accidental and expr.accidental.displayStatus is True
+                expr.accidental is not None and expr.accidental.displayStatus is True
             )
             if not accidentalIsVisible:
                 # check if someone (e.g. makeAccidentals) decided it should be visible anyway
                 accidentalIsVisible = (
                     expr.ornamentalPitch is not None
-                        and expr.ornamentalPitch.accidental is not None
-                        and expr.ornamentalPitch.accidental.displayStatus is True
+                    and expr.ornamentalPitch.accidental is not None
+                    and expr.ornamentalPitch.accidental.displayStatus is True
                 )
 
             if accidentalIsVisible:
+                if t.TYPE_CHECKING:
+                    assert expr.accidental is not None
                 theName += f' ({expr.accidental.name})'
 
             return theName
@@ -190,8 +182,8 @@ class M21Utils:
                 # note.pitch.accidental.displayStatus was not set.
                 # This can happen when there are no measures in the test data.
                 # We will guess, based on displayType.
-                # displayType can be 'normal', 'always', 'never', 'unless-repeated', 'even-tied'
-                # print("accidental.displayStatus unknown, so we will guess based on displayType", file=sys.stderr)
+                # displayType can be 'normal', 'always', 'never', 'unless-repeated',
+                # 'if-absolutely-necessary', 'even-tied'
                 displayType = note.pitch.accidental.displayType
                 if displayType is None:
                     displayType = "normal"
@@ -200,7 +192,7 @@ class M21Utils:
                     note_accidental = note.pitch.accidental.name
                 elif displayType == "never":
                     note_accidental = "None"
-                elif displayType == "normal":
+                elif displayType in ("normal", "if-absolutely-necessary"):
                     # Complete guess: the accidental will be displayed
                     # This will be wrong if this is not the first such note in the measure.
                     note_accidental = note.pitch.accidental.name
@@ -237,8 +229,12 @@ class M21Utils:
     def generalNote_info(gn):
         """
         Get a json of informations about a general note.
-        The fields of the json are "type"-string (chord, rest,note), "pitches" (a list of pitches)-list of strings,"noteHead" (also for rests)-string,"dots"-integer.
-        For rests the pitch is set to [\"A0\"].
+        The fields of the json are
+        type: ("chord", "rest", or "note"),
+        pitches: list of pitch strings
+        noteHead (also for rests): string
+        dots: integer
+        For rests the pitch is set to ['A0'].
         Does not consider the ties (because of music21 ties encoding).
         Arguments:
             gn {music21 general note} -- the general note to have the information
@@ -285,20 +281,21 @@ class M21Utils:
     #         else:
     #             _general_ties_list.append(n.tie.type)
     #     # keep only the information of when a note is tied to the previous
-    #     # (also we solve the bad notation of having a start and a not specified stop, that can happen in music21)
+    #     # (also we solve the bad notation of having a start and a not specified
+    #     # stop, that can happen in music21)
     #     _ties_list = [False] * len(_general_ties_list)
     #     for i, t in enumerate(_general_ties_list):
     #         if t == 'start' and i < len(_ties_list) - 1:
     #             _ties_list[i + 1] = True
     #         elif t == 'continue' and i < len(_ties_list) - 1:
     #             _ties_list[i + 1] = True
-    #             if i == 0: # we can have a continue in the first note if the tie is from the previous bar
+    #             if i == 0: # we can have a continue in first note if tie is from previous bar
     #                 _ties_list[i] = True
     #         elif t == 'stop':
-    #             if i == 0: # we can have a stop in the first note if the tie is from the previous bar
+    #             if i == 0: # we can have a stop in first note if tie is from previous bar
     #                 _ties_list[i] = True
     #             else:
-    #                 # assert (_ties_list[i] == True) #removed to import wrong scores even if it vould be correct
+    #                 # assert (_ties_list[i] == True)  # don't reject wrong scores
     #                 _ties_list[i] = True
     #     return _ties_list
 
@@ -312,16 +309,16 @@ class M21Utils:
         return typeNum
 
     @staticmethod
-    def get_type_nums(note_list):
-        _type_list = []
+    def get_type_nums(note_list: list[m21.note.GeneralNote]):
+        _type_list: list[float] = []
         for n in note_list:
             _type_list.append(M21Utils.get_type_num(n.duration))
         return _type_list
 
 
     @staticmethod
-    def get_rest_or_note(note_list):
-        _rest_or_note = []
+    def get_rest_or_note(note_list: list[m21.note.GeneralNote]):
+        _rest_or_note: list[str] = []
         for n in note_list:
             if n.isRest:
                 _rest_or_note.append("R")
@@ -331,15 +328,17 @@ class M21Utils:
 
 
     @staticmethod
-    def get_enhance_beamings(note_list):
-        """create a mod_beam_list that take into account also the single notes with a type > 4"""
-        _beam_list = M21Utils.get_beamings(note_list)
-        _type_list = M21Utils.get_type_nums(note_list)
-        _mod_beam_list = M21Utils.get_beamings(note_list)
+    def get_enhance_beamings(note_list: list[m21.note.GeneralNote]) -> list[list[str]]:
+        """
+        Create a mod_beam_list that take into account also the single notes with a type > 4
+        """
+        _beam_list: list[list[str]] = M21Utils.get_beamings(note_list)
+        _type_list: list[float] = M21Utils.get_type_nums(note_list)
+        _mod_beam_list: list[list[str]] = M21Utils.get_beamings(note_list)
         # add informations for rests and notes not grouped
         for i, n in enumerate(_beam_list):
             if len(n) == 0:
-                rangeEnd: int = None
+                rangeEnd: int | None = None
                 if _type_list[i] != 0:
                     rangeEnd = int(math.log(_type_list[i] / 4, 2))
                 if rangeEnd is None:
@@ -358,37 +357,52 @@ class M21Utils:
                         _mod_beam_list[i].append("continue")
                     else:
                         _mod_beam_list[i].append("partial")
-        # change the single "start" and "stop" with partial (since MEI parser is not working properly)
-        new_mod_beam_list = _mod_beam_list.copy()
+        # change the single "start" and "stop" with partial (since MEI parser is
+        # not working properly)
+        new_mod_beam_list: list[list[str]] = _mod_beam_list.copy()
         max_beam_len = max([len(t) for t in _mod_beam_list])
         for beam_depth in range(max_beam_len):
             for note_index in range(len(_mod_beam_list)):
                 if (
-                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "start"
-                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth)
-                    is None
+                    M21Utils.safe_get(
+                        _mod_beam_list[note_index], beam_depth
+                    ) == "start"
+                    and M21Utils.safe_get(
+                        M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth
+                    ) is None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "partial"
                 elif (
-                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "stop"
-                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth)
-                    is None
+                    M21Utils.safe_get(
+                        _mod_beam_list[note_index], beam_depth
+                    ) == "stop"
+                    and M21Utils.safe_get(
+                        M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth
+                    ) is None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "partial"
                 elif (
-                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "continue"
-                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth)
-                    is None
-                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth)
-                    is None
+                    M21Utils.safe_get(
+                        _mod_beam_list[note_index], beam_depth
+                    ) == "continue"
+                    and M21Utils.safe_get(
+                        M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth
+                    ) is None
+                    and M21Utils.safe_get(
+                        M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth
+                    ) is None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "partial"
                 elif (
-                    M21Utils.safe_get(_mod_beam_list[note_index], beam_depth) == "continue"
-                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth)
-                    is None
-                    and M21Utils.safe_get(M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth)
-                    is not None
+                    M21Utils.safe_get(
+                        _mod_beam_list[note_index], beam_depth
+                    ) == "continue"
+                    and M21Utils.safe_get(
+                        M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth
+                    ) is None
+                    and M21Utils.safe_get(
+                        M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth
+                    ) is not None
                 ):
                     new_mod_beam_list[note_index][beam_depth] = "start"
 
@@ -420,9 +434,9 @@ class M21Utils:
 
     @staticmethod
     def get_tuplets_info(
-        note_list: List[m21.note.GeneralNote],
+        note_list: list[m21.note.GeneralNote],
         detail: DetailLevel = DetailLevel.Default
-    ) -> List[List[str]]:
+    ) -> list[list[str]]:
         """
         for each note return a list of tuple(str, str) with the tuplet type string and a string
         representation of what is visible.
@@ -430,27 +444,27 @@ class M21Utils:
         str_list = []
         for n in note_list:
             tuplet_info_list_for_note = []
-            for t in n.duration.tuplets:
-                if t.type == "start":
+            for tup in n.duration.tuplets:
+                if tup.type == "start":
                     # music21 only pays attention to number and bracket visibility/placement
                     # on the start note of a tuplet.
-                    if t.tupletActualShow in ("number", "both"):
-                        if t.tupletNormalShow in ("number", "both"):
-                            new_info = str(t.numberNotesActual) + ":" + str(t.numberNotesNormal)
+                    if tup.tupletActualShow in ("number", "both"):
+                        if tup.tupletNormalShow in ("number", "both"):
+                            new_info = str(tup.numberNotesActual) + ":" + str(tup.numberNotesNormal)
                         else:  # just a number for the tuplets
-                            new_info = str(t.numberNotesActual)
+                            new_info = str(tup.numberNotesActual)
                     else:
-                        if t.tupletNormalShow in ("number", "both"):
-                            new_info = ":" + str(t.numberNotesNormal)
+                        if tup.tupletNormalShow in ("number", "both"):
+                            new_info = ":" + str(tup.numberNotesNormal)
                         else:  # no number shown
                             new_info = ""
                     # if the brackets are drawn explicitly, add B
-                    if t.bracket:
+                    if tup.bracket:
                         new_info = new_info + "B"
                     # if diffing style, include placement (None, "above", "below")
                     if detail >= DetailLevel.AllObjectsWithStyle:
-                        if t.placement is not None:
-                            new_info = new_info + t.placement
+                        if tup.placement is not None:
+                            new_info = new_info + tup.placement
                     tuplet_info_list_for_note.append(new_info)
             str_list.append(tuplet_info_list_for_note)
         return str_list
@@ -458,14 +472,17 @@ class M21Utils:
 
     @staticmethod
     def get_tuplets_type(
-        note_list: List[m21.note.GeneralNote]
-    ) -> List[List[str]]:
+        note_list: list[m21.note.GeneralNote]
+    ) -> list[list[str]]:
         """
         for each note return a list of tuple(str, str), with the first string filled in with
         the type of the tuplets for the note
         """
-        tuplets_list = [[t.type for t in n.duration.tuplets] for n in note_list]
+        tuplets_list: list[list[str | None]] = [
+            [str(tup.type) for tup in n.duration.tuplets] for n in note_list
+        ]
         new_tuplets_list = tuplets_list.copy()
+
         # now correct the missing of "start" and add "continue" for clarity
         max_tupl_len = max([len(t) for t in tuplets_list])
         for ii in range(max_tupl_len):
@@ -475,11 +492,10 @@ class M21Utils:
                 if len(note_tuplets) > ii:
                     if note_tuplets[ii] == "start":
                         # Some medieval music has weirdly nested triplets that
-                        # end up in music21 with two starts in a row.  This is
-                        # OK, no need to assert here.
-#                        assert start_index is None
+                        # end up in music21 with two starts in a row.
                         start_index = ii
                     elif note_tuplets[ii] is None:
+                        # replace any None with "start" or "continue"
                         if start_index is None:
                             start_index = ii
                             new_tuplets_list[i][ii] = "start"
@@ -489,7 +505,8 @@ class M21Utils:
                         start_index = None
                     else:
                         raise TypeError("Invalid tuplet type")
-        return new_tuplets_list
+        # we have replaced any None with "start" or "continue"
+        return t.cast(list[list[str]], new_tuplets_list)
 
 
     @staticmethod
@@ -511,13 +528,15 @@ class M21Utils:
 
 
     @staticmethod
-    def get_notes_and_gracenotes(measure):
+    def get_notes_and_gracenotes(
+        measureOrVoice: m21.stream.Measure | m21.stream.Voice
+    ) -> list[m21.note.GeneralNote]:
         """
-        :param measure: a music21 measure
+        :param measureOrVoice: a music21 measure or voice
         :return: a list of visible notes, including grace notes, inside the measure
         """
-        out = []
-        for n in measure.getElementsByClass('GeneralNote'):
+        out: list[m21.note.GeneralNote] = []
+        for n in measureOrVoice.getElementsByClass('GeneralNote'):
             if not n.style.hideObjectOnPrint:
                 out.append(n)
         return out
@@ -529,8 +548,8 @@ class M21Utils:
         if hasattr(arpeggio, 'musicdiff_cached_highest_diatonic_element'):
             return arpeggio.musicdiff_cached_highest_diatonic_element  # type: ignore
 
-        origSpannedList: List[m21.note.NotRest] = arpeggio.getSpannedElements()
-        nrList: List[m21.note.NotRest] = copy.deepcopy(origSpannedList)
+        origSpannedList: list[m21.note.NotRest] = arpeggio.getSpannedElements()
+        nrList: list[m21.note.NotRest] = copy.deepcopy(origSpannedList)
         highestNoteOrChord: m21.note.NotRest
         highestNote: m21.note.Note
         for i, (nr, origSpanned) in enumerate(zip(nrList, origSpannedList)):
@@ -540,6 +559,9 @@ class M21Utils:
                 nr.sortDiatonicAscending()
                 currentNote = nr.notes[-1]
             else:
+                if t.TYPE_CHECKING:
+                    # because you don't see arpeggios on Unpitched
+                    assert isinstance(nr, m21.note.Note)
                 currentNote = nr
             if i == 0:
                 highestNote = currentNote
@@ -552,20 +574,20 @@ class M21Utils:
         return highestNoteOrChord
 
     @staticmethod
-    def getPrimarySpannerElement(sp: m21.spanner.Spanner) -> m21.base.Music21Object:
+    def getPrimarySpannerElement(
+        sp: m21.spanner.Spanner
+    ) -> m21.note.GeneralNote | m21.spanner.SpannerAnchor:
         # returns sp.getFirst() except if the spanner is ArpeggioMarkSpanner, in
         # which case it returns the element that contains the highest diatonic
         # pitch.
-        if not hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
-            return sp.getFirst()
-        if not isinstance(sp, m21.expressions.ArpeggioMarkSpanner):  # type: ignore
+        if not isinstance(sp, m21.expressions.ArpeggioMarkSpanner):
             return sp.getFirst()
         return M21Utils.getHighestDiatonicNoteOrChord(sp)
 
     @staticmethod
     def clefs_are_equivalent(
-        clef1: Optional[m21.clef.Clef],
-        clef2: Optional[m21.clef.Clef]
+        clef1: m21.clef.Clef | None,
+        clef2: m21.clef.Clef | None
     ) -> bool:
         if not isinstance(clef1, m21.clef.Clef):
             return False
@@ -587,26 +609,21 @@ class M21Utils:
         part: m21.stream.Part,
         spannerBundle: m21.spanner.SpannerBundle,
         detail: DetailLevel = DetailLevel.Default
-    ) -> List[m21.base.Music21Object]:
+    ) -> list[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
         # substreams/Voices), skipping any Streams, and GeneralNotes (which are returned
         # from get_notes/get_notes_and_gracenotes).  We're looking for things like Clefs,
         # TextExpressions, and Dynamics...
-        output: List[m21.base.Music21Object] = []
-        initialList: List[m21.base.Music21Object]
-        if hasattr(m21.spanner, 'SpannerAnchor'):
-            initialList = list(
-                measure.recurse().getElementsNotOfClass(
-                    (m21.note.GeneralNote,
-                     m21.spanner.SpannerAnchor,
-                     m21.stream.Stream,
-                     m21.spanner.Spanner) ) )
-        else:
-            initialList = list(
-                measure.recurse().getElementsNotOfClass(
-                    (m21.note.GeneralNote,
-                     m21.stream.Stream,
-                     m21.spanner.Spanner) ) )
+        output: list[m21.base.Music21Object] = []
+        initialList: list[m21.base.Music21Object]
+        initialList = list(
+            measure.recurse().getElementsNotOfClass(
+                (m21.note.GeneralNote,
+                 m21.spanner.SpannerAnchor,
+                 m21.stream.Stream,
+                 m21.spanner.Spanner)
+            )
+        )
 
         # Sort the initialList by offset in measure, so we can see which clefs are
         # duplicates from different voices.
@@ -619,7 +636,7 @@ class M21Utils:
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
         # barlines of type 'none' (also not printed).
         # We also try to de-duplicate redundant clefs.
-        mostRecentClef: Optional[m21.clef.Clef] = None
+        mostRecentClef: m21.clef.Clef | None = None
         for el in initialList:
             # we ignore hidden extras
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
@@ -647,24 +664,16 @@ class M21Utils:
 
         # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos/Ottavas that start
         # on GeneralNotes/SpannerAnchors in this measure
-        if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
-            spanner_types = (
-                m21.expressions.ArpeggioMarkSpanner,
-                m21.dynamics.DynamicWedge,
-                m21.spanner.Ottava
-            )
-        else:
-            spanner_types = (
-                m21.dynamics.DynamicWedge,
-                m21.spanner.Ottava
-            )
+        spanner_types = (
+            m21.expressions.ArpeggioMarkSpanner,
+            m21.dynamics.DynamicWedge,
+            m21.spanner.Ottava
+        )
 
-        spannerElementClasses = (m21.note.GeneralNote,)
-        if hasattr(m21.spanner, 'SpannerAnchor'):
-            spannerElementClasses = (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
+        spannerElementClasses = (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
 
         for gn in measure.recurse().getElementsByClass(spannerElementClasses):
-            spannerList: List[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
+            spannerList: list[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
             for sp in spannerList:
                 if sp not in spannerBundle:
                     continue
@@ -672,19 +681,9 @@ class M21Utils:
                     output.append(sp)
                     if not isinstance(sp, m21.spanner.Ottava):
                         continue
-                    # Transpose all the notes/chords in the Ottava
-                    # to written pitch (for ease of comparison).
-                    if M21Utils.m21SupportsSpannerFill():
-                        # we already transposed the whole score to written pitch
-                        pass
-                    else:
-                        # music21 doesn't support spanner fill,
-                        # so we call our own version instead.
-                        M21Utils.fillOttava(sp, part)
-                        sp.undoTransposition()
 
         # Add any RepeatBracket spanners that start on this measure
-        rbList: List[m21.spanner.Spanner] = measure.getSpannerSites(m21.spanner.RepeatBracket)
+        rbList: list[m21.spanner.Spanner] = measure.getSpannerSites([m21.spanner.RepeatBracket])
         for rb in rbList:
             if rb not in spannerBundle:
                 continue
@@ -703,7 +702,7 @@ class M21Utils:
         mustBeginInSpan: bool = True,
         includeElementsThatEndAtStart: bool = False
     ):
-        if hasattr(ottava, 'filledStatus') and ottava.filledStatus is True:  # type: ignore
+        if ottava.filledStatus is True:
             # Don't fill twice.
             return
 
@@ -720,6 +719,8 @@ class M21Utils:
             # regardless of offset.  But first and last will still be the same two elements
             # as before, which is the most important thing.
             endElement = ottava.getLast()
+            if t.TYPE_CHECKING:
+                assert endElement is not None
             ottava.spannerStorage.remove(endElement)
 
         try:
@@ -742,7 +743,8 @@ class M21Utils:
                 return
         else:
             endOffsetInHierarchy = (
-                ottava.getLast().getOffsetInHierarchy(searchStream) + ottava.getLast().quarterLength
+                ottava.getLast().getOffsetInHierarchy(searchStream)
+                + ottava.getLast().quarterLength
             )
 
         for foundElement in (searchStream
@@ -823,7 +825,9 @@ class M21Utils:
             # convert to MetronomeMark
             mm = mm.newMetronome
 
-        # Assume mm is now a MetronomeMark
+        # mm must be a MetronomeMark if we get here.
+        if t.TYPE_CHECKING:
+            assert isinstance(mm, m21.tempo.MetronomeMark)
         if mm.textImplicit is True or mm._tempoText is None:
             if mm.referent is None or mm.number is None:
                 output = 'MM:'
@@ -840,7 +844,10 @@ class M21Utils:
             return output
 
         # no 'MM:' prefix, TempoText adds their own
-        output = f'{M21Utils.tempo_to_string(mm._tempoText)} {mm.referent.fullName}={float(mm.number)}'
+        output = (
+            f'{M21Utils.tempo_to_string(mm._tempoText)}'
+            + f' {mm.referent.fullName}={float(mm.number)}'
+        )
         return output
         # pylint: enable=protected-access
 
@@ -872,7 +879,7 @@ class M21Utils:
         return output
 
     @staticmethod
-    def keysig_to_string(keysig: Union[m21.key.Key, m21.key.KeySignature]) -> str:
+    def keysig_to_string(keysig: m21.key.Key | m21.key.KeySignature) -> str:
         output: str = f'KS:{keysig.sharps}'
         return output
 
@@ -974,26 +981,31 @@ class M21Utils:
         return output
 
     @staticmethod
-    def specificstyle_to_dict(style: m21.style.Style,
-                              detail: DetailLevel = DetailLevel.Default) -> dict:
+    def specificstyle_to_dict(
+        style: m21.style.Style,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> dict:
         if detail < DetailLevel.AllObjectsWithStyle:
             return {}
 
         if isinstance(style, m21.style.NoteStyle):
             return M21Utils.notestyle_to_dict(style, detail)
-        if isinstance(style, m21.style.TextStyle): # includes TextStylePlacement
+        if isinstance(style, m21.style.TextStyle):
+            # includes TextStylePlacement
             return M21Utils.textstyle_to_dict(style, detail)
         if isinstance(style, m21.style.BezierStyle):
-            return {} # M21Utils.bezierstyle_to_dict(style, detail)
+            return {}  # M21Utils.bezierstyle_to_dict(style, detail)
         if isinstance(style, m21.style.LineStyle):
-            return {} # M21Utils.linestyle_to_dict(style, detail)
+            return {}  # M21Utils.linestyle_to_dict(style, detail)
         if isinstance(style, m21.style.BeamStyle):
-            return {} # M21Utils.beamstyle_to_dict(style, detail)
+            return {}  # M21Utils.beamstyle_to_dict(style, detail)
         return {}
 
     @staticmethod
-    def obj_to_styledict(obj: m21.base.Music21Object,
-                         detail: DetailLevel = DetailLevel.Default) -> dict:
+    def obj_to_styledict(
+        obj: m21.base.Music21Object | m21.style.StyleMixin,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> dict:
         if detail < DetailLevel.AllObjectsWithStyle:
             return {}
 
@@ -1001,7 +1013,7 @@ class M21Utils:
         if obj.hasStyleInformation:
             output = M21Utils.genericstyle_to_dict(obj.style, detail)
             specific = M21Utils.specificstyle_to_dict(obj.style, detail)
-            for k,v in specific.items():
+            for k, v in specific.items():
                 output[k] = v
 
         if hasattr(obj, 'placement') and obj.placement is not None:
@@ -1026,13 +1038,12 @@ class M21Utils:
 
     @staticmethod
     def arpeggiomark_to_string(
-        arp: m21.expressions.Expression) -> str:
-        if hasattr(m21.expressions, 'ArpeggioMark'):
-            if isinstance(arp, m21.expressions.ArpeggioMark):
-                return f'ARP:{arp.type}'
-        if hasattr(m21.expressions, 'ArpeggioMarkSpanner'):
-            if isinstance(arp, m21.expressions.ArpeggioMarkSpanner):
-                return f'ARPS:{arp.type}:len={len(arp)}'
+        arp: m21.expressions.ArpeggioMark | m21.expressions.ArpeggioMarkSpanner
+    ) -> str:
+        if isinstance(arp, m21.expressions.ArpeggioMark):
+            return f'ARP:{arp.type}'
+        if isinstance(arp, m21.expressions.ArpeggioMarkSpanner):
+            return f'ARPS:{arp.type}:len={len(arp)}'
         return ''
 
     @staticmethod
@@ -1046,7 +1057,7 @@ class M21Utils:
         return ''
 
     @staticmethod
-    def pagelayout_to_string(pb: m21.layout.SystemLayout) -> str:
+    def pagelayout_to_string(pb: m21.layout.PageLayout) -> str:
         if pb.isNew:
             if pb.pageNumber is not None:
                 return f'PB:num={pb.pageNumber}'
@@ -1078,10 +1089,10 @@ class M21Utils:
             return M21Utils.ottava_to_string(extra)
         if isinstance(extra, m21.spanner.RepeatBracket):
             return M21Utils.repeatbracket_to_string(extra)
-        if (hasattr(m21.expressions, 'ArpeggioMark')
-                and hasattr(m21.expressions, 'ArpeggioMarkSpanner')):
-            if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
-                return M21Utils.arpeggiomark_to_string(extra)
+        if isinstance(
+                extra,
+                (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
+            return M21Utils.arpeggiomark_to_string(extra)
 
         # Page breaks and system breaks are only paid attention to at
         # DetailLevel.AllObjectsWithStyle, because they are entirely
@@ -1096,7 +1107,7 @@ class M21Utils:
         return ''
 
     @staticmethod
-    def has_style(obj: m21.base.Music21Object) -> bool:
+    def has_style(obj: m21.base.Music21Object | m21.style.StyleMixin) -> bool:
         output: bool = hasattr(obj, 'placement') and obj.placement is not None
         output = output or obj.hasStyleInformation
         return output

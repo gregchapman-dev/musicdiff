@@ -14,7 +14,6 @@
 __docformat__ = "google"
 
 import copy
-from typing import List, Tuple
 from collections import namedtuple
 from difflib import ndiff
 
@@ -167,9 +166,11 @@ class Comparison:
 
     @staticmethod
     def _non_common_subsequences_myers(original, compare_to):
-        ### Both original and compare_to are list of lists, or numpy arrays with 2 columns.
-        ### This is necessary because bars need two representation at the same time.
-        ### One without the id (for comparison), and one with the id (to retrieve the bar at the end)
+        # Both original and compare_to are list of lists, or numpy arrays with 2 columns.
+        # This is necessary because bars need two representation at the same time.
+        # One without the id (for comparison), and one with the id (to retrieve the bar
+        # at the end).
+
         # get the list of operations
         op_list = Comparison._myers_diff(
             np.array(original, dtype=np.int64), np.array(compare_to, dtype=np.int64)
@@ -196,7 +197,8 @@ class Comparison:
     def _non_common_subsequences_of_measures(original_m, compare_to_m):
         # Take the hash for each measure to run faster comparison
         # We need two hashes: one that is independent of the IDs (precomputed_str, for comparison),
-        # and one that contains the IDs (precomputed_repr, to retrieve the correct measure after computation)
+        # and one that contains the IDs (precomputed_repr, to retrieve the correct measure after
+        # computation)
         original_int = [[o.precomputed_str, o.precomputed_repr] for o in original_m]
         compare_to_int = [[c.precomputed_str, c.precomputed_repr] for c in compare_to_m]
         ncs = Comparison._non_common_subsequences_myers(original_int, compare_to_int)
@@ -221,7 +223,8 @@ class Comparison:
     @staticmethod
     @_memoize_pitches_lev_diff
     def _pitches_leveinsthein_diff(original, compare_to, noteNode1, noteNode2, ids):
-        """Compute the leveinsthein distance between two sequences of pitches
+        """
+        Compute the leveinsthein distance between two sequences of pitches.
         Arguments:
             original {list} -- list of pitches
             compare_to {list} -- list of pitches
@@ -293,7 +296,8 @@ class Comparison:
 
     @staticmethod
     def _pitches_diff(pitch1, pitch2, noteNode1, noteNode2, ids):
-        """compute the differences between two pitch (definition from the paper).
+        """
+        Compute the differences between two pitch (definition from the paper).
         a pitch consist of a tuple: pitch name (letter+number), accidental, tie.
         param : pitch1. The music_notation_repr tuple of note1
         param : pitch2. The music_notation_repr tuple of note2
@@ -327,8 +331,9 @@ class Comparison:
             else:  # a different tipe of alteration is present
                 op_list.append(("accidentedit", noteNode1, noteNode2, 1, ids))
         # add for the ties
-        if pitch1[2] != pitch2[2]:  # exclusive or. Add if one is tied and not the other
-            ################probably to revise for chords
+        if pitch1[2] != pitch2[2]:
+            # exclusive or. Add if one is tied and not the other.
+            # probably to revise for chords
             cost += 1
             if pitch1[2]:
                 assert not pitch2[2]
@@ -453,7 +458,9 @@ class Comparison:
         ):  # avoid call another function if they are equal
             extrasub_op, extrasub_cost = [], 0
         else:
-            extrasub_op, extrasub_cost = Comparison._annotated_extra_diff(original[0], compare_to[0])
+            extrasub_op, extrasub_cost = (
+                Comparison._annotated_extra_diff(original[0], compare_to[0])
+            )
         cost["extrasub"] += extrasub_cost
         op_list["extrasub"].extend(extrasub_op)
         # compute the minimum of the possibilities
@@ -465,7 +472,7 @@ class Comparison:
     def _strings_leveinshtein_distance(str1: str, str2: str):
         counter: dict = {"+": 0, "-": 0}
         distance: int = 0
-        for edit_code, *_ in ndiff(str1, str2):
+        for edit_code in ndiff(str1, str2):
             if edit_code == " ":
                 distance += max(counter.values())
                 counter = {"+": 0, "-": 0}
@@ -486,7 +493,8 @@ class Comparison:
 
     @staticmethod
     def _annotated_extra_diff(annExtra1: AnnExtra, annExtra2: AnnExtra):
-        """compute the differences between two annotated extras
+        """
+        Compute the differences between two annotated extras.
         Each annotated extra consists of three values: content, offset, and duration
         """
         cost = 0
@@ -494,8 +502,9 @@ class Comparison:
 
         # add for the content
         if annExtra1.content != annExtra2.content:
-            content_cost: int = Comparison._strings_leveinshtein_distance(
-                                            annExtra1.content, annExtra2.content)
+            content_cost: int = (
+                Comparison._strings_leveinshtein_distance(annExtra1.content, annExtra2.content)
+            )
             cost += content_cost
             op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
 
@@ -584,8 +593,10 @@ class Comparison:
 
     @staticmethod
     def _annotated_note_diff(annNote1: AnnNote, annNote2: AnnNote):
-        """compute the differences between two annotated notes
-        Each annotated note consist in a 5tuple (pitches, notehead, dots, beamings, tuplets) where pitches is a list
+        """
+        Compute the differences between two annotated notes.
+        Each annotated note consist in a 5tuple (pitches, notehead, dots, beamings, tuplets)
+        where pitches is a list.
         Arguments:
             noteNode1 {[AnnNote]} -- original AnnNote
             noteNode2 {[AnnNote]} -- compare_to AnnNote
@@ -695,7 +706,8 @@ class Comparison:
     @staticmethod
     @_memoize_beamtuplet_lev_diff
     def _beamtuplet_leveinsthein_diff(original, compare_to, note1, note2, which):
-        """Compute the leveinsthein distance between two sequences of beaming or tuples
+        """
+        Compute the leveinsthein distance between two sequences of beaming or tuples.
         Arguments:
             original {list} -- list of strings (start, stop, continue or partial)
             compare_to {list} -- list of strings (start, stop, continue or partial)
@@ -703,8 +715,8 @@ class Comparison:
             note2 {AnnNote} -- the note for referencing in the score
             which -- a string: "beam" or "tuplet" depending what we are comparing
         """
-        if not which in ("beam", "tuplet"):
-            raise Exception("Argument 'which' must be either 'beam' or 'tuplet'")
+        if which not in ("beam", "tuplet"):
+            raise ValueError("Argument 'which' must be either 'beam' or 'tuplet'")
 
         if len(original) == 0 and len(compare_to) == 0:
             return [], 0
@@ -759,7 +771,9 @@ class Comparison:
     @staticmethod
     @_memoize_generic_lev_diff
     def _generic_leveinsthein_diff(original, compare_to, note1, note2, which):
-        """Compute the leveinsthein distance between two generic sequences of symbols (e.g., articulations)
+        """
+        Compute the leveinsthein distance between two generic sequences of symbols
+        (e.g., articulations).
         Arguments:
             original {list} -- list of strings
             compare_to {list} -- list of strings
@@ -821,8 +835,10 @@ class Comparison:
         return out
 
     @staticmethod
-    def _voices_coupling_recursive(original: List[AnnVoice], compare_to: List[AnnVoice]):
-        """compare all the possible voices permutations, considering also deletion and insertion (equation on office lens)
+    def _voices_coupling_recursive(original: list[AnnVoice], compare_to: list[AnnVoice]):
+        """
+        Compare all the possible voices permutations, considering also deletion and
+        insertion (equation on office lens).
         original [list] -- a list of Voice
         compare_to [list] -- a list of Voice
         """
@@ -861,7 +877,7 @@ class Comparison:
                 op_list["voicesub" + str(i)],
                 cost["voicesub" + str(i)],
             ) = Comparison._voices_coupling_recursive(
-                original[1:], compare_to[:i] + compare_to[i + 1 :]
+                original[1:], compare_to[:i] + compare_to[i + 1:]
             )
             if (
                 compare_to[0] != original[0]
@@ -877,7 +893,7 @@ class Comparison:
         return out
 
     @staticmethod
-    def annotated_scores_diff(score1: AnnScore, score2: AnnScore) -> Tuple[List[Tuple], int]:
+    def annotated_scores_diff(score1: AnnScore, score2: AnnScore) -> tuple[list[tuple], int]:
         '''
         Compare two annotated scores, computing an operations list and the cost of applying those
         operations to the first score to generate the second score.
@@ -887,7 +903,7 @@ class Comparison:
             score2 (`musicdiff.annotation.AnnScore`): The second annotated score to compare.
 
         Returns:
-            List[Tuple], int: The operations list and the cost
+            list[tuple], int: The operations list and the cost
         '''
         # for now just working with equal number of parts that are already pairs
         # TODO : extend to different number of parts

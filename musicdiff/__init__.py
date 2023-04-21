@@ -14,7 +14,7 @@ __docformat__ = "google"
 
 import sys
 import os
-from typing import Union, List, Tuple
+import typing as t
 from pathlib import Path
 
 import music21 as m21
@@ -26,7 +26,7 @@ from musicdiff.annotation import AnnScore
 from musicdiff.comparison import Comparison
 from musicdiff.visualization import Visualization
 
-def _getInputExtensionsList() -> [str]:
+def _getInputExtensionsList() -> list[str]:
     c = m21.converter.Converter()
     inList = c.subconvertersList('input')
     result = []
@@ -44,14 +44,15 @@ def _printSupportedInputFormats():
             print('\tformats   : ' + ', '.join(subc.registerFormats)
                     + '\textensions: ' + ', '.join(subc.registerInputExtensions), file=sys.stderr)
 
-def diff(score1: Union[str, Path, m21.stream.Score],
-         score2: Union[str, Path, m21.stream.Score],
-         out_path1:  Union[str, Path] = None,
-         out_path2:  Union[str, Path] = None,
-         force_parse: bool = True,
-         visualize_diffs: bool = True,
-         detail: DetailLevel = DetailLevel.Default
-        ) -> int:
+def diff(
+    score1: str | Path | m21.stream.Score,
+    score2: str | Path | m21.stream.Score,
+    out_path1: str | Path | None = None,
+    out_path2: str | Path | None = None,
+    force_parse: bool = True,
+    visualize_diffs: bool = True,
+    detail: DetailLevel = DetailLevel.Default
+) -> int | None:
     '''
     Compare two musical scores and optionally save/display the differences as two marked-up
     rendered PDFs.
@@ -80,7 +81,8 @@ def diff(score1: Union[str, Path, m21.stream.Score],
             currently equivalent to AllObjects).
 
     Returns:
-        int: The number of differences found (0 means the scores were identical, None means the diff failed)
+        int | None: The number of differences found (0 means the scores were identical,
+            None means the diff failed)
     '''
     # Use the new Humdrum/MEI importers from converter21 in place of the ones in music21...
     # Comment out this line to go back to music21's built-in Humdrum/MEI importers.
@@ -93,14 +95,14 @@ def diff(score1: Union[str, Path, m21.stream.Score],
     if isinstance(score1, str):
         try:
             score1 = Path(score1)
-        except:
+        except Exception:  # pylint: disable=broad-exception-caught
             print(f'score1 ({score1}) is not a valid path.', file=sys.stderr)
             badArg1 = True
 
     if isinstance(score2, str):
         try:
             score2 = Path(score2)
-        except:
+        except Exception:  # pylint: disable=broad-exception-caught
             print(f'score2 ({score2}) is not a valid path.', file=sys.stderr)
             badArg2 = True
 
@@ -118,7 +120,11 @@ def diff(score1: Union[str, Path, m21.stream.Score],
         if not badArg1:
             # pylint: disable=broad-except
             try:
-                score1 = m21.converter.parse(score1, forceSource = force_parse)
+                sc = m21.converter.parse(score1, forceSource=force_parse)
+                if t.TYPE_CHECKING:
+                    assert isinstance(sc, m21.stream.Score)
+                score1 = sc
+
             except Exception as e:
                 print(f'score1 ({fileName1}) could not be parsed by music21', file=sys.stderr)
                 print(e, file=sys.stderr)
@@ -136,7 +142,10 @@ def diff(score1: Union[str, Path, m21.stream.Score],
         if not badArg2:
             # pylint: disable=broad-except
             try:
-                score2 = m21.converter.parse(score2, forceSource = force_parse)
+                sc = m21.converter.parse(score2, forceSource=force_parse)
+                if t.TYPE_CHECKING:
+                    assert isinstance(sc, m21.stream.Score)
+                score2 = sc
             except Exception as e:
                 print(f'score2 ({fileName2}) could not be parsed by music21', file=sys.stderr)
                 print(e, file=sys.stderr)
@@ -146,20 +155,24 @@ def diff(score1: Union[str, Path, m21.stream.Score],
     if badArg1 or badArg2:
         return None
 
+    if t.TYPE_CHECKING:
+        assert isinstance(score1, m21.stream.Score)
+        assert isinstance(score2, m21.stream.Score)
+
     # scan each score, producing an annotated wrapper
     annotated_score1: AnnScore = AnnScore(score1, detail)
     annotated_score2: AnnScore = AnnScore(score2, detail)
 
-    diff_list: List = None
-    _cost: int = None
+    diff_list: list
+    _cost: int
     diff_list, _cost = Comparison.annotated_scores_diff(annotated_score1, annotated_score2)
 
     numDiffs: int = len(diff_list)
     if visualize_diffs and numDiffs != 0:
         # you can change these three colors as you like...
-        #Visualization.INSERTED_COLOR = 'red'
-        #Visualization.DELETED_COLOR = 'red'
-        #Visualization.CHANGED_COLOR = 'red'
+        # Visualization.INSERTED_COLOR = 'red'
+        # Visualization.DELETED_COLOR = 'red'
+        # Visualization.CHANGED_COLOR = 'red'
 
         # color changed/deleted/inserted notes, add descriptive text for each change, etc
         Visualization.mark_diffs(score1, score2, diff_list)
