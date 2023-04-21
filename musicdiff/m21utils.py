@@ -39,7 +39,7 @@ class DetailLevel(IntEnum):
 
 class M21Utils:
     @staticmethod
-    def get_beamings(note_list: list[m21.note.GeneralNote]):
+    def get_beamings(note_list: list[m21.note.GeneralNote]) -> list[list[str]]:
         _beam_list: list[list[str]] = []
         for n in note_list:
             if n.isRest:
@@ -52,7 +52,7 @@ class M21Utils:
 
 
     @staticmethod
-    def generalNote_to_string(gn):
+    def generalNote_to_string(gn: m21.note.GeneralNote) -> str:
         """
         Return the NoteString with R or N, notehead number and dots.
         Does not consider the ties (because of music21 ties encoding).
@@ -161,12 +161,12 @@ class M21Utils:
         return theName
 
     @staticmethod
-    def note2tuple(note):
+    def note2tuple(note: m21.note.Note | m21.note.Unpitched) -> tuple[str, str, bool]:
         # pitch name (including octave, but not accidental)
         if isinstance(note, m21.note.Unpitched):
             # use the displayName (e.g. 'G4') with no accidental
-            note_pitch = note.displayName
-            note_accidental = "None"
+            note_pitch: str = note.displayName
+            note_accidental: str = "None"
         else:
             note_pitch = note.pitch.step + str(note.pitch.octave)
 
@@ -184,7 +184,7 @@ class M21Utils:
                 # We will guess, based on displayType.
                 # displayType can be 'normal', 'always', 'never', 'unless-repeated',
                 # 'if-absolutely-necessary', 'even-tied'
-                displayType = note.pitch.accidental.displayType
+                displayType: str | None = note.pitch.accidental.displayType
                 if displayType is None:
                     displayType = "normal"
 
@@ -208,7 +208,7 @@ class M21Utils:
 
 
     @staticmethod
-    def pitch_size(pitch):
+    def pitch_size(pitch: tuple[str, str, bool]) -> int:
         """Compute the size of a pitch.
         Arguments:
             pitch {[triple]} -- a triple (pitchname,accidental,tie)
@@ -226,7 +226,7 @@ class M21Utils:
 
 
     @staticmethod
-    def generalNote_info(gn):
+    def generalNote_info(gn: m21.note.GeneralNote) -> dict[str, int | str | list]:
         """
         Get a json of informations about a general note.
         The fields of the json are
@@ -240,18 +240,23 @@ class M21Utils:
             gn {music21 general note} -- the general note to have the information
         """
         # pitches and type info
-        if gn.isChord:
+        pitches: list[tuple[str, m21.pitch.Accidental | None]]
+        gn_type: str
+        if isinstance(gn, m21.chord.ChordBase):
+            gnPitches: tuple[m21.pitch.Pitch, ...] = gn.pitches
+            if hasattr(gn, "sortDiatonicAscending"):
+                gnPitches = gn.sortDiatonicAscending().pitches
             pitches = [
                 (p.step + str(p.octave), p.accidental)
-                for p in gn.sortDiatonicAscending().pitches
+                for p in gnPitches
             ]
             gn_type = "chord"
         elif gn.isRest:
-            pitches = ["A0", None]  # pitch is set to ["A0"] for rests
+            pitches = [("A0", None)]  # pitch is set to ["A0"] for rests
             gn_type = "rest"
-        elif gn.isNote:
+        elif isinstance(gn, m21.note.Note):
             pitches = [
-                (gn.step + str(gn.octave), gn.pitch.accidental)
+                (gn.pitch.step + str(gn.pitch.octave), gn.pitch.accidental)
             ]  # a list with  one pitch inside
             gn_type = "note"
         else:
@@ -264,7 +269,7 @@ class M21Utils:
         else:
             note_head = str(type_number)
 
-        gn_info = {
+        gn_info: dict[str, int | str | list] = {
             "type": gn_type,
             "pitches": pitches,
             "noteHead": note_head,
@@ -309,7 +314,7 @@ class M21Utils:
         return typeNum
 
     @staticmethod
-    def get_type_nums(note_list: list[m21.note.GeneralNote]):
+    def get_type_nums(note_list: list[m21.note.GeneralNote]) -> list[float]:
         _type_list: list[float] = []
         for n in note_list:
             _type_list.append(M21Utils.get_type_num(n.duration))
@@ -317,7 +322,7 @@ class M21Utils:
 
 
     @staticmethod
-    def get_rest_or_note(note_list: list[m21.note.GeneralNote]):
+    def get_rest_or_note(note_list: list[m21.note.GeneralNote]) -> list[str]:
         _rest_or_note: list[str] = []
         for n in note_list:
             if n.isRest:
@@ -360,7 +365,7 @@ class M21Utils:
         # change the single "start" and "stop" with partial (since MEI parser is
         # not working properly)
         new_mod_beam_list: list[list[str]] = _mod_beam_list.copy()
-        max_beam_len = max([len(t) for t in _mod_beam_list])
+        max_beam_len: int = max([len(t) for t in _mod_beam_list])
         for beam_depth in range(max_beam_len):
             for note_index in range(len(_mod_beam_list)):
                 if (
@@ -410,25 +415,28 @@ class M21Utils:
 
 
     @staticmethod
-    def get_dots(note_list):
+    def get_dots(note_list: list[m21.note.GeneralNote]) -> list[int]:
         return [n.duration.dots for n in note_list]
 
 
     @staticmethod
-    def get_durations(note_list):
+    def get_durations(note_list: list[m21.note.GeneralNote]) -> list[Fraction]:
         return [Fraction(n.duration.quarterLength) for n in note_list]
 
 
     @staticmethod
-    def get_norm_durations(note_list):
+    def get_norm_durations(note_list: list[m21.note.GeneralNote]) -> list[Fraction]:
         dur_list = M21Utils.get_durations(note_list)
-        if sum(dur_list) == 0:
+        sum_dur_list = sum(dur_list)
+        if sum_dur_list == 0:
             raise ValueError("It's not possible to normalize the durations if the sum is 0")
-        return [d / sum(dur_list) for d in dur_list]  # normalize the duration
+        return [d / sum_dur_list for d in dur_list]  # normalize the duration
 
 
     @staticmethod
-    def get_tuplets(note_list):
+    def get_tuplets(
+        note_list: list[m21.note.GeneralNote]
+    ) -> list[tuple[m21.duration.Tuplet, ...]]:
         return [n.duration.tuplets for n in note_list]
 
 
@@ -441,9 +449,9 @@ class M21Utils:
         for each note return a list of tuple(str, str) with the tuplet type string and a string
         representation of what is visible.
         """
-        str_list = []
+        str_list: list[list[str]] = []
         for n in note_list:
-            tuplet_info_list_for_note = []
+            tuplet_info_list_for_note: list[str] = []
             for tup in n.duration.tuplets:
                 if tup.type == "start":
                     # music21 only pays attention to number and bracket visibility/placement
@@ -510,18 +518,21 @@ class M21Utils:
 
 
     @staticmethod
-    def get_notes(measure, allowGraceNotes=False):
+    def get_notes(
+        measureOrVoice: m21.stream.Measure | m21.stream.Voice,
+        allowGraceNotes=False
+    ) -> list[m21.note.GeneralNote]:
         """
-        :param measure: a music21 measure
+        :param measureOrVoice: a music21 measure or voice
         :return: a list of (visible) notes, eventually excluding grace notes, inside the measure
         """
         out = []
         if allowGraceNotes:
-            for n in measure.getElementsByClass('GeneralNote'):
+            for n in measureOrVoice.getElementsByClass('GeneralNote'):
                 if not n.style.hideObjectOnPrint:
                     out.append(n)
         else:
-            for n in measure.getElementsByClass('GeneralNote'):
+            for n in measureOrVoice.getElementsByClass('GeneralNote'):
                 if not n.style.hideObjectOnPrint and n.duration.quarterLength != 0:
                     out.append(n)
         return out
@@ -701,7 +712,7 @@ class M21Utils:
         mustFinishInSpan: bool = False,
         mustBeginInSpan: bool = True,
         includeElementsThatEndAtStart: bool = False
-    ):
+    ) -> None:
         if ottava.filledStatus is True:
             # Don't fill twice.
             return
@@ -767,7 +778,7 @@ class M21Utils:
         ottava.filledStatus = True  # type: ignore
 
     @staticmethod
-    def note_to_string(note):
+    def note_to_string(note: m21.note.GeneralNote) -> str:
         if note.isRest:
             _str = "R"
         else:
@@ -894,8 +905,10 @@ class M21Utils:
         return output
 
     @staticmethod
-    def notestyle_to_dict(style: m21.style.NoteStyle,
-                          detail: DetailLevel = DetailLevel.Default) -> dict:
+    def notestyle_to_dict(
+        style: m21.style.NoteStyle,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> dict:
         if detail < DetailLevel.AllObjectsWithStyle:
             return {}
 
@@ -913,8 +926,10 @@ class M21Utils:
         return output
 
     @staticmethod
-    def textstyle_to_dict(style: m21.style.TextStyle,
-                          detail: DetailLevel = DetailLevel.Default) -> dict:
+    def textstyle_to_dict(
+        style: m21.style.TextStyle,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> dict:
         if detail < DetailLevel.AllObjectsWithStyle:
             return {}
 
@@ -952,8 +967,10 @@ class M21Utils:
         return output
 
     @staticmethod
-    def genericstyle_to_dict(style: m21.style.Style,
-                             detail: DetailLevel = DetailLevel.Default) -> dict:
+    def genericstyle_to_dict(
+        style: m21.style.Style,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> dict:
         if detail < DetailLevel.AllObjectsWithStyle:
             return {}
 

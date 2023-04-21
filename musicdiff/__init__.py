@@ -35,7 +35,7 @@ def _getInputExtensionsList() -> list[str]:
             result.append('.' + inputExt)
     return result
 
-def _printSupportedInputFormats():
+def _printSupportedInputFormats() -> None:
     c = m21.converter.Converter()
     inList = c.subconvertersList('input')
     print("Supported input formats are:", file=sys.stderr)

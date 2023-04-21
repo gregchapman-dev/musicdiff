@@ -39,8 +39,10 @@ class Visualization:
 
     @staticmethod
     def mark_diffs(
-        score1: m21.stream.Score, score2: m21.stream.Score, operations: list[tuple]
-    ):
+        score1: m21.stream.Score,
+        score2: m21.stream.Score,
+        operations: list[tuple]
+    ) -> None:
         """
         Mark up two music21 scores with the differences described by an operations
         list (e.g. a list returned from `musicdiff.Comparison.annotated_scores_diff`).
@@ -1221,10 +1223,12 @@ class Visualization:
                 )
 
     @staticmethod
-    def show_diffs(score1: m21.stream.Score,
-                   score2: m21.stream.Score,
-                   out_path1: str | Path | None = None,
-                   out_path2: str | Path | None = None):
+    def show_diffs(
+        score1: m21.stream.Score,
+        score2: m21.stream.Score,
+        out_path1: str | Path | None = None,
+        out_path2: str | Path | None = None
+    ) -> None:
         """
         Render two (presumably marked-up) music21 scores.  If both out_path1 and
         out_path2 are not None, save the rendered PDFs at those two locations,

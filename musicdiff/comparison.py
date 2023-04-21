@@ -222,7 +222,13 @@ class Comparison:
 
     @staticmethod
     @_memoize_pitches_lev_diff
-    def _pitches_leveinsthein_diff(original, compare_to, noteNode1, noteNode2, ids):
+    def _pitches_leveinsthein_diff(
+        original: list[tuple[str, str, bool]],
+        compare_to: list[tuple[str, str, bool]],
+        noteNode1: AnnNote,
+        noteNode2: AnnNote,
+        ids: tuple[int, int]
+    ):
         """
         Compute the leveinsthein distance between two sequences of pitches.
         Arguments:

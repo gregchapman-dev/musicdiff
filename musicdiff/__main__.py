@@ -60,5 +60,7 @@ if __name__ == "__main__":
     # or both arguments.
     # Note also that diff() can take str or pathlib.Path for files.
     numDiffs: int | None = diff(args.file1, args.file2, detail=detail)
-    if numDiffs is not None and numDiffs == 0:
+    if numDiffs is None:
+        print('musicdiff failed.', file=sys.stderr)
+    elif numDiffs == 0:
         print(f'Scores in {args.file1} and {args.file2} are identical.', file=sys.stderr)
