@@ -6,8 +6,8 @@ def test_annotNote1():
     n1 = m21.note.Note(nameWithOctave="D#5", quarterLength=1)
     n1.id = 344
     # create annotated note
-    anote = AnnNote(n1, [], [])
-    assert anote.__repr__() == "[('D5', 'sharp', False)],4,0,[],[],344,[],[],[],{}"
+    anote = AnnNote(n1, [], [], [])
+    assert anote.__repr__() == "[('D5', 'sharp', False)],4,0,B:[],T:[],TI:[],344,[],[],[],{}"
     assert str(anote) == "[D5sharp]4"
 
 
@@ -15,11 +15,11 @@ def test_annotNote2():
     n1 = m21.note.Note(nameWithOctave="E#5", quarterLength=0.5)
     n1.id = 344
     # create annotated note
-    anote = AnnNote(n1, ["start"], ["start"])
+    anote = AnnNote(n1, ["start"], ["start"], ['3'])
     assert (
-        anote.__repr__() == "[('E5', 'sharp', False)],4,0,['start'],['start'],344,[],[],[],{}"
+        anote.__repr__() == "[('E5', 'sharp', False)],4,0,B:['start'],T:['start'],TI:['3'],344,[],[],[],{}"
     )
-    assert str(anote) == "[E5sharp]4BsrTsr"
+    assert str(anote) == "[E5sharp]4BsrTsr(3)"
 
 
 def test_annotNote3():
@@ -27,8 +27,8 @@ def test_annotNote3():
     n1.id = 344
     n1.tie = m21.tie.Tie("stop")
     # create annotated note
-    anote = AnnNote(n1, [], [])
-    assert anote.__repr__() == "[('D5', 'None', True)],2,0,[],[],344,[],[],[],{}"
+    anote = AnnNote(n1, [], [], [])
+    assert anote.__repr__() == "[('D5', 'None', True)],2,0,B:[],T:[],TI:[],344,[],[],[],{}"
     assert str(anote) == "[D5T]2"
 
 
@@ -36,7 +36,7 @@ def test_annotNote_size1():
     n1 = m21.note.Note(nameWithOctave="D5", quarterLength=2)
     n1.tie = m21.tie.Tie("stop")
     # create annotated note
-    anote = AnnNote(n1, [], [])
+    anote = AnnNote(n1, [], [], [])
     assert anote.notation_size() == 2
 
 
@@ -44,7 +44,7 @@ def test_annotNote_size2():
     n1 = m21.note.Note(nameWithOctave="D#5", quarterLength=1.5)
     n1.tie = m21.tie.Tie("stop")
     # create annotated note
-    anote = AnnNote(n1, [], [])
+    anote = AnnNote(n1, [], [], [])
     assert anote.notation_size() == 4
 
 
@@ -52,7 +52,7 @@ def test_noteNode_size3():
     d = m21.duration.Duration(1.5)
     n1 = m21.chord.Chord(["D", "F#", "A"], duration=d)
     # create annotated note
-    anote = AnnNote(n1, [], [])
+    anote = AnnNote(n1, [], [], [])
     assert anote.notation_size() == 7
 
 
@@ -64,7 +64,7 @@ def test_noteNode_size4():
     d = m21.duration.Duration(1.75)
     chord = m21.chord.Chord([n1, n2, n3], duration=d)
     # create annotated note
-    anote = AnnNote(chord, [], [])
+    anote = AnnNote(chord, [], [], [])
     assert anote.notation_size() == 12
 
 
@@ -170,8 +170,8 @@ def test_equality_an1():
     n2.id = 345
     n2.tie = m21.tie.Tie("stop")
     # create annotated note
-    anote1 = AnnNote(n1, [], [])
-    anote2 = AnnNote(n2, [], [])
+    anote1 = AnnNote(n1, [], [], [])
+    anote2 = AnnNote(n2, [], [], [])
     assert anote1 == anote2
     assert repr(anote1) != repr(anote2)
 
@@ -184,8 +184,8 @@ def test_equality_an2():
     n2.id = 344
     n2.tie = m21.tie.Tie("stop")
     # create annotated note
-    anote1 = AnnNote(n1, [], [])
-    anote2 = AnnNote(n2, [], [])
+    anote1 = AnnNote(n1, [], [], [])
+    anote2 = AnnNote(n2, [], [], [])
     assert anote1 == anote2
     assert repr(anote1) == repr(anote2)
 

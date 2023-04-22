@@ -168,8 +168,8 @@ def test_pitches_diff1():
     n1 = m21.note.Note(nameWithOctave="D#5", quarterLength=1)
     n2 = m21.note.Note(nameWithOctave="D--5", quarterLength=1)
     # create AnnotatedNotes
-    note1 = AnnNote(n1, [], [])
-    note2 = AnnNote(n2, [], [])
+    note1 = AnnNote(n1, [], [], [])
+    note2 = AnnNote(n2, [], [], [])
     # pitches to compare
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
@@ -182,8 +182,8 @@ def test_pitches_diff1():
 def test_pitches_diff2():
     n1 = m21.note.Note(nameWithOctave="E5", quarterLength=2)
     n2 = m21.note.Note(nameWithOctave="D--5", quarterLength=1)
-    note1 = AnnNote(n1, [], [])
-    note2 = AnnNote(n2, [], [])
+    note1 = AnnNote(n1, [], [], [])
+    note2 = AnnNote(n2, [], [], [])
     # pitches to compare
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
@@ -199,8 +199,8 @@ def test_pitches_diff3():
     n1 = m21.note.Note(nameWithOctave="D--5", quarterLength=2)
     n1.tie = m21.tie.Tie("stop")
     n2 = m21.note.Rest(quarterLength=0.5)
-    note1 = AnnNote(n1, [], [])
-    note2 = AnnNote(n2, [], [])
+    note1 = AnnNote(n1, [], [], [])
+    note2 = AnnNote(n2, [], [], [])
     # pitches to compare
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
@@ -218,8 +218,8 @@ def test_pitches_diff4():
     n1.tie = m21.tie.Tie("stop")
     n2 = m21.note.Note(nameWithOctave="D#5", quarterLength=3)
     n2.tie = m21.tie.Tie("stop")
-    note1 = AnnNote(n1, [], [])
-    note2 = AnnNote(n2, [], [])
+    note1 = AnnNote(n1, [], [], [])
+    note2 = AnnNote(n2, [], [], [])
     # pitches to compare
     pitch1 = note1.pitches[0]
     pitch2 = note2.pitches[0]
