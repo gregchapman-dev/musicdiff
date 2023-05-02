@@ -594,7 +594,6 @@ class AnnPart:
                 currently equivalent to AllObjects).
         """
         self.part: int | str = part.id
-        self.isPartStaff: bool = isinstance(part, m21.stream.PartStaff)
         self.bar_list: list[AnnMeasure] = []
         for measure in part.getElementsByClass("Measure"):
             # create the bar objects
@@ -607,11 +606,7 @@ class AnnPart:
         self.precomputed_str: int = hash(self.__str__())
 
     def __str__(self) -> str:
-        output: str
-        if self.isPartStaff:
-            output = 'PartStaff: '
-        else:
-            output = 'Part: '
+        output: str = 'Part: '
         output += str([str(b) for b in self.bar_list])
         return output
 
@@ -621,9 +616,6 @@ class AnnPart:
             return False
 
         if len(self.bar_list) != len(other.bar_list):
-            return False
-
-        if self.isPartStaff != other.isPartStaff:
             return False
 
         return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
