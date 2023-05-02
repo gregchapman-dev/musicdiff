@@ -594,6 +594,7 @@ class AnnPart:
                 currently equivalent to AllObjects).
         """
         self.part: int | str = part.id
+        self.isPartStaff: bool = isinstance(part, m21.stream.PartStaff)
         self.bar_list: list[AnnMeasure] = []
         for measure in part.getElementsByClass("Measure"):
             # create the bar objects
@@ -606,7 +607,13 @@ class AnnPart:
         self.precomputed_str: int = hash(self.__str__())
 
     def __str__(self) -> str:
-        return str([str(b) for b in self.bar_list])
+        output: str
+        if self.isPartStaff:
+            output = 'PartStaff: '
+        else:
+            output = 'Part: '
+        output += str([str(b) for b in self.bar_list])
+        return output
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
@@ -614,6 +621,9 @@ class AnnPart:
             return False
 
         if len(self.bar_list) != len(other.bar_list):
+            return False
+
+        if self.isPartStaff != other.isPartStaff:
             return False
 
         return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
@@ -643,6 +653,92 @@ class AnnPart:
         return notes_id
 
 
+class AnnStaffGroup:
+    def __init__(
+        self,
+        staff_group: m21.layout.StaffGroup,
+        part_to_index: dict[m21.stream.Part, int],
+        detail: DetailLevel = DetailLevel.Default
+    ) -> None:
+        """
+        Take a StaffGroup and store it as an annotated object.
+        """
+        self.staff_group: int | str = staff_group.id
+        self.name: str = staff_group.name or ''
+        self.abbreviation: str = staff_group.abbreviation or ''
+        self.symbol: str | None = staff_group.symbol
+        self.barTogether: bool | str | None = staff_group.barTogether
+
+        self.part_indices: list[int] = []
+        for part in staff_group:
+            self.part_indices.append(part_to_index.get(part, -1))
+
+        # sort so simple list comparison can work
+        self.part_indices.sort()
+
+        self.n_of_parts: int = len(self.part_indices)
+
+        # precomputed representations for faster comparison
+        self.precomputed_str: str = self.__str__()
+
+    def __str__(self) -> str:
+        output: str = "StaffGroup"
+        if self.name and self.abbreviation:
+            output += f"({self.name},{self.abbreviation})"
+        elif self.name:
+            output += f"({self.name})"
+        elif self.abbreviation:
+            output += f"(,{self.abbreviation})"
+        else:
+            output += "(,)"
+
+        output += f", symbol={self.symbol}"
+        output += f", barTogether={self.barTogether}"
+        output += f", partIndices={self.part_indices}"
+        return output
+
+    def __eq__(self, other) -> bool:
+        # equality does not consider MEI id (or MEI ids of parts included in the group)
+        if not isinstance(other, AnnStaffGroup):
+            return False
+
+        if self.name != other.name:
+            return False
+
+        if self.abbreviation != other.abbreviation:
+            return False
+
+        if self.symbol != other.symbol:
+            return False
+
+        if self.barTogether != other.barTogether:
+            return False
+
+        if self.part_indices != other.part_indices:
+            return False
+
+        return True
+
+    def notation_size(self) -> int:
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnStaffGroup`.
+
+        Returns:
+            int: The notation size of the annotated staff group
+        """
+        # notation_size = 5 because there are 5 main visible things about a StaffGroup:
+        #   name, abbreviation, symbol shape, barline type, and which parts it encloses
+        return 5
+
+    def __repr__(self) -> str:
+        # does consider the MEI id!
+        output: str = f"StaffGroup({self.staff_group}):"
+        output += f" name={self.name}, abbrev={self.abbreviation},"
+        output += f" symbol={self.symbol}, barTogether={self.barTogether}"
+        output += f", partIndices={self.part_indices}"
+        return output
+
+
 class AnnScore:
     def __init__(
         self,
@@ -660,7 +756,10 @@ class AnnScore:
         """
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []
+        self.staff_group_list: list[AnnStaffGroup] = []
+
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
+        part_to_index: dict[m21.stream.Part, int] = {}
 
         # Before we start, transpose all notes to written pitch, both for transposing
         # instruments and Ottavas. Be careful to preserve accidental.displayStatus
@@ -668,12 +767,20 @@ class AnnScore:
         # accidentals.
         score.toWrittenPitch(inPlace=True, preserveAccidentalDisplay=True)
 
-        for part in score.parts:
+        for idx, part in enumerate(score.parts):
             # create and add the AnnPart object to part_list
+            # and to part_to_index dict
+            part_to_index[part] = idx
             ann_part = AnnPart(part, score, spannerBundle, detail)
-            if ann_part.n_of_bars > 0:
-                self.part_list.append(ann_part)
+            self.part_list.append(ann_part)
+
         self.n_of_parts: int = len(self.part_list)
+
+        for staffGroup in score[m21.layout.StaffGroup]:
+            ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
+            if ann_staff_group.n_of_parts > 0:
+                self.staff_group_list.append(ann_staff_group)
+        self.n_of_staff_groups: int = len(self.staff_group_list)
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
