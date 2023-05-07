@@ -19,7 +19,7 @@ import typing as t
 
 import music21 as m21
 
-from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote, AnnExtra
+from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote, AnnExtra, AnnStaffGroup
 
 
 class Visualization:
@@ -326,6 +326,173 @@ class Visualization:
                 else:
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
+
+            # staff groups
+            elif op[0] == "staffgrpins":
+                assert isinstance(op[2], AnnStaffGroup)
+                # add a textExpression describing the insertion.
+                staffGroup2 = score2.recurse().getElementById(
+                    op[2].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup2 is not None
+                textExp = m21.expressions.TextExpression("inserted StaffGroup")
+                textExp.style.color = Visualization.INSERTED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp)
+
+            elif op[0] == "staffgrpdel":
+                assert isinstance(op[1], AnnStaffGroup)
+                # add a textExpression describing the deletion.
+                staffGroup1 = score1.recurse().getElementById(
+                    op[1].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup1 is not None
+                textExp = m21.expressions.TextExpression("deleted StaffGroup")
+                textExp.style.color = Visualization.DELETED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp)
+
+            elif op[0] == "staffgrpsub":
+                assert isinstance(op[1], AnnStaffGroup)
+                assert isinstance(op[2], AnnStaffGroup)
+                # add a textExpression describing the change.
+                staffGroup1 = score1.recurse().getElementById(
+                    op[1].staff_group  # type: ignore
+                )
+                staffGroup2 = score2.recurse().getElementById(
+                    op[2].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup1 is not None
+                    assert staffGroup2 is not None
+                textExp1 = m21.expressions.TextExpression("changed StaffGroup")
+                textExp2 = m21.expressions.TextExpression("changed StaffGroup")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp1)
+                insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp2)
+
+            elif op[0] == "staffgrpnameedit":
+                assert isinstance(op[1], AnnStaffGroup)
+                assert isinstance(op[2], AnnStaffGroup)
+                # add a textExpression describing the change.
+                staffGroup1 = score1.recurse().getElementById(
+                    op[1].staff_group  # type: ignore
+                )
+                staffGroup2 = score2.recurse().getElementById(
+                    op[2].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup1 is not None
+                    assert staffGroup2 is not None
+                textExp1 = m21.expressions.TextExpression("changed StaffGroup name")
+                textExp2 = m21.expressions.TextExpression("changed StaffGroup name")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp1)
+                insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp2)
+
+            elif op[0] == "staffgrpabbreviationedit":
+                assert isinstance(op[1], AnnStaffGroup)
+                assert isinstance(op[2], AnnStaffGroup)
+                # add a textExpression describing the change.
+                staffGroup1 = score1.recurse().getElementById(
+                    op[1].staff_group  # type: ignore
+                )
+                staffGroup2 = score2.recurse().getElementById(
+                    op[2].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup1 is not None
+                    assert staffGroup2 is not None
+                textExp1 = m21.expressions.TextExpression("changed StaffGroup abbreviation")
+                textExp2 = m21.expressions.TextExpression("changed StaffGroup abbreviation")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp1)
+                insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp2)
+
+            elif op[0] == "staffgrpsymboledit":
+                assert isinstance(op[1], AnnStaffGroup)
+                assert isinstance(op[2], AnnStaffGroup)
+                # add a textExpression describing the change.
+                staffGroup1 = score1.recurse().getElementById(
+                    op[1].staff_group  # type: ignore
+                )
+                staffGroup2 = score2.recurse().getElementById(
+                    op[2].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup1 is not None
+                    assert staffGroup2 is not None
+                textExp1 = m21.expressions.TextExpression("changed StaffGroup symbol shape")
+                textExp2 = m21.expressions.TextExpression("changed StaffGroup symbol shape")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp1)
+                insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp2)
+
+            elif op[0] == "staffgrpbartogetheredit":
+                assert isinstance(op[1], AnnStaffGroup)
+                assert isinstance(op[2], AnnStaffGroup)
+                # add a textExpression describing the change.
+                staffGroup1 = score1.recurse().getElementById(
+                    op[1].staff_group  # type: ignore
+                )
+                staffGroup2 = score2.recurse().getElementById(
+                    op[2].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup1 is not None
+                    assert staffGroup2 is not None
+                textExp1 = m21.expressions.TextExpression("changed StaffGroup barline type")
+                textExp2 = m21.expressions.TextExpression("changed StaffGroup barline type")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp1)
+                insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp2)
+
+            elif op[0] == "staffgrppartindicesedit":
+                assert isinstance(op[1], AnnStaffGroup)
+                assert isinstance(op[2], AnnStaffGroup)
+                # add a textExpression describing the change.
+                staffGroup1 = score1.recurse().getElementById(
+                    op[1].staff_group  # type: ignore
+                )
+                staffGroup2 = score2.recurse().getElementById(
+                    op[2].staff_group  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert staffGroup1 is not None
+                    assert staffGroup2 is not None
+                textExp1 = m21.expressions.TextExpression("changed StaffGroup parts")
+                textExp2 = m21.expressions.TextExpression("changed StaffGroup parts")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                # insert text at offset 0 in first measure of first part in group
+                insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp1)
+                insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp2)
 
             # note
             elif op[0] == "noteins":

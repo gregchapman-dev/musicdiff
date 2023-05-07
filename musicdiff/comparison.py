@@ -19,7 +19,7 @@ from difflib import ndiff
 
 import numpy as np
 
-from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra
+from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnStaffGroup
 from musicdiff import M21Utils
 
 # memoizers to speed up the recursive computation
@@ -35,6 +35,17 @@ def _memoize_inside_bars_diff_lin(func):
     return memoizer
 
 def _memoize_extras_diff_lin(func):
+    mem = {}
+
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in mem:
+            mem[key] = func(original, compare_to)
+        return copy.deepcopy(mem[key])
+
+    return memoizer
+
+def _memoize_staff_groups_diff_lin(func):
     mem = {}
 
     def memoizer(original, compare_to):
@@ -475,6 +486,65 @@ class Comparison:
         return out
 
     @staticmethod
+    @_memoize_staff_groups_diff_lin
+    def _staff_groups_diff_lin(original, compare_to):
+        # original and compare to are two lists of AnnStaffGroup
+        if len(original) == 0 and len(compare_to) == 0:
+            return [], 0
+
+        if len(original) == 0:
+            cost = 0
+            op_list, cost = Comparison._staff_groups_diff_lin(original, compare_to[1:])
+            op_list.append(("staffgrpins", None, compare_to[0], compare_to[0].notation_size()))
+            cost += compare_to[0].notation_size()
+            return op_list, cost
+
+        if len(compare_to) == 0:
+            cost = 0
+            op_list, cost = Comparison._staff_groups_diff_lin(original[1:], compare_to)
+            op_list.append(("staffgrpdel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
+            return op_list, cost
+
+        # compute the cost and the op_list for the many possibilities of recursion
+        cost = {}
+        op_list = {}
+        # staffgrpdel
+        op_list["staffgrpdel"], cost["staffgrpdel"] = Comparison._staff_groups_diff_lin(
+            original[1:], compare_to
+        )
+        cost["staffgrpdel"] += original[0].notation_size()
+        op_list["staffgrpdel"].append(
+            ("staffgrpdel", original[0], None, original[0].notation_size())
+        )
+        # staffgrpins
+        op_list["staffgrpins"], cost["staffgrpins"] = Comparison._staff_groups_diff_lin(
+            original, compare_to[1:]
+        )
+        cost["staffgrpins"] += compare_to[0].notation_size()
+        op_list["staffgrpins"].append(
+            ("staffgrpins", None, compare_to[0], compare_to[0].notation_size())
+        )
+        # staffgrpsub
+        op_list["staffgrpsub"], cost["staffgrpsub"] = Comparison._staff_groups_diff_lin(
+            original[1:], compare_to[1:]
+        )
+        if (
+            original[0] == compare_to[0]
+        ):  # avoid call another function if they are equal
+            staffgrpsub_op, staffgrpsub_cost = [], 0
+        else:
+            staffgrpsub_op, staffgrpsub_cost = (
+                Comparison._annotated_staff_group_diff(original[0], compare_to[0])
+            )
+        cost["staffgrpsub"] += staffgrpsub_cost
+        op_list["staffgrpsub"].extend(staffgrpsub_op)
+        # compute the minimum of the possibilities
+        min_key = min(cost, key=cost.get)
+        out = op_list[min_key], cost[min_key]
+        return out
+
+    @staticmethod
     def _strings_leveinshtein_distance(str1: str, str2: str):
         counter: dict = {"+": 0, "-": 0}
         distance: int = 0
@@ -537,6 +607,70 @@ class Comparison:
         if annExtra1.styledict != annExtra2.styledict:
             cost += 1
             op_list.append(("extrastyleedit", annExtra1, annExtra2, 1))
+
+        return op_list, cost
+
+    @staticmethod
+    def _annotated_staff_group_diff(annStaffGroup1: AnnStaffGroup, annStaffGroup2: AnnStaffGroup):
+        """
+        Compute the differences between two annotated staff groups.
+        Each annotated staff group consists of five values: name, abbreviation,
+        symbol, barTogether, part_indices.
+        """
+        cost = 0
+        op_list = []
+
+        # add for the name
+        if annStaffGroup1.name != annStaffGroup2.name:
+            name_cost: int = (
+                Comparison._strings_leveinshtein_distance(annStaffGroup1.name, annStaffGroup2.name)
+            )
+            cost += name_cost
+            op_list.append(("staffgrpnameedit", annStaffGroup1, annStaffGroup2, name_cost))
+
+        # add for the abbreviation
+        if annStaffGroup1.abbreviation != annStaffGroup2.abbreviation:
+            abbreviation_cost: int = (
+                Comparison._strings_leveinshtein_distance(
+                    annStaffGroup1.abbreviation,
+                    annStaffGroup2.abbreviation
+                )
+            )
+            cost += abbreviation_cost
+            op_list.append(
+                ("staffgrpabbreviationedit", annStaffGroup1, annStaffGroup2, abbreviation_cost)
+            )
+
+        # add for the symbol
+        if annStaffGroup1.symbol != annStaffGroup2.symbol:
+            symbol_cost: int = 1
+            cost += symbol_cost
+            op_list.append(
+                ("staffgrpsymboledit", annStaffGroup1, annStaffGroup2, symbol_cost)
+            )
+
+        # add for barTogether
+        if annStaffGroup1.barTogether != annStaffGroup2.barTogether:
+            barTogether_cost: int = 1
+            cost += barTogether_cost
+            op_list.append(
+                ("staffgrpbartogetheredit", annStaffGroup1, annStaffGroup2, barTogether_cost)
+            )
+
+        # add for partIndices (sorted list of int)
+        if annStaffGroup1.part_indices != annStaffGroup2.part_indices:
+            parts1: str = str(annStaffGroup1.part_indices)
+            parts2: str = str(annStaffGroup2.part_indices)
+            partIndices_cost: int = (
+                Comparison._strings_leveinshtein_distance(
+                    parts1,
+                    parts2
+                )
+            )
+            cost += partIndices_cost
+            op_list.append(
+                ("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2, partIndices_cost)
+            )
 
         return op_list, cost
 
@@ -930,5 +1064,12 @@ class Comparison:
                 )
                 op_list_total.extend(op_list_block)
                 cost_total += cost_block
+
+        # compare the staff groups
+        groups_op_list, groups_cost = Comparison._staff_groups_diff_lin(
+            score1.staff_group_list, score2.staff_group_list
+        )
+        op_list_total.extend(groups_op_list)
+        cost_total += groups_cost
 
         return op_list_total, cost_total
