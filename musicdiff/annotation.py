@@ -768,11 +768,12 @@ class AnnScore:
 
         self.n_of_parts: int = len(self.part_list)
 
-        for staffGroup in score[m21.layout.StaffGroup]:
-            ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
-            if ann_staff_group.n_of_parts > 0:
-                self.staff_group_list.append(ann_staff_group)
-        self.n_of_staff_groups: int = len(self.staff_group_list)
+        if detail >= DetailLevel.AllObjects:
+            # we don't look at staff groups unless client has specified AllObject or greater
+            for staffGroup in score[m21.layout.StaffGroup]:
+                ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
+                if ann_staff_group.n_of_parts > 0:
+                    self.staff_group_list.append(ann_staff_group)
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
