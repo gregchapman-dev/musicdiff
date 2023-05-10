@@ -658,8 +658,12 @@ class AnnStaffGroup:
         self.staff_group: int | str = staff_group.id
         self.name: str = staff_group.name or ''
         self.abbreviation: str = staff_group.abbreviation or ''
-        self.symbol: str | None = staff_group.symbol
+        self.symbol: str | None = None
         self.barTogether: bool | str | None = staff_group.barTogether
+
+        if detail >= DetailLevel.AllObjectsWithStyle:
+            # symbol (brace, bracket, line, etc) is considered to be style
+            self.symbol = staff_group.symbol
 
         self.part_indices: list[int] = []
         for part in staff_group:
