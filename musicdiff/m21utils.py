@@ -81,8 +81,13 @@ class M21Utils:
         return out_string
 
     @staticmethod
-    def expression_to_string(expr: m21.expressions.Expression) -> str:
+    def expression_to_string(
+        expr: m21.expressions.Expression,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> str:
         theName: str = ''
+        placement: str | None = None
+
 
         # we customize name a bit for Turn/GeneralMordent/Trill, because we only want to
         # know about visible accidentals (i.e. with displayStatus == True).
@@ -133,6 +138,16 @@ class M21Utils:
                     theName += 'lower=' + expr.lowerAccidental.name
                 theName += ')'
 
+            # if diffing style, include placement (None, "above", "below")
+            if detail >= DetailLevel.AllObjectsWithStyle:
+                placement = None
+                if hasattr(expr, 'placement'):
+                    placement = getattr(expr, 'placement')
+                elif expr.hasStyleInformation and hasattr(expr.style, 'placement'):
+                    placement = getattr(expr.style, 'placement')
+                if placement is not None:
+                    theName = theName + '(' + placement + ')'
+
             return theName
 
         if isinstance(expr, (m21.expressions.GeneralMordent, m21.expressions.Trill)):
@@ -155,9 +170,38 @@ class M21Utils:
                     assert expr.accidental is not None
                 theName += f' ({expr.accidental.name})'
 
+            # if diffing style, include placement (None, "above", "below")
+            if detail >= DetailLevel.AllObjectsWithStyle:
+                placement = None
+                if hasattr(expr, 'placement'):
+                    placement = getattr(expr, 'placement')
+                elif expr.hasStyleInformation and hasattr(expr.style, 'placement'):
+                    placement = getattr(expr.style, 'placement')
+                if placement is not None:
+                    theName = theName + '(' + placement + ')'
+
             return theName
 
         theName = expr.name
+        return theName
+
+    @staticmethod
+    def articulation_to_string(
+        artic: m21.articulations.Articulation,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> str:
+        theName: str = artic.name
+
+        # if diffing style, include placement (None, "above", "below")
+        if detail >= DetailLevel.AllObjectsWithStyle:
+            placement: str | None = None
+            if hasattr(artic, 'placement'):
+                placement = getattr(artic, 'placement')
+            elif artic.hasStyleInformation and hasattr(artic.style, 'placement'):
+                placement = getattr(artic.style, 'placement')
+            if placement is not None:
+                theName = theName + '(' + placement + ')'
+
         return theName
 
     @staticmethod

@@ -107,12 +107,14 @@ class AnnNote:
             self.graceType = ''
             self.graceSlash = False
         # articulations
-        self.articulations: list[str] = [a.name for a in general_note.articulations]
+        self.articulations: list[str] = [
+            M21Utils.articulation_to_string(a, detail) for a in general_note.articulations
+        ]
         if self.articulations:
             self.articulations.sort()
         # expressions
         self.expressions: list[str] = [
-            M21Utils.expression_to_string(a) for a in general_note.expressions
+            M21Utils.expression_to_string(a, detail) for a in general_note.expressions
         ]
         if self.expressions:
             self.expressions.sort()
