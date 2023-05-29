@@ -552,7 +552,7 @@ class M21Utils:
                             new_tuplets_list[i][ii] = "start"
                         else:
                             new_tuplets_list[i][ii] = "continue"
-                    elif note_tuplets[ii] == "stop":
+                    elif note_tuplets[ii] in ("stop", "startStop"):
                         start_index = None
                     else:
                         raise TypeError("Invalid tuplet type")
