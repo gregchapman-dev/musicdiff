@@ -1113,7 +1113,7 @@ class M21Utils:
     @staticmethod
     def stafflayout_to_string(
         sl: m21.layout.StaffLayout,
-        detail: DetailLevel=DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default
     ) -> str:
         output: str = ''
         if sl.staffLines is not None:
