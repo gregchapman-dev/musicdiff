@@ -88,7 +88,6 @@ class M21Utils:
         theName: str = ''
         placement: str | None = None
 
-
         # we customize name a bit for Turn/GeneralMordent/Trill, because we only want to
         # know about visible accidentals (i.e. with displayStatus == True).
         if isinstance(expr, m21.expressions.Turn):
@@ -1112,6 +1111,25 @@ class M21Utils:
         return f'END:{rb.number}:len={len(rb)}'
 
     @staticmethod
+    def stafflayout_to_string(
+        sl: m21.layout.StaffLayout,
+        detail: DetailLevel=DetailLevel.Default
+    ) -> str:
+        output: str = ''
+        if sl.staffLines is not None:
+            if not output:
+                output = 'STAFF:'
+            output += f'lines={sl.staffLines}'
+        if detail >= DetailLevel.AllObjectsWithStyle:
+            if sl.staffSize is not None:
+                if not output:
+                    output = 'STAFF:'
+                else:
+                    output += ','
+                output += f'size={sl.staffSize:.2g}%'
+        return output
+
+    @staticmethod
     def systemlayout_to_string(sb: m21.layout.SystemLayout) -> str:
         if sb.isNew:
             return 'SB'
@@ -1150,6 +1168,8 @@ class M21Utils:
             return M21Utils.ottava_to_string(extra)
         if isinstance(extra, m21.spanner.RepeatBracket):
             return M21Utils.repeatbracket_to_string(extra)
+        if isinstance(extra, m21.layout.StaffLayout):
+            return M21Utils.stafflayout_to_string(extra, detail)
         if isinstance(
                 extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
