@@ -246,7 +246,7 @@ class M21Utils:
             # TODO: we should append editorial style info to note_accidental here ('paren', etc)
 
         # add tie information (Unpitched has this, too)
-        note_tie = note.tie is not None and note.tie.type in ("stop", "continue")
+        note_tie = note.tie is not None and note.tie.type in ("start", "continue")
         return (note_pitch, note_accidental, note_tie)
 
 
