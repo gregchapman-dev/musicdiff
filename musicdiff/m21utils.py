@@ -181,8 +181,23 @@ class M21Utils:
 
             return theName
 
+        if isinstance(expr, m21.expressions.Tremolo):
+            return M21Utils.tremolo_to_string(expr, detail)
+
+        # all others just get expr.name
         theName = expr.name
         return theName
+
+    @staticmethod
+    def tremolo_to_string(
+        expr: m21.expressions.Tremolo | m21.expressions.TremoloSpanner,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> str:
+        if isinstance(expr, m21.expressions.Tremolo):
+            return 'bTrem'
+        if isinstance(expr, m21.expressions.TremoloSpanner):
+            return 'fTrem'
+        return ''
 
     @staticmethod
     def articulation_to_string(
@@ -716,12 +731,12 @@ class M21Utils:
 
             output.append(el)
 
-        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos/Ottavas that start
-        # on GeneralNotes/SpannerAnchors in this measure
+        # Add any interesting spanners that start on GeneralNotes/SpannerAnchors in this measure
         spanner_types = (
             m21.expressions.ArpeggioMarkSpanner,
             m21.dynamics.DynamicWedge,
-            m21.spanner.Ottava
+            m21.spanner.Ottava,
+            m21.expressions.TremoloSpanner
         )
 
         spannerElementClasses = (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
@@ -1168,6 +1183,8 @@ class M21Utils:
             return M21Utils.ottava_to_string(extra)
         if isinstance(extra, m21.spanner.RepeatBracket):
             return M21Utils.repeatbracket_to_string(extra)
+        if isinstance(extra, m21.expressions.TremoloSpanner):
+            return M21Utils.tremolo_to_string(extra)
         if isinstance(extra, m21.layout.StaffLayout):
             return M21Utils.stafflayout_to_string(extra, detail)
         if isinstance(
