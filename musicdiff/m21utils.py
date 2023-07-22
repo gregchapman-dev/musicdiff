@@ -1123,7 +1123,10 @@ class M21Utils:
 
     @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
-        return f'END:{rb.number}:len={len(rb)}'
+        if rb.overrideDisplay:
+            return f'END:{rb.number,rb.overrideDisplay}:len={len(rb)}'
+        else:
+            return f'END:{rb.number}:len={len(rb)}'
 
     @staticmethod
     def stafflayout_to_string(
