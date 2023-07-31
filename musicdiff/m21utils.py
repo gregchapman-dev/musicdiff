@@ -219,13 +219,32 @@ class M21Utils:
         return theName
 
     @staticmethod
-    def note2tuple(note: m21.note.Note | m21.note.Unpitched) -> tuple[str, str, bool]:
-        # pitch name (including octave, but not accidental)
-        if isinstance(note, m21.note.Unpitched):
+    def note2tuple(
+        note: m21.note.Note | m21.note.Unpitched | m21.note.Rest,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> tuple[str, str, bool]:
+        note_pitch: str
+        note_accidental: str
+        note_tie: bool = False
+        if isinstance(note, m21.note.Rest):
+            note_pitch = "R"
+            note_accidental = "None"
+            if detail >= DetailLevel.AllObjectsWithStyle:
+                # rest position is style, not substance
+                # rest.stepShift is the number of lines/spaces above/below middle of staff.
+                # We can use it directly in our annotation.
+                if note.stepShift > 0:
+                    note_pitch = f"R+{note.stepShift}"
+                elif note.stepShift < 0:
+                    note_pitch = f"R{note.stepShift}"
+                else:
+                    note_pitch = "R"
+        elif isinstance(note, m21.note.Unpitched):
             # use the displayName (e.g. 'G4') with no accidental
-            note_pitch: str = note.displayName
-            note_accidental: str = "None"
+            note_pitch = note.displayName
+            note_accidental = "None"
         else:
+            # pitch name (including octave, but not accidental)
             note_pitch = note.pitch.step + str(note.pitch.octave)
 
             # note_accidental is only set to non-'None' if the accidental will
@@ -260,8 +279,12 @@ class M21Utils:
 
             # TODO: we should append editorial style info to note_accidental here ('paren', etc)
 
-        # add tie information (Unpitched has this, too)
-        note_tie = note.tie is not None and note.tie.type in ("start", "continue")
+        # add tie information (Unpitched has this, too, but not Rest, and not meaningfully in
+        # Chord either)
+        if isinstance(note, (m21.note.Rest, m21.chord.ChordBase)):
+            note_tie = False
+        else:
+            note_tie = note.tie is not None and note.tie.type in ("start", "continue")
         return (note_pitch, note_accidental, note_tie)
 
 
