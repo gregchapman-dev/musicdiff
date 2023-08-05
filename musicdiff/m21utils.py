@@ -16,7 +16,7 @@ import math
 import sys
 import copy
 import typing as t
-from enum import IntEnum, auto
+from enum import IntEnum
 
 # import sys
 import music21 as m21
@@ -24,15 +24,15 @@ from music21.common.types import OffsetQL
 
 class DetailLevel(IntEnum):
     # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
-    GeneralNotesOnly = auto()
+    GeneralNotesOnly = 1
 
     # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
     # TimeSignatures, TempoIndications, etc
-    AllObjects = auto()
+    AllObjects = 2
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
-    AllObjectsWithStyle = auto()
+    AllObjectsWithStyle = 3
 
     Default = AllObjects
 
@@ -1223,7 +1223,7 @@ class M21Utils:
         # Page breaks and system breaks are only paid attention to at
         # DetailLevel.AllObjectsWithStyle, because they are entirely
         # style, no substance.
-        if detail == DetailLevel.AllObjectsWithStyle:
+        if detail >= DetailLevel.AllObjectsWithStyle:
             if isinstance(extra, m21.layout.SystemLayout):
                 return M21Utils.systemlayout_to_string(extra)
             if isinstance(extra, m21.layout.PageLayout):
