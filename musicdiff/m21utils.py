@@ -230,15 +230,17 @@ class M21Utils:
             note_pitch = "R"
             note_accidental = "None"
             if detail >= DetailLevel.AllObjectsWithStyle:
-                # rest position is style, not substance
-                # rest.stepShift is the number of lines/spaces above/below middle of staff.
-                # We can use it directly in our annotation.
-                if note.stepShift > 0:
-                    note_pitch = f"R+{note.stepShift}"
-                elif note.stepShift < 0:
-                    note_pitch = f"R{note.stepShift}"
-                else:
-                    note_pitch = "R"
+                # Rest position is style, not substance, but check
+                # that rest-position comparison hasn't been turned off
+                TURN_OFF_REST_POSITION_COMPARISON: int = 0x10000000
+                if detail & TURN_OFF_REST_POSITION_COMPARISON == 0:
+                    # rest.stepShift is the number of lines/spaces above/below middle of staff.
+                    # We can use it directly in our annotation.
+                    if note.stepShift > 0:
+                        note_pitch = f"R+{note.stepShift}"
+                    elif note.stepShift < 0:
+                        note_pitch = f"R{note.stepShift}"
+
         elif isinstance(note, m21.note.Unpitched):
             # use the displayName (e.g. 'G4') with no accidental
             note_pitch = note.displayName
