@@ -64,12 +64,7 @@ class AnnNote:
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tied)
         self.pitches: list[tuple[str, str, bool]]
-        if general_note.isRest:
-            self.pitches = [
-                ("R", "None", False)
-            ]  # accidental and tie are automaticaly set for rests
-
-        elif isinstance(general_note, m21.chord.ChordBase):
+        if isinstance(general_note, m21.chord.ChordBase):
             notes: tuple[m21.note.NotRest, ...] = general_note.notes
             if hasattr(general_note, "sortDiatonicAscending"):
                 # PercussionChords don't have this
@@ -78,10 +73,10 @@ class AnnNote:
             for p in notes:
                 if not isinstance(p, (m21.note.Note, m21.note.Unpitched)):
                     raise TypeError("The chord must contain only Note or Unpitched")
-                self.pitches.append(M21Utils.note2tuple(p))
+                self.pitches.append(M21Utils.note2tuple(p, detail))
 
-        elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched)):
-            self.pitches = [M21Utils.note2tuple(general_note)]
+        elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched, m21.note.Rest)):
+            self.pitches = [M21Utils.note2tuple(general_note, detail)]
         else:
             raise TypeError("The generalNote must be a Chord, a Rest, a Note, or an Unpitched")
 

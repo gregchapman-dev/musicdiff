@@ -16,7 +16,7 @@ import math
 import sys
 import copy
 import typing as t
-from enum import IntEnum, auto
+from enum import IntEnum
 
 # import sys
 import music21 as m21
@@ -24,15 +24,15 @@ from music21.common.types import OffsetQL
 
 class DetailLevel(IntEnum):
     # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
-    GeneralNotesOnly = auto()
+    GeneralNotesOnly = 1
 
     # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
     # TimeSignatures, TempoIndications, etc
-    AllObjects = auto()
+    AllObjects = 2
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
-    AllObjectsWithStyle = auto()
+    AllObjectsWithStyle = 3
 
     Default = AllObjects
 
@@ -87,7 +87,6 @@ class M21Utils:
     ) -> str:
         theName: str = ''
         placement: str | None = None
-
 
         # we customize name a bit for Turn/GeneralMordent/Trill, because we only want to
         # know about visible accidentals (i.e. with displayStatus == True).
@@ -182,8 +181,23 @@ class M21Utils:
 
             return theName
 
+        if isinstance(expr, m21.expressions.Tremolo):
+            return M21Utils.tremolo_to_string(expr, detail)
+
+        # all others just get expr.name
         theName = expr.name
         return theName
+
+    @staticmethod
+    def tremolo_to_string(
+        expr: m21.expressions.Tremolo | m21.expressions.TremoloSpanner,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> str:
+        if isinstance(expr, m21.expressions.Tremolo):
+            return 'bTrem'
+        if isinstance(expr, m21.expressions.TremoloSpanner):
+            return 'fTrem'
+        return ''
 
     @staticmethod
     def articulation_to_string(
@@ -205,13 +219,34 @@ class M21Utils:
         return theName
 
     @staticmethod
-    def note2tuple(note: m21.note.Note | m21.note.Unpitched) -> tuple[str, str, bool]:
-        # pitch name (including octave, but not accidental)
-        if isinstance(note, m21.note.Unpitched):
+    def note2tuple(
+        note: m21.note.Note | m21.note.Unpitched | m21.note.Rest,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> tuple[str, str, bool]:
+        note_pitch: str
+        note_accidental: str
+        note_tie: bool = False
+        if isinstance(note, m21.note.Rest):
+            note_pitch = "R"
+            note_accidental = "None"
+            if detail >= DetailLevel.AllObjectsWithStyle:
+                # Rest position is style, not substance, but check
+                # that rest-position comparison hasn't been turned off
+                TURN_OFF_REST_POSITION_COMPARISON: int = 0x10000000
+                if detail & TURN_OFF_REST_POSITION_COMPARISON == 0:
+                    # rest.stepShift is the number of lines/spaces above/below middle of staff.
+                    # We can use it directly in our annotation.
+                    if note.stepShift > 0:
+                        note_pitch = f"R+{note.stepShift}"
+                    elif note.stepShift < 0:
+                        note_pitch = f"R{note.stepShift}"
+
+        elif isinstance(note, m21.note.Unpitched):
             # use the displayName (e.g. 'G4') with no accidental
-            note_pitch: str = note.displayName
-            note_accidental: str = "None"
+            note_pitch = note.displayName
+            note_accidental = "None"
         else:
+            # pitch name (including octave, but not accidental)
             note_pitch = note.pitch.step + str(note.pitch.octave)
 
             # note_accidental is only set to non-'None' if the accidental will
@@ -246,8 +281,12 @@ class M21Utils:
 
             # TODO: we should append editorial style info to note_accidental here ('paren', etc)
 
-        # add tie information (Unpitched has this, too)
-        note_tie = note.tie is not None and note.tie.type in ("stop", "continue")
+        # add tie information (Unpitched has this, too, but not Rest, and not meaningfully in
+        # Chord either)
+        if isinstance(note, (m21.note.Rest, m21.chord.ChordBase)):
+            note_tie = False
+        else:
+            note_tie = note.tie is not None and note.tie.type in ("start", "continue")
         return (note_pitch, note_accidental, note_tie)
 
 
@@ -553,7 +592,7 @@ class M21Utils:
                             new_tuplets_list[i][ii] = "start"
                         else:
                             new_tuplets_list[i][ii] = "continue"
-                    elif note_tuplets[ii] == "stop":
+                    elif note_tuplets[ii] in ("stop", "startStop"):
                         start_index = None
                     else:
                         raise TypeError("Invalid tuplet type")
@@ -717,12 +756,12 @@ class M21Utils:
 
             output.append(el)
 
-        # Add any ArpeggioMarkSpanners/Crescendos/Diminuendos/Ottavas that start
-        # on GeneralNotes/SpannerAnchors in this measure
+        # Add any interesting spanners that start on GeneralNotes/SpannerAnchors in this measure
         spanner_types = (
             m21.expressions.ArpeggioMarkSpanner,
             m21.dynamics.DynamicWedge,
-            m21.spanner.Ottava
+            m21.spanner.Ottava,
+            m21.expressions.TremoloSpanner
         )
 
         spannerElementClasses = (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
@@ -1109,7 +1148,29 @@ class M21Utils:
 
     @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
-        return f'END:{rb.number}:len={len(rb)}'
+        if rb.overrideDisplay:
+            return f'END:{rb.number,rb.overrideDisplay}:len={len(rb)}'
+        else:
+            return f'END:{rb.number}:len={len(rb)}'
+
+    @staticmethod
+    def stafflayout_to_string(
+        sl: m21.layout.StaffLayout,
+        detail: DetailLevel = DetailLevel.Default
+    ) -> str:
+        output: str = ''
+        if sl.staffLines is not None:
+            if not output:
+                output = 'STAFF:'
+            output += f'lines={sl.staffLines}'
+        if detail >= DetailLevel.AllObjectsWithStyle:
+            if sl.staffSize is not None:
+                if not output:
+                    output = 'STAFF:'
+                else:
+                    output += ','
+                output += f'size={sl.staffSize:.2g}%'
+        return output
 
     @staticmethod
     def systemlayout_to_string(sb: m21.layout.SystemLayout) -> str:
@@ -1150,6 +1211,10 @@ class M21Utils:
             return M21Utils.ottava_to_string(extra)
         if isinstance(extra, m21.spanner.RepeatBracket):
             return M21Utils.repeatbracket_to_string(extra)
+        if isinstance(extra, m21.expressions.TremoloSpanner):
+            return M21Utils.tremolo_to_string(extra)
+        if isinstance(extra, m21.layout.StaffLayout):
+            return M21Utils.stafflayout_to_string(extra, detail)
         if isinstance(
                 extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
@@ -1158,7 +1223,7 @@ class M21Utils:
         # Page breaks and system breaks are only paid attention to at
         # DetailLevel.AllObjectsWithStyle, because they are entirely
         # style, no substance.
-        if detail == DetailLevel.AllObjectsWithStyle:
+        if detail >= DetailLevel.AllObjectsWithStyle:
             if isinstance(extra, m21.layout.SystemLayout):
                 return M21Utils.systemlayout_to_string(extra)
             if isinstance(extra, m21.layout.PageLayout):
