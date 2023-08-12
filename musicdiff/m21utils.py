@@ -28,13 +28,42 @@ class DetailLevel(IntEnum):
 
     # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
     # TimeSignatures, TempoIndications, etc
-    AllObjects = 2
+    # Implied value of extras bit-field is 2, but we don't allow random combinations
+    AllObjects = 3
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
-    AllObjectsWithStyle = 3
+    # Implied value of style bit-field is 4, but we don't allow random combinations
+    AllObjectsWithStyle = 7
 
     Default = AllObjects
+
+    # Some bit-fields you can or in for even more detail:
+    # e.g. GeneralNotesOnly | Metadata
+    # e.g. AllObjects | Metadata
+    # e.g. AllObjectsWithStyle | Metadata
+
+    Metadata = 8
+
+    @classmethod
+    def includesGeneralNotes(cls, val: int) -> bool:
+        if val == DetailLevel.Metadata:
+            # The only time we allow GeneralNotes to be left out is if
+            # we are diffing Metadata _only_
+            return False
+        return True
+
+    @classmethod
+    def includesOtherMusicObjects(cls, val: int) -> bool:
+        return val & 2 != 0
+
+    @classmethod
+    def includesStyle(cls, val: int) -> bool:
+        return val & 4 != 0
+
+    @classmethod
+    def includesMetadata(cls, val: int) -> bool:
+        return val & cls.Metadata != 0
 
 
 class M21Utils:
@@ -138,7 +167,7 @@ class M21Utils:
                 theName += ')'
 
             # if diffing style, include placement (None, "above", "below")
-            if detail >= DetailLevel.AllObjectsWithStyle:
+            if DetailLevel.includesStyle(detail):
                 placement = None
                 if hasattr(expr, 'placement'):
                     placement = getattr(expr, 'placement')
@@ -170,7 +199,7 @@ class M21Utils:
                 theName += f' ({expr.accidental.name})'
 
             # if diffing style, include placement (None, "above", "below")
-            if detail >= DetailLevel.AllObjectsWithStyle:
+            if DetailLevel.includesStyle(detail):
                 placement = None
                 if hasattr(expr, 'placement'):
                     placement = getattr(expr, 'placement')
@@ -207,7 +236,7 @@ class M21Utils:
         theName: str = artic.name
 
         # if diffing style, include placement (None, "above", "below")
-        if detail >= DetailLevel.AllObjectsWithStyle:
+        if DetailLevel.includesStyle(detail):
             placement: str | None = None
             if hasattr(artic, 'placement'):
                 placement = getattr(artic, 'placement')
@@ -229,7 +258,7 @@ class M21Utils:
         if isinstance(note, m21.note.Rest):
             note_pitch = "R"
             note_accidental = "None"
-            if detail >= DetailLevel.AllObjectsWithStyle:
+            if DetailLevel.includesStyle(detail):
                 # Rest position is style, not substance, but check
                 # that rest-position comparison hasn't been turned off
                 TURN_OFF_REST_POSITION_COMPARISON: int = 0x10000000
@@ -553,7 +582,7 @@ class M21Utils:
                     if tup.bracket:
                         new_info = new_info + "B"
                     # if diffing style, include placement (None, "above", "below")
-                    if detail >= DetailLevel.AllObjectsWithStyle:
+                    if DetailLevel.includesStyle(detail):
                         if tup.placement is not None:
                             new_info = new_info + tup.placement
                     tuplet_info_list_for_note.append(new_info)
@@ -992,7 +1021,7 @@ class M21Utils:
         style: m21.style.NoteStyle,
         detail: DetailLevel = DetailLevel.Default
     ) -> dict:
-        if detail < DetailLevel.AllObjectsWithStyle:
+        if not DetailLevel.includesStyle(detail):
             return {}
 
         output: dict = {}
@@ -1013,7 +1042,7 @@ class M21Utils:
         style: m21.style.TextStyle,
         detail: DetailLevel = DetailLevel.Default
     ) -> dict:
-        if detail < DetailLevel.AllObjectsWithStyle:
+        if not DetailLevel.includesStyle(detail):
             return {}
 
         output: dict = {}
@@ -1054,7 +1083,7 @@ class M21Utils:
         style: m21.style.Style,
         detail: DetailLevel = DetailLevel.Default
     ) -> dict:
-        if detail < DetailLevel.AllObjectsWithStyle:
+        if not DetailLevel.includesStyle(detail):
             return {}
 
         output: dict = {}
@@ -1085,7 +1114,7 @@ class M21Utils:
         style: m21.style.Style,
         detail: DetailLevel = DetailLevel.Default
     ) -> dict:
-        if detail < DetailLevel.AllObjectsWithStyle:
+        if not DetailLevel.includesStyle(detail):
             return {}
 
         if isinstance(style, m21.style.NoteStyle):
@@ -1106,7 +1135,7 @@ class M21Utils:
         obj: m21.base.Music21Object | m21.style.StyleMixin,
         detail: DetailLevel = DetailLevel.Default
     ) -> dict:
-        if detail < DetailLevel.AllObjectsWithStyle:
+        if not DetailLevel.includesStyle(detail):
             return {}
 
         output: dict = {}
@@ -1163,7 +1192,7 @@ class M21Utils:
             if not output:
                 output = 'STAFF:'
             output += f'lines={sl.staffLines}'
-        if detail >= DetailLevel.AllObjectsWithStyle:
+        if DetailLevel.includesStyle(detail):
             if sl.staffSize is not None:
                 if not output:
                     output = 'STAFF:'
@@ -1223,7 +1252,7 @@ class M21Utils:
         # Page breaks and system breaks are only paid attention to at
         # DetailLevel.AllObjectsWithStyle, because they are entirely
         # style, no substance.
-        if detail >= DetailLevel.AllObjectsWithStyle:
+        if DetailLevel.includesStyle(detail):
             if isinstance(extra, m21.layout.SystemLayout):
                 return M21Utils.systemlayout_to_string(extra)
             if isinstance(extra, m21.layout.PageLayout):

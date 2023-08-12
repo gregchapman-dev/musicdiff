@@ -17,9 +17,11 @@ import copy
 from collections import namedtuple
 from difflib import ndiff
 
+import typing as t
 import numpy as np
 
 from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnStaffGroup
+from musicdiff.annotation import AnnMetadataItem
 from musicdiff import M21Utils
 
 # memoizers to speed up the recursive computation
@@ -46,6 +48,17 @@ def _memoize_extras_diff_lin(func):
     return memoizer
 
 def _memoize_staff_groups_diff_lin(func):
+    mem = {}
+
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in mem:
+            mem[key] = func(original, compare_to)
+        return copy.deepcopy(mem[key])
+
+    return memoizer
+
+def _memoize_metadata_items_diff_lin(func):
     mem = {}
 
     def memoizer(original, compare_to):
@@ -486,6 +499,65 @@ class Comparison:
         return out
 
     @staticmethod
+    @_memoize_metadata_items_diff_lin
+    def _metadata_items_diff_lin(original, compare_to):
+        # original and compare to are two lists of tuple[str, t.Any]
+        if len(original) == 0 and len(compare_to) == 0:
+            return [], 0
+
+        if len(original) == 0:
+            cost = 0
+            op_list, cost = Comparison._metadata_items_diff_lin(original, compare_to[1:])
+            op_list.append(("mditemins", None, compare_to[0], compare_to[0].notation_size()))
+            cost += compare_to[0].notation_size()
+            return op_list, cost
+
+        if len(compare_to) == 0:
+            cost = 0
+            op_list, cost = Comparison._metadata_items_diff_lin(original[1:], compare_to)
+            op_list.append(("mditemdel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
+            return op_list, cost
+
+        # compute the cost and the op_list for the many possibilities of recursion
+        cost = {}
+        op_list = {}
+        # mditemdel
+        op_list["mditemdel"], cost["mditemdel"] = Comparison._metadata_items_diff_lin(
+            original[1:], compare_to
+        )
+        cost["mditemdel"] += original[0].notation_size()
+        op_list["mditemdel"].append(
+            ("mditemdel", original[0], None, original[0].notation_size())
+        )
+        # mditemins
+        op_list["mditemins"], cost["mditemins"] = Comparison._metadata_items_diff_lin(
+            original, compare_to[1:]
+        )
+        cost["mditemins"] += compare_to[0].notation_size()
+        op_list["mditemins"].append(
+            ("mditemins", None, compare_to[0], compare_to[0].notation_size())
+        )
+        # mditemsub
+        op_list["mditemsub"], cost["mditemsub"] = Comparison._metadata_items_diff_lin(
+            original[1:], compare_to[1:]
+        )
+        if (
+            original[0] == compare_to[0]
+        ):  # avoid call another function if they are equal
+            mditemsub_op, mditemsub_cost = [], 0
+        else:
+            mditemsub_op, mditemsub_cost = (
+                Comparison._annotated_metadata_item_diff(original[0], compare_to[0])
+            )
+        cost["mditemsub"] += mditemsub_cost
+        op_list["mditemsub"].extend(mditemsub_op)
+        # compute the minimum of the possibilities
+        min_key = min(cost, key=cost.get)
+        out = op_list[min_key], cost[min_key]
+        return out
+
+    @staticmethod
     @_memoize_staff_groups_diff_lin
     def _staff_groups_diff_lin(original, compare_to):
         # original and compare to are two lists of AnnStaffGroup
@@ -607,6 +679,41 @@ class Comparison:
         if annExtra1.styledict != annExtra2.styledict:
             cost += 1
             op_list.append(("extrastyleedit", annExtra1, annExtra2, 1))
+
+        return op_list, cost
+
+    @staticmethod
+    def _annotated_metadata_item_diff(
+        annMetadataItem1: AnnMetadataItem,
+        annMetadataItem2: AnnMetadataItem
+    ):
+        """
+        Compute the differences between two annotated metadata items.
+        Each annotated metadata item has two values: key: str, value: t.Any,
+        """
+        cost = 0
+        op_list = []
+
+        # add for the key
+        if annMetadataItem1.key != annMetadataItem2.key:
+            key_cost: int = (
+                Comparison._strings_leveinshtein_distance(annMetadataItem1.key, annMetadataItem2.key)
+            )
+            cost += key_cost
+            op_list.append(("mditemkeyedit", annMetadataItem1, annMetadataItem2, key_cost))
+
+        # add for the value
+        if annMetadataItem1.value != annMetadataItem2.value:
+            value_cost: int = (
+                Comparison._strings_leveinshtein_distance(
+                    str(annMetadataItem1.value),
+                    str(annMetadataItem2.value)
+                )
+            )
+            cost += value_cost
+            op_list.append(
+                ("mditemvalueedit", annMetadataItem1, annMetadataItem2, value_cost)
+            )
 
         return op_list, cost
 
@@ -1071,5 +1178,12 @@ class Comparison:
         )
         op_list_total.extend(groups_op_list)
         cost_total += groups_cost
+
+        # compare the metadata items
+        mditems_op_list, mditems_cost = Comparison._metadata_items_diff_lin(
+            score1.metadata_items_list, score2.metadata_items_list
+        )
+        op_list_total.extend(mditems_op_list)
+        cost_total += mditems_cost
 
         return op_list_total, cost_total

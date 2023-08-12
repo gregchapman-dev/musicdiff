@@ -16,6 +16,8 @@ __docformat__ = "google"
 
 from fractions import Fraction
 
+import typing as t
+
 import music21 as m21
 
 from musicdiff import M21Utils
@@ -55,7 +57,7 @@ class AnnNote:
         self.noteheadFill: bool | None = None
         self.noteheadParenthesis: bool = False
         self.stemDirection: str = 'unspecified'
-        if detail >= DetailLevel.AllObjectsWithStyle and isinstance(general_note, m21.note.NotRest):
+        if DetailLevel.includesStyle(detail) and isinstance(general_note, m21.note.NotRest):
             self.noteshape = general_note.notehead
             self.noteheadFill = general_note.noteheadFill
             self.noteheadParenthesis = general_note.noteheadParenthesis
@@ -392,7 +394,11 @@ class AnnVoice:
                 currently equivalent to AllObjects).
         """
         self.voice: int | str = voice.id
-        note_list: list[m21.note.GeneralNote] = M21Utils.get_notes_and_gracenotes(voice)
+        note_list: list[m21.note.GeneralNote] = []
+
+        if DetailLevel.includesGeneralNotes(detail):
+            note_list = M21Utils.get_notes_and_gracenotes(voice)
+
         if not note_list:
             self.en_beam_list: list[list[str]] = []
             self.tuplet_list: list[list[str]] = []
@@ -508,7 +514,7 @@ class AnnMeasure:
         self.n_of_voices: int = len(self.voices_list)
 
         self.extras_list: list[AnnExtra] = []
-        if detail >= DetailLevel.AllObjects:
+        if DetailLevel.includesOtherMusicObjects(detail):
             for extra in M21Utils.get_extras(measure, part, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
@@ -658,7 +664,7 @@ class AnnStaffGroup:
         self.symbol: str | None = None
         self.barTogether: bool | str | None = staff_group.barTogether
 
-        if detail >= DetailLevel.AllObjectsWithStyle:
+        if DetailLevel.includesStyle(detail):
             # symbol (brace, bracket, line, etc) is considered to be style
             self.symbol = staff_group.symbol
 
@@ -732,6 +738,43 @@ class AnnStaffGroup:
         return output
 
 
+class AnnMetadataItem:
+    def __init__(
+        self,
+        key: str,
+        value: t.Any
+    ) -> None:
+        self.key = key
+        self.value = value
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, AnnMetadataItem):
+            return False
+
+        if self.key != other.key:
+            return False
+
+        if self.value != other.value:
+            return False
+
+        return True
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        return self.key + ':' + str(self.value)
+
+    def notation_size(self) -> int:
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnMetadataItem`.
+
+        Returns:
+            int: The notation size of the annotated metadata item
+        """
+        return 1
+
+
 class AnnScore:
     def __init__(
         self,
@@ -750,6 +793,7 @@ class AnnScore:
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []
         self.staff_group_list: list[AnnStaffGroup] = []
+        self.metadata_items_list: list[AnnMetadataItem] = []
 
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
         part_to_index: dict[m21.stream.Part, int] = {}
@@ -769,12 +813,18 @@ class AnnScore:
 
         self.n_of_parts: int = len(self.part_list)
 
-        if detail >= DetailLevel.AllObjects:
-            # we don't look at staff groups unless client has specified AllObject or greater
+        if DetailLevel.includesOtherMusicObjects(detail):
+            # staffgroups are extras (a.k.a. OtherMusicObjects)
             for staffGroup in score[m21.layout.StaffGroup]:
                 ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
                 if ann_staff_group.n_of_parts > 0:
                     self.staff_group_list.append(ann_staff_group)
+
+        if DetailLevel.includesMetadata(detail):
+            for key, value in score.metadata.all(returnPrimitives=True):
+                if key in ('fileFormat', 'filePath'):
+                    continue
+                self.metadata_items_list.append(AnnMetadataItem(key, value))
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
