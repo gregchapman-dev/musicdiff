@@ -822,7 +822,7 @@ class AnnScore:
 
         if DetailLevel.includesMetadata(detail):
             for key, value in score.metadata.all(returnPrimitives=True):
-                if key in ('fileFormat', 'filePath'):
+                if key in ('fileFormat', 'filePath', 'software'):
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
 
