@@ -821,7 +821,12 @@ class AnnScore:
                     self.staff_group_list.append(ann_staff_group)
 
         if DetailLevel.includesMetadata(detail):
-            for key, value in score.metadata.all(returnPrimitives=True):
+            # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
+            all: list[tuple[str, t.Any]] = list(
+                score.metadata.all(returnPrimitives=True, returnSorted=False)
+            )
+            all.sort(key=lambda each: (each[0], str(each[1])))
+            for key, value in all:
                 if key in ('fileFormat', 'filePath', 'software'):
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
