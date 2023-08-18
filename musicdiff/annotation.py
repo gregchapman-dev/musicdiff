@@ -820,7 +820,7 @@ class AnnScore:
                 if ann_staff_group.n_of_parts > 0:
                     self.staff_group_list.append(ann_staff_group)
 
-        if DetailLevel.includesMetadata(detail):
+        if DetailLevel.includesMetadata(detail) and score.metadata is not None:
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
             all: list[tuple[str, t.Any]] = list(
                 score.metadata.all(returnPrimitives=True, returnSorted=False)
