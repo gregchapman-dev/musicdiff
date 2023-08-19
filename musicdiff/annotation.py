@@ -827,7 +827,8 @@ class AnnScore:
             )
             all.sort(key=lambda each: (each[0], str(each[1])))
             for key, value in all:
-                if key in ('fileFormat', 'filePath', 'software'):
+                if key in ('fileFormat', 'filePath', 'software', 'meiraw:meiHead'):
+                    # don't compare metadata items that are often uninterestingly different.
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
 
