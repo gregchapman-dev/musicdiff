@@ -23,47 +23,48 @@ import music21 as m21
 from music21.common.types import OffsetQL
 
 class DetailLevel(IntEnum):
+    # Bit definitions are private:
+    _GeneralNotes = 1
+    _Extras = 2
+    _Style = 4
+    _Metadata = 8
+
+    # Combinations are public (and supported on command line):
+
     # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
-    GeneralNotesOnly = 1
+    GeneralNotesOnly = _GeneralNotes
 
     # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
     # TimeSignatures, TempoIndications, etc
-    # Implied value of extras bit-field is 2, but we don't allow random combinations
-    AllObjects = 3
+    AllObjects = GeneralNotesOnly | _Extras
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
-    # Implied value of style bit-field is 4, but we don't allow random combinations
-    AllObjectsWithStyle = 7
+    AllObjectsWithStyle = AllObjects | _Style
+
+    # Various options that include Metadata:
+    MetadataOnly = _Metadata
+    GeneralNotesAndMetadata = GeneralNotesOnly | _Metadata
+    AllObjectsAndMetadata = AllObjects | _Metadata
+    AllObjectsWithStyleAndMetadata = AllObjectsWithStyle | _Metadata
 
     Default = AllObjects
 
-    # Some bit-fields you can or in for even more detail:
-    # e.g. GeneralNotesOnly | Metadata
-    # e.g. AllObjects | Metadata
-    # e.g. AllObjectsWithStyle | Metadata
-
-    Metadata = 8
-
     @classmethod
     def includesGeneralNotes(cls, val: int) -> bool:
-        if val == DetailLevel.Metadata:
-            # The only time we allow GeneralNotes to be left out is if
-            # we are diffing Metadata _only_
-            return False
-        return True
+        return val & cls._GeneralNotes != 0
 
     @classmethod
     def includesOtherMusicObjects(cls, val: int) -> bool:
-        return val & 2 != 0
+        return val & cls._Extras != 0
 
     @classmethod
     def includesStyle(cls, val: int) -> bool:
-        return val & 4 != 0
+        return val & cls._Style != 0
 
     @classmethod
     def includesMetadata(cls, val: int) -> bool:
-        return val & cls.Metadata != 0
+        return val & cls._Metadata != 0
 
 
 class M21Utils:

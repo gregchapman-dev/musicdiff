@@ -9,7 +9,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 import sys
@@ -41,7 +41,15 @@ if __name__ == "__main__":
         "-d",
         "--detail",
         default="Default",
-        choices=["GeneralNotesOnly", "AllObjects", "AllObjectsWithStyle", "Default"],
+        choices=[
+            "GeneralNotesOnly",
+            "AllObjects",
+            "AllObjectsWithStyle",
+            "MetadataOnly",
+            "GeneralNotesAndMetadata",
+            "AllObjectsAndMetadata",
+            "AllObjectsWithStyleAndMetadata",
+            "Default"],
         help="set detail level"
     )
     args = parser.parse_args()
@@ -53,6 +61,14 @@ if __name__ == "__main__":
         detail = DetailLevel.AllObjects
     elif args.detail == "AllObjectsWithStyle":
         detail = DetailLevel.AllObjectsWithStyle
+    elif args.detail == "MetadataOnly":
+        detail = DetailLevel.MetadataOnly
+    elif args.detail == "GeneralNotesAndMetadata":
+        detail = DetailLevel.GeneralNotesAndMetadata
+    elif args.detail == "AllObjectsAndMetadata":
+        detail = DetailLevel.AllObjectsAndMetadata
+    elif args.detail == "AllObjectsWithStyleAndMetadata":
+        detail = DetailLevel.AllObjectsWithStyleAndMetadata
     elif args.detail == "Default":
         detail = DetailLevel.Default
 

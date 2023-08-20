@@ -17,7 +17,7 @@ import copy
 from collections import namedtuple
 from difflib import ndiff
 
-import typing as t
+# import typing as t
 import numpy as np
 
 from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnStaffGroup
@@ -697,7 +697,10 @@ class Comparison:
         # add for the key
         if annMetadataItem1.key != annMetadataItem2.key:
             key_cost: int = (
-                Comparison._strings_leveinshtein_distance(annMetadataItem1.key, annMetadataItem2.key)
+                Comparison._strings_leveinshtein_distance(
+                    annMetadataItem1.key,
+                    annMetadataItem2.key
+                )
             )
             cost += key_cost
             op_list.append(("mditemkeyedit", annMetadataItem1, annMetadataItem2, key_cost))

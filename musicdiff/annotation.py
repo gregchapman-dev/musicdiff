@@ -39,9 +39,10 @@ class AnnNote:
             general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
             tuplet_list (list): A list of tuplet info about this GeneralNote.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
 
         """
         self.general_note: int | str = general_note.id
@@ -300,9 +301,10 @@ class AnnExtra:
             measure (music21.stream.Measure): The music21 Measure the extra was found in.
                 If the extra was found in a Voice, this is the Measure that the Voice was
                 found in.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.extra = extra.id
         self.offset: float
@@ -389,9 +391,10 @@ class AnnVoice:
         Args:
             voice (music21.stream.Voice or Measure): The music21 voice to extend. This
                 can be a Measure, but only if it contains no Voices.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.voice: int | str = voice.id
         note_list: list[m21.note.GeneralNote] = []
@@ -494,9 +497,10 @@ class AnnMeasure:
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
                 in the score.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.measure: int | str = measure.id
         self.voices_list: list[AnnVoice] = []
@@ -592,9 +596,10 @@ class AnnPart:
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in
                 the score.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.part: int | str = part.id
         self.bar_list: list[AnnMeasure] = []
@@ -786,9 +791,10 @@ class AnnScore:
         The hierarchy is "score -> parts -> measures -> voices -> notes"
         Args:
             score (music21.stream.Score): The music21 score
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []
@@ -822,11 +828,11 @@ class AnnScore:
 
         if DetailLevel.includesMetadata(detail) and score.metadata is not None:
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
-            all: list[tuple[str, t.Any]] = list(
+            allItems: list[tuple[str, t.Any]] = list(
                 score.metadata.all(returnPrimitives=True, returnSorted=False)
             )
-            all.sort(key=lambda each: (each[0], str(each[1])))
-            for key, value in all:
+            allItems.sort(key=lambda each: (each[0], str(each[1])))
+            for key, value in allItems:
                 if key in ('fileFormat', 'filePath', 'software', 'meiraw:meiHead'):
                     # don't compare metadata items that are often uninterestingly different.
                     continue
