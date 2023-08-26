@@ -836,10 +836,12 @@ class AnnScore:
                 if key in ('fileFormat', 'filePath', 'software'):
                     # Don't compare metadata items that are uninterestingly different.
                     continue
-                if 'raw:' in key:
+                if (key.startswith('raw:')
+                        or key.startswith('meiraw:')
+                        or key.startswith('humdrumraw:')):
                     # Don't compare verbatim/raw metadata ('meiraw:meihead',
-                    # 'raw:freeform', 'humdrumraw:???'), it's often deleted
-                    # by conversions/edits.
+                    # 'raw:freeform', 'humdrumraw:XXX'), it's often deleted
+                    # when made obsolete by conversions/edits.
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
 
