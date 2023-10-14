@@ -750,7 +750,16 @@ class AnnMetadataItem:
         value: t.Any
     ) -> None:
         self.key = key
-        self.value = value
+        if isinstance(value, m21.metadata.Text):
+            # Create a string representing both the text and the language, but not isTranslated,
+            # since isTranslated cannot be represented in many file formats.
+            self.value = str(value) + f'(language={value.language})'
+        elif isinstance(value, m21.metadata.Contributor):
+            # Create a string (same thing: value.name.isTranslated will differ randomly)
+            # Currently I am also ignoring more than one name, and birth/death.
+            self.value = str(value) + f'(role={value.role}, language={value._names[0].language})'
+        else:
+            self.value = value
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, AnnMetadataItem):
