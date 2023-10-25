@@ -76,9 +76,10 @@ def diff(
         visualize_diffs (bool): Whether or not to render diffs as marked up PDFs. If False,
             the only result of the call will be the return value (the number of differences).
             (default is True)
-        detail (DetailLevel): What level of detail to use during the diff.  Can be
-            GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-            currently equivalent to AllObjects).
+        detail (DetailLevel): What level of detail to use during the diff.
+            Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+            GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+            or Default (Default is currently equivalent to AllObjects).
 
     Returns:
         int | None: The number of differences found (0 means the scores were identical,

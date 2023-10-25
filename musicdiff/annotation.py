@@ -16,6 +16,8 @@ __docformat__ = "google"
 
 from fractions import Fraction
 
+import typing as t
+
 import music21 as m21
 
 from musicdiff import M21Utils
@@ -37,9 +39,10 @@ class AnnNote:
             general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
             tuplet_list (list): A list of tuplet info about this GeneralNote.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
 
         """
         self.general_note: int | str = general_note.id
@@ -55,7 +58,7 @@ class AnnNote:
         self.noteheadFill: bool | None = None
         self.noteheadParenthesis: bool = False
         self.stemDirection: str = 'unspecified'
-        if detail >= DetailLevel.AllObjectsWithStyle and isinstance(general_note, m21.note.NotRest):
+        if DetailLevel.includesStyle(detail) and isinstance(general_note, m21.note.NotRest):
             self.noteshape = general_note.notehead
             self.noteheadFill = general_note.noteheadFill
             self.noteheadParenthesis = general_note.noteheadParenthesis
@@ -298,9 +301,10 @@ class AnnExtra:
             measure (music21.stream.Measure): The music21 Measure the extra was found in.
                 If the extra was found in a Voice, this is the Measure that the Voice was
                 found in.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.extra = extra.id
         self.offset: float
@@ -387,12 +391,17 @@ class AnnVoice:
         Args:
             voice (music21.stream.Voice or Measure): The music21 voice to extend. This
                 can be a Measure, but only if it contains no Voices.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.voice: int | str = voice.id
-        note_list: list[m21.note.GeneralNote] = M21Utils.get_notes_and_gracenotes(voice)
+        note_list: list[m21.note.GeneralNote] = []
+
+        if DetailLevel.includesGeneralNotes(detail):
+            note_list = M21Utils.get_notes_and_gracenotes(voice)
+
         if not note_list:
             self.en_beam_list: list[list[str]] = []
             self.tuplet_list: list[list[str]] = []
@@ -488,9 +497,10 @@ class AnnMeasure:
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
                 in the score.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.measure: int | str = measure.id
         self.voices_list: list[AnnVoice] = []
@@ -508,7 +518,7 @@ class AnnMeasure:
         self.n_of_voices: int = len(self.voices_list)
 
         self.extras_list: list[AnnExtra] = []
-        if detail >= DetailLevel.AllObjects:
+        if DetailLevel.includesOtherMusicObjects(detail):
             for extra in M21Utils.get_extras(measure, part, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
@@ -586,9 +596,10 @@ class AnnPart:
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in
                 the score.
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.part: int | str = part.id
         self.bar_list: list[AnnMeasure] = []
@@ -658,7 +669,7 @@ class AnnStaffGroup:
         self.symbol: str | None = None
         self.barTogether: bool | str | None = staff_group.barTogether
 
-        if detail >= DetailLevel.AllObjectsWithStyle:
+        if DetailLevel.includesStyle(detail):
             # symbol (brace, bracket, line, etc) is considered to be style
             self.symbol = staff_group.symbol
 
@@ -732,6 +743,52 @@ class AnnStaffGroup:
         return output
 
 
+class AnnMetadataItem:
+    def __init__(
+        self,
+        key: str,
+        value: t.Any
+    ) -> None:
+        self.key = key
+        if isinstance(value, m21.metadata.Text):
+            # Create a string representing both the text and the language, but not isTranslated,
+            # since isTranslated cannot be represented in many file formats.
+            self.value = str(value) + f'(language={value.language})'
+        elif isinstance(value, m21.metadata.Contributor):
+            # Create a string (same thing: value.name.isTranslated will differ randomly)
+            # Currently I am also ignoring more than one name, and birth/death.
+            self.value = str(value) + f'(role={value.role}, language={value._names[0].language})'
+        else:
+            self.value = value
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, AnnMetadataItem):
+            return False
+
+        if self.key != other.key:
+            return False
+
+        if self.value != other.value:
+            return False
+
+        return True
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        return self.key + ':' + str(self.value)
+
+    def notation_size(self) -> int:
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnMetadataItem`.
+
+        Returns:
+            int: The notation size of the annotated metadata item
+        """
+        return 1
+
+
 class AnnScore:
     def __init__(
         self,
@@ -743,13 +800,15 @@ class AnnScore:
         The hierarchy is "score -> parts -> measures -> voices -> notes"
         Args:
             score (music21.stream.Score): The music21 score
-            detail (DetailLevel): What level of detail to use during the diff.  Can be
-                GeneralNotesOnly, AllObjects, AllObjectsWithStyle or Default (Default is
-                currently equivalent to AllObjects).
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                or Default (Default is currently equivalent to AllObjects).
         """
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []
         self.staff_group_list: list[AnnStaffGroup] = []
+        self.metadata_items_list: list[AnnMetadataItem] = []
 
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
         part_to_index: dict[m21.stream.Part, int] = {}
@@ -769,12 +828,31 @@ class AnnScore:
 
         self.n_of_parts: int = len(self.part_list)
 
-        if detail >= DetailLevel.AllObjects:
-            # we don't look at staff groups unless client has specified AllObject or greater
+        if DetailLevel.includesOtherMusicObjects(detail):
+            # staffgroups are extras (a.k.a. OtherMusicObjects)
             for staffGroup in score[m21.layout.StaffGroup]:
                 ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
                 if ann_staff_group.n_of_parts > 0:
                     self.staff_group_list.append(ann_staff_group)
+
+        if DetailLevel.includesMetadata(detail) and score.metadata is not None:
+            # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
+            allItems: list[tuple[str, t.Any]] = list(
+                score.metadata.all(returnPrimitives=True, returnSorted=False)
+            )
+            allItems.sort(key=lambda each: (each[0], str(each[1])))
+            for key, value in allItems:
+                if key in ('fileFormat', 'filePath', 'software'):
+                    # Don't compare metadata items that are uninterestingly different.
+                    continue
+                if (key.startswith('raw:')
+                        or key.startswith('meiraw:')
+                        or key.startswith('humdrumraw:')):
+                    # Don't compare verbatim/raw metadata ('meiraw:meihead',
+                    # 'raw:freeform', 'humdrumraw:XXX'), it's often deleted
+                    # when made obsolete by conversions/edits.
+                    continue
+                self.metadata_items_list.append(AnnMetadataItem(key, value))
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
