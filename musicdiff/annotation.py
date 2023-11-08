@@ -328,9 +328,12 @@ class AnnExtra:
                 self.duration = 0.
             else:
                 startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
-                endOffsetInScore: float = float(
-                    lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength
-                )
+                try:
+                    endOffsetInScore: float = float(
+                        lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength
+                    )
+                except m21.sites.SitesException:
+                    endOffsetInScore = startOffsetInScore
                 self.duration = endOffsetInScore - startOffsetInScore
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
