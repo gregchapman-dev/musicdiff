@@ -49,6 +49,7 @@ if __name__ == '__main__':
             'compare',
             'OMR',
             'Optical Music Recognition',
+            'assess',
             'assessment',
             'comparison',
             'music21',
