@@ -14,11 +14,11 @@ def test_note2tuple2():
 def test_note2tuple3():
     n = m21.note.Note(nameWithOctave='D--5')
     n.tie = m21.tie.Tie('start')
-    expected_tuple = ("D5","double-flat",False)
+    expected_tuple = ("D5","double-flat",True)
     assert(M21Utils.note2tuple(n) == expected_tuple )
 
 def test_note2tuple4():
     n = m21.note.Note(nameWithOctave='D--5')
     n.tie = m21.tie.Tie('stop')
-    expected_tuple = ("D5","double-flat",True)
+    expected_tuple = ("D5","double-flat",False)
     assert(M21Utils.note2tuple(n) == expected_tuple )

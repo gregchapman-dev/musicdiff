@@ -1,0 +1,24 @@
+Changes since 2.0.1:
+    - Require music21 v9 (for several features/fixes) and converter21 v3
+        (for improved Humdrum and MEI import)
+    - Remove all checks for music21 features (they're all there in v9)
+    - compare Mordent/Trill/Turn better, to include ornament accidentals
+        (newly supported in music21 v9)
+    - Compare metadata if requested (e.g. AllObjectsAndMetadata)
+    - compare StaffLayout.staffLines and StaffLayout.staffSize
+    - support tuplet.type = 'startStop'
+    - fix tie annotation
+    - finish tremolo annotation:
+        notice fingered tremolos (TremoloSpanner)
+        annotate tremolos as 'bTrem' (Tremolo, a.k.a. bowed tremolo, a.k.a. one note tremolo)
+            vs. 'fTrem' (TremoloSpanner, a.k.a. fingered tremolo, a.k.a. two note tremolo)
+    - compare rest positioning
+    - better comparison of RepeatBrackets (support .overrideDisplay)
+    - compare placement (above/below) of articulations and expressions (AllObjectsWithStyle)
+    - support comparison of StaffGroups as part of AllObjects.
+        StaffGroup bracket shape is relegated to AllObjectsWithStyle.
+    - compare (and fill and transpose) Ottavas, maintaining accidental display status
+        (newly possible in music21 v9)
+    - compare delayed turns (new in music21 v9)
+    - ignore redundant clefs during comparison
+    - compare tuplet number/bracket visibility and format (and placement if diffing WithStyle)

@@ -6,14 +6,14 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '2.0.1'
+musicdiffversion = '3.0.0'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -49,6 +49,7 @@ if __name__ == '__main__':
             'compare',
             'OMR',
             'Optical Music Recognition',
+            'assess',
             'assessment',
             'comparison',
             'music21',
@@ -56,12 +57,12 @@ if __name__ == '__main__':
 
         packages=find_packages(),
 
-        python_requires='>=3.9',
+        python_requires='>=3.10',
 
         install_requires=[
-            'music21>=8.1',
+            'music21>=9.1',
             'numpy',
-            'converter21>=2.0'
+            'converter21>=3.0'
         ],
 
         project_urls={
