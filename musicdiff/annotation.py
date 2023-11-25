@@ -14,8 +14,8 @@
 
 __docformat__ = "google"
 
+import html
 from fractions import Fraction
-
 import typing as t
 
 import music21 as m21
@@ -756,11 +756,17 @@ class AnnMetadataItem:
         if isinstance(value, m21.metadata.Text):
             # Create a string representing both the text and the language, but not isTranslated,
             # since isTranslated cannot be represented in many file formats.
-            self.value = str(value) + f'(language={value.language})'
+            self.value = (
+                self.make_value_string(value)
+                    + f'(language={value.language})'
+            )
         elif isinstance(value, m21.metadata.Contributor):
             # Create a string (same thing: value.name.isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
-            self.value = str(value) + f'(role={value.role}, language={value._names[0].language})'
+            self.value = (
+                self.make_value_string(value)
+                    + f'(role={value.role}, language={value._names[0].language})'
+            )
         else:
             self.value = value
 
@@ -790,6 +796,12 @@ class AnnMetadataItem:
             int: The notation size of the annotated metadata item
         """
         return 1
+
+    def make_value_string(self, value: m21.metadata.Contributor | m21.metadata.Text) -> str:
+        # Unescapes a bunch of stuff
+        output: str = str(value)
+        output = html.unescape(output)
+        return output
 
 
 class AnnScore:
@@ -854,6 +866,13 @@ class AnnScore:
                     # Don't compare verbatim/raw metadata ('meiraw:meihead',
                     # 'raw:freeform', 'humdrumraw:XXX'), it's often deleted
                     # when made obsolete by conversions/edits.
+                    continue
+                if key in ('humdrum:EMD', 'humdrum:EST', 'humdrum:VTS'):
+                    # Don't compare metadata items that should never be transferred
+                    # from one file to another ('humdrum:EMD' is a modification
+                    # description entry, humdrum:EST is "current encoding status"
+                    # (i.e. complete or some value of not complete), 'humdrum:VTS'
+                    # is a checksum of the file).
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
 
