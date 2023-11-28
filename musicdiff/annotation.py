@@ -867,12 +867,15 @@ class AnnScore:
                     # 'raw:freeform', 'humdrumraw:XXX'), it's often deleted
                     # when made obsolete by conversions/edits.
                     continue
-                if key in ('humdrum:EMD', 'humdrum:EST', 'humdrum:VTS'):
+                if key in ('humdrum:EMD', 'humdrum:EST', 'humdrum:VTS',
+                        'humdrum:RLN', 'humdrum:PUB'):
                     # Don't compare metadata items that should never be transferred
-                    # from one file to another ('humdrum:EMD' is a modification
+                    # from one file to another.  'humdrum:EMD' is a modification
                     # description entry, humdrum:EST is "current encoding status"
                     # (i.e. complete or some value of not complete), 'humdrum:VTS'
-                    # is a checksum of the file).
+                    # is a checksum of the Humdrum file, 'humdrum:RLN' is the
+                    # extended ASCII encoding of the Humdrum file, 'humdrum:PUB'
+                    # is the publication status of the file (published or not?).
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
 
