@@ -602,7 +602,7 @@ class M21Utils:
         tuplets_list: list[list[str | None]] = [
             [tup.type for tup in n.duration.tuplets] for n in note_list  # type: ignore
         ]
-        new_tuplets_list = tuplets_list.copy()
+        new_tuplets_list = copy.deepcopy(tuplets_list)
 
         # now correct the missing of "start" and add "continue" for clarity
         max_tupl_len = max([len(t) for t in tuplets_list])
@@ -758,17 +758,28 @@ class M21Utils:
 
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
-        # barlines of type 'none' (also not printed).
+        # barlines of type 'regular' with no interesting details (because no barline
+        # at all in music21 means a regular, uninteresting barline).  Note that an
+        # actual invisible barline is left in place (el.type == 'none').
         # We also try to de-duplicate redundant clefs.
         mostRecentClef: m21.clef.Clef | None = None
         for el in initialList:
-            # we ignore hidden extras
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
+                # we ignore hidden extras
                 continue
-            if isinstance(el, m21.bar.Barline) and el.type == 'none':
+
+            if (isinstance(el, m21.bar.Barline)
+                    and el.type == 'regular'
+                    and el.pause is None
+                    and not el.hasStyleInformation):
+                # we ignore unadorned regular barlines (since that's what no barline at all means)
                 continue
+
             if M21Utils.extra_to_string(el, detail) == '':
+                # skip unrecognized extras.
+                # (extra_to_string complains about unrecognized extras)
                 continue
+
             if isinstance(el, m21.clef.Clef):
                 # If this clef is the same as the most recent clef seen in this
                 # measure (i.e. with no different clef between them), ignore

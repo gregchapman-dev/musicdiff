@@ -335,6 +335,11 @@ class AnnExtra:
                 except m21.sites.SitesException:
                     endOffsetInScore = startOffsetInScore
                 self.duration = endOffsetInScore - startOffsetInScore
+        elif isinstance(extra, m21.bar.Barline):
+            # we ignore offset for barlines; barline offset is derived from the objects in the
+            # measure, which are already being compared.
+            self.offset = 0.0
+            self.duration = float(extra.duration.quarterLength)
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
@@ -758,14 +763,14 @@ class AnnMetadataItem:
             # since isTranslated cannot be represented in many file formats.
             self.value = (
                 self.make_value_string(value)
-                    + f'(language={value.language})'
+                + f'(language={value.language})'
             )
         elif isinstance(value, m21.metadata.Contributor):
             # Create a string (same thing: value.name.isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
             self.value = (
                 self.make_value_string(value)
-                    + f'(role={value.role}, language={value._names[0].language})'
+                + f'(role={value.role}, language={value._names[0].language})'
             )
         else:
             self.value = value
