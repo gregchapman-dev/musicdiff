@@ -602,7 +602,7 @@ class M21Utils:
         tuplets_list: list[list[str | None]] = [
             [tup.type for tup in n.duration.tuplets] for n in note_list  # type: ignore
         ]
-        new_tuplets_list = tuplets_list.copy()
+        new_tuplets_list = copy.deepcopy(tuplets_list)
 
         # now correct the missing of "start" and add "continue" for clarity
         max_tupl_len = max([len(t) for t in tuplets_list])
@@ -750,25 +750,44 @@ class M21Utils:
         )
 
         # Sort the initialList by offset in measure, so we can see which clefs are
-        # duplicates from different voices.
+        # duplicates from different voices. We use el.musicdiff_offset_in_measure
+        # later, so compute it even if list is of length 1.
+        for el in initialList:
+            el.musicdiff_offset_in_measure = el.getOffsetInHierarchy(measure)  # type: ignore
         if len(initialList) > 1:
-            for el in initialList:
-                el.musicdiff_offset_in_measure = el.getOffsetInHierarchy(measure)  # type: ignore
             initialList.sort(key=lambda el: el.musicdiff_offset_in_measure)  # type: ignore
 
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
-        # barlines of type 'none' (also not printed).
-        # We also try to de-duplicate redundant clefs.
+        # right/left barlines of type 'regular' with no interesting details (because
+        # no right/left barline at all in music21 means a regular, uninteresting barline).
+        # Note that we ignore all invisible barlines as well (el.type == 'none') since
+        # they are non-printed.  We also try to de-duplicate redundant clefs.
         mostRecentClef: m21.clef.Clef | None = None
         for el in initialList:
-            # we ignore hidden extras
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
+                # we ignore hidden extras
                 continue
-            if isinstance(el, m21.bar.Barline) and el.type == 'none':
-                continue
+
+            if isinstance(el, m21.bar.Barline):
+                if el.type == 'none':
+                    # we ignore hidden barlines
+                    continue
+
+                barlineOffset: OffsetQL = el.musicdiff_offset_in_measure  # type: ignore
+                if ((barlineOffset in (0, measure.duration.quarterLength))
+                        and el.type == 'regular'
+                        and el.pause is None
+                        and not el.hasStyleInformation):
+                    # we ignore unadorned regular left or right barlines (since
+                    # that's what no left or right barline at all means)
+                    continue
+
             if M21Utils.extra_to_string(el, detail) == '':
+                # skip unrecognized extras.
+                # (extra_to_string complains about unrecognized extras)
                 continue
+
             if isinstance(el, m21.clef.Clef):
                 # If this clef is the same as the most recent clef seen in this
                 # measure (i.e. with no different clef between them), ignore

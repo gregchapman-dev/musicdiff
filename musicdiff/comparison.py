@@ -896,6 +896,13 @@ class Comparison:
             )
             op_list.extend(tuplet_op_list)
             cost += tuplet_cost
+        # add for the tuplet info
+        if annNote1.tuplet_info != annNote2.tuplet_info:
+            tuplet_info_op_list, tuplet_info_cost = Comparison._beamtuplet_leveinsthein_diff(
+                annNote1.tuplet_info, annNote2.tuplet_info, annNote1, annNote2, "tuplet"
+            )
+            op_list.extend(tuplet_info_op_list)
+            cost += tuplet_info_cost
         # add for the articulations
         if annNote1.articulations != annNote2.articulations:
             artic_op_list, artic_cost = Comparison._generic_leveinsthein_diff(
