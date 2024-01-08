@@ -1109,24 +1109,24 @@ class M21Utils:
         output: dict = {}
         if style.size is not None:
             output['size'] = style.size
-        if style.relativeX is not None:
-            output['relX'] = style.relativeX
-        if style.relativeY is not None:
-            output['relY'] = style.relativeY
-        if style.absoluteX is not None:
-            output['absX'] = style.absoluteX
-        if style.absoluteY is not None:
-            output['absY'] = style.absoluteY
+        # if style.relativeX is not None:
+            # output['relX'] = style.relativeX
+        # if style.relativeY is not None:
+            # output['relY'] = style.relativeY
+        # if style.absoluteX is not None:
+            # output['absX'] = style.absoluteX
+        # if style.absoluteY is not None:
+            # output['absY'] = style.absoluteY
         if style.enclosure is not None:
             output['encl'] = style.enclosure
         if style.fontRepresentation is not None:
             output['fontrep'] = style.fontRepresentation
         if style.color is not None:
             output['color'] = style.color
-        if style.units != 'tenths':
-            output['units'] = style.units
-        if style.hideObjectOnPrint:
-            output['hidden'] = True
+        # if style.units != 'tenths':
+            # output['units'] = style.units
+        # if style.hideObjectOnPrint:
+            # output['hidden'] = True
         return output
 
     @staticmethod
