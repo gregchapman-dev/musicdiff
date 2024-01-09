@@ -768,10 +768,17 @@ class AnnMetadataItem:
         elif isinstance(value, m21.metadata.Contributor):
             # Create a string (same thing: value.name.isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
-            self.value = (
-                self.make_value_string(value)
-                + f'(role={value.role}, language={value._names[0].language})'
-            )
+            self.value = self.make_value_string(value)
+            roleEmitted: bool = False
+            if value.role:
+                self.value += f'(role={value.role}'
+                roleEmitted = True
+            if value._names:
+                if roleEmitted:
+                    self.value += ', '
+                self.value += f'language={value._names[0].language}'
+            if roleEmitted:
+                self.value += ')'
         else:
             self.value = value
 
