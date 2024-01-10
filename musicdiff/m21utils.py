@@ -1046,8 +1046,8 @@ class M21Utils:
 
         output: dict = {}
 
-        if style.stemStyle is not None:
-            output['stemstyle'] = M21Utils.genericstyle_to_dict(style.stemStyle)
+        # if style.stemStyle is not None:
+        #     output['stemstyle'] = M21Utils.genericstyle_to_dict(style.stemStyle)
 
         if style.accidentalStyle is not None:
             output['accidstyle'] = M21Utils.genericstyle_to_dict(style.accidentalStyle)
