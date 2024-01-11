@@ -131,7 +131,9 @@ class AnnNote:
                 lyricStr += f" text={lyric.text}"
             lyricStr += f" rawText={lyric.rawText}"
             if M21Utils.has_style(lyric):
-                lyricStr += f" style={M21Utils.obj_to_styledict(lyric, detail)}"
+                styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
+                if styleDict:
+                    lyricStr += f" style={styleDict}"
             self.lyrics.append(lyricStr)
 
         # precomputed representations for faster comparison
