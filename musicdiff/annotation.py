@@ -530,7 +530,7 @@ class AnnMeasure:
 
         self.extras_list: list[AnnExtra] = []
         if DetailLevel.includesOtherMusicObjects(detail):
-            for extra in M21Utils.get_extras(measure, part, spannerBundle, detail):
+            for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
             # For correct comparison, sort the extras_list, so that any list slices

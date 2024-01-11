@@ -731,6 +731,7 @@ class M21Utils:
     def get_extras(
         measure: m21.stream.Measure,
         part: m21.stream.Part,
+        score: m21.stream.Score,
         spannerBundle: m21.spanner.SpannerBundle,
         detail: DetailLevel = DetailLevel.Default
     ) -> list[m21.base.Music21Object]:
@@ -768,6 +769,12 @@ class M21Utils:
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
                 # we ignore hidden extras
                 continue
+
+            if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
+                # we ignore PageLayouts and SystemLayouts that are not in the
+                # first Part in the Score.
+                if part is not score.parts[0]:
+                    continue
 
             if isinstance(el, m21.bar.Barline):
                 if el.type == 'none':
