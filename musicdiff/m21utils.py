@@ -1071,12 +1071,26 @@ class M21Utils:
             output['placement'] = style.placement
         if style.fontFamily:
             output['fontFamily'] = style.fontFamily
-        if style.fontSize is not None:
-            output['fontSize'] = style.fontSize
-        if style.fontStyle is not None and style.fontStyle != 'normal':
-            output['fontStyle'] = style.fontStyle
-        if style.fontWeight is not None and style.fontWeight != 'normal':
-            output['fontWeight'] = style.fontWeight
+
+        # ignore fontSize, Humdrum can't represent it.
+        # if style.fontSize is not None:
+            # output['fontSize'] = style.fontSize
+
+        # normalize 'bold', since sometimes it's fontStyle='bold'/'bolditalic',
+        # and sometimes it's fontWeight='bold' + fontStyle='italic' or 'normal'
+        fontStyle = style.fontStyle
+        fontWeight = style.fontWeight
+        if fontStyle == 'bold':
+            fontStyle = None
+            fontWeight = 'bold'
+        elif fontStyle == 'bolditalic':
+            fontStyle = 'italic'
+            fontWeight = 'bold'
+        if fontStyle is not None and fontStyle != 'normal':
+            output['fontStyle'] = fontStyle
+        if fontWeight is not None and fontWeight != 'normal':
+            output['fontWeight'] = fontWeight
+
         if style.letterSpacing is not None and style.letterSpacing != 'normal':
             output['letterSpacing'] = style.letterSpacing
         if style.lineHeight:
