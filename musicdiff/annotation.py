@@ -430,7 +430,7 @@ class AnnVoice:
             self.annot_notes = []
             for i, n in enumerate(note_list):
                 if n.hasStyleInformation and n.style.hideObjectOnPrint:
-                    # It would be ok to annotate and then ignore invisible notes,
+                    # It would be OK to annotate and then ignore invisible notes,
                     # like we do with other things, but there are scores with
                     # invisible notes that have 'inexpressible' durations, and
                     # we'd just as soon avoid them.
