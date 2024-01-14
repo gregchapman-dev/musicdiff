@@ -1098,24 +1098,24 @@ class M21Utils:
         if fontWeight is not None and fontWeight != 'normal':
             output['fontWeight'] = fontWeight
 
-        if style.letterSpacing is not None and style.letterSpacing != 'normal':
-            output['letterSpacing'] = style.letterSpacing
-        if style.lineHeight:
-            output['lineHeight'] = style.lineHeight
-        if style.textDirection:
-            output['textDirection'] = style.textDirection
-        if style.textRotation:
-            output['textRotation'] = style.textRotation
-        if style.language:
-            output['language'] = style.language
-        if style.textDecoration:
-            output['textDecoration'] = style.textDecoration
+        # if style.letterSpacing is not None and style.letterSpacing != 'normal':
+        #     output['letterSpacing'] = style.letterSpacing
+        # if style.lineHeight:
+        #     output['lineHeight'] = style.lineHeight
+        # if style.textDirection:
+        #     output['textDirection'] = style.textDirection
+        # if style.textRotation:
+        #     output['textRotation'] = style.textRotation
+        # if style.language:
+        #     output['language'] = style.language
+        # if style.textDecoration:
+        #     output['textDecoration'] = style.textDecoration
         if style.justify:
             output['justify'] = style.justify
-        if style.alignHorizontal:
-            output['alignHorizontal'] = style.alignHorizontal
-        if style.alignVertical:
-            output['alignVertical'] = style.alignVertical
+        # if style.alignHorizontal:
+        #     output['alignHorizontal'] = style.alignHorizontal
+        # if style.alignVertical:
+        #     output['alignVertical'] = style.alignVertical
 
         return output
 
