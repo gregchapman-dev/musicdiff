@@ -1114,8 +1114,8 @@ class M21Utils:
             output['justify'] = style.justify
         # if style.alignHorizontal:
         #     output['alignHorizontal'] = style.alignHorizontal
-        # if style.alignVertical:
-        #     output['alignVertical'] = style.alignVertical
+        if style.alignVertical:
+            output['alignVertical'] = style.alignVertical
 
         return output
 
