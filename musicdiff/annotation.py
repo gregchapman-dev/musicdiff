@@ -429,20 +429,15 @@ class AnnVoice:
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
             for i, n in enumerate(note_list):
-                if n.hasStyleInformation and n.style.hideObjectOnPrint:
-                    # It would be OK to annotate and then ignore invisible notes,
-                    # like we do with other things, but there are scores with
-                    # invisible notes that have 'inexpressible' durations, and
-                    # we'd just as soon avoid them.
-                    self.annot_notes.append(
-                        AnnNote(
-                            n,
-                            self.en_beam_list[i],
-                            self.tuplet_list[i],
-                            self.tuplet_info[i],
-                            detail
-                        )
+                self.annot_notes.append(
+                    AnnNote(
+                        n,
+                        self.en_beam_list[i],
+                        self.tuplet_list[i],
+                        self.tuplet_info[i],
+                        detail
                     )
+                )
 
         self.n_of_notes: int = len(self.annot_notes)
         self.precomputed_str: str = self.__str__()
