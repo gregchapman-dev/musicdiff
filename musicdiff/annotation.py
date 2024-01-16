@@ -99,7 +99,21 @@ class AnnNote:
             self.graceType: str = 'acc'
             self.graceSlash: bool | None = general_note.duration.slash
         elif isinstance(general_note.duration, m21.duration.GraceDuration):
-            self.graceType = 'nonacc'
+            # might be accented or unaccented.  duration.slash isn't always reliable
+            # (historically), but we can use it as a fallback.
+            # Check duration.stealTimePrevious and duration.stealTimeFollowing first.
+            if general_note.duration.stealTimePrevious is not None:
+                self.graceType = 'unacc'
+            elif general_note.duration.stealTimeFollowing is not None:
+                self.graceType = 'acc'
+            elif general_note.duration.slash is True:
+                self.graceType = 'unacc'
+            elif general_note.duration.slash is False:
+                self.graceType = 'acc'
+            else:
+                # by default, GraceDuration with no other indications (slash is None)
+                # is assumed to be unaccented.
+                self.graceType = 'unacc'
             self.graceSlash = general_note.duration.slash
         else:
             self.graceType = ''
