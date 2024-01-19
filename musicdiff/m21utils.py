@@ -642,12 +642,22 @@ class M21Utils:
         out = []
         if allowGraceNotes:
             for n in measureOrVoice.getElementsByClass('GeneralNote'):
-                if not n.style.hideObjectOnPrint:
-                    out.append(n)
+                if n.style.hideObjectOnPrint:
+                    continue
+                if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
+                    # skip non-realized ChordSymbols like it was an unsupported extra
+                    continue
+                out.append(n)
         else:
             for n in measureOrVoice.getElementsByClass('GeneralNote'):
-                if not n.style.hideObjectOnPrint and n.duration.quarterLength != 0:
-                    out.append(n)
+                if n.style.hideObjectOnPrint:
+                    continue
+                if n.duration.quarterLength == 0:
+                    continue
+                if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
+                    # skip non-realized ChordSymbols like it was an unsupported extra
+                    continue
+                out.append(n)
         return out
 
 
@@ -661,8 +671,12 @@ class M21Utils:
         """
         out: list[m21.note.GeneralNote] = []
         for n in measureOrVoice.getElementsByClass('GeneralNote'):
-            if not n.style.hideObjectOnPrint:
-                out.append(n)
+            if n.style.hideObjectOnPrint:
+                continue
+            if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
+                # skip non-realized ChordSymbols like it was an unsupported extra
+                continue
+            out.append(n)
         return out
 
     @staticmethod
