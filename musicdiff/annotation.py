@@ -19,6 +19,7 @@ from fractions import Fraction
 import typing as t
 
 import music21 as m21
+from music21.common.numberTools import OffsetQL
 
 from musicdiff import M21Utils
 from musicdiff import DetailLevel
@@ -27,6 +28,7 @@ class AnnNote:
     def __init__(
         self,
         general_note: m21.note.GeneralNote,
+        offsetInMeasure: OffsetQL,
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
         tuplet_info: list[str],
@@ -46,6 +48,7 @@ class AnnNote:
 
         """
         self.general_note: int | str = general_note.id
+        self.offsetInMeasure: OffsetQL = offsetInMeasure
         self.beamings: list[str] = enhanced_beam_list
         self.tuplets: list[str] = tuplet_list
         self.tuplet_info: list[str] = tuplet_info
@@ -256,6 +259,9 @@ class AnnNote:
         if self.stemDirection != 'unspecified':
             string += f"stemDirection={self.stemDirection}"
 
+        # offset
+        string += f" {self.offsetInMeasure}"
+
         # and then the style fields
         for i, (k, v) in enumerate(self.styledict.items()):
             if i > 0:
@@ -408,6 +414,7 @@ class AnnVoice:
     def __init__(
         self,
         voice: m21.stream.Voice | m21.stream.Measure,
+        enclosingMeasure: m21.stream.Measure,
         detail: DetailLevel = DetailLevel.Default
     ) -> None:
         """
@@ -443,9 +450,11 @@ class AnnVoice:
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
             for i, n in enumerate(note_list):
+                offset: OffsetQL = n.getOffsetInHierarchy(enclosingMeasure)
                 self.annot_notes.append(
                     AnnNote(
                         n,
+                        offset,
                         self.en_beam_list[i],
                         self.tuplet_list[i],
                         self.tuplet_info[i],
@@ -532,12 +541,12 @@ class AnnMeasure:
 
         if len(measure.voices) == 0:
             # there is a single AnnVoice (i.e. in the music21 Measure there are no voices)
-            ann_voice = AnnVoice(measure, detail)
+            ann_voice = AnnVoice(measure, measure, detail)
             if ann_voice.n_of_notes > 0:
                 self.voices_list.append(ann_voice)
         else:  # there are multiple voices (or an array with just one voice)
             for voice in measure.voices:
-                ann_voice = AnnVoice(voice, detail)
+                ann_voice = AnnVoice(voice, measure, detail)
                 if ann_voice.n_of_notes > 0:
                     self.voices_list.append(ann_voice)
         self.n_of_voices: int = len(self.voices_list)

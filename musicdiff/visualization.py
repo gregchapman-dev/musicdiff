@@ -785,6 +785,25 @@ class Visualization:
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
+            elif op[0] == "editnoteoffset":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note offset")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note offset")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
             elif op[0] == "editnoteheadfill":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)

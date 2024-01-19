@@ -937,6 +937,11 @@ class Comparison:
             op_list.extend(lyr_op_list)
             cost += lyr_cost
 
+        # add for offset in quarter notes from start of measure (i.e. horizontal position)
+        if annNote1.offsetInMeasure != annNote2.offsetInMeasure:
+            cost += 1
+            op_list.append(("editnoteoffset", annNote1, annNote2, 1))
+
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:
             cost += 1
