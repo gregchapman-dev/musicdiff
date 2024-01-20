@@ -142,11 +142,8 @@ class AnnNote:
                 lyricStr += f"number={lyric.number}"
             if lyric._identifier is not None:
                 lyricStr += f" identifier={lyric._identifier}"
-            if lyric.syllabic is not None and lyric.syllabic != 'single':
-                # None and 'single' mean the same thing (a one syllable lyric, nothing fancy)
-                lyricStr += f" syllabic={lyric.syllabic}"
-            if lyric.text is not None:
-                lyricStr += f" text={lyric.text}"
+            # ignore .syllabic and .text, what is visible is .rawText (and there
+            # are several .syllabic/.text combos that create the same .rawText).
             lyricStr += f" rawText={lyric.rawText}"
             if M21Utils.has_style(lyric):
                 styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)

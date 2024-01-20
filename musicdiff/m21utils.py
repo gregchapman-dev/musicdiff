@@ -1150,8 +1150,11 @@ class M21Utils:
             # output['relY'] = style.relativeY
         # if style.absoluteX is not None:
             # output['absX'] = style.absoluteX
-        # if style.absoluteY is not None:
-            # output['absY'] = style.absoluteY
+        if style.absoluteY is not None:
+            if style.absoluteY > 0:
+                output['placement'] = 'above'
+            elif style.absoluteY < 0:
+                output['placement'] = 'below'
         if style.enclosure is not None:
             output['encl'] = style.enclosure
         if style.fontRepresentation is not None:
