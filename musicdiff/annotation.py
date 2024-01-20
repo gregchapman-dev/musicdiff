@@ -148,6 +148,8 @@ class AnnNote:
             if M21Utils.has_style(lyric):
                 styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
                 if styleDict:
+                    # sort styleDict before converting to string so we can compare strings
+                    styleDict = dict(sorted(styleDict.items()))
                     lyricStr += f" style={styleDict}"
             self.lyrics.append(lyricStr)
 

@@ -1150,11 +1150,8 @@ class M21Utils:
             # output['relY'] = style.relativeY
         # if style.absoluteX is not None:
             # output['absX'] = style.absoluteX
-        if style.absoluteY is not None:
-            if style.absoluteY > 0:
-                output['placement'] = 'above'
-            elif style.absoluteY < 0:
-                output['placement'] = 'below'
+        # if style.absoluteY is not None:
+            # output['absY'] = style.absoluteY
         if style.enclosure is not None:
             output['encl'] = style.enclosure
         if style.fontRepresentation is not None:
@@ -1209,6 +1206,16 @@ class M21Utils:
                 print('placement specified twice, taking the one in .style', file=sys.stderr)
             else:
                 output['placement'] = obj.placement
+
+        if obj.hasStyleInformation and 'placement' not in output:
+            # no placement yet, use style.absoluteY (if present and non-zero), but
+            # only if obj or style has a .placement field (notes don't, for instance)
+            if hasattr(obj, 'placement') or hasattr(obj.style, 'placement'):
+                if obj.style.absoluteY is not None:
+                    if obj.style.absoluteY > 0:
+                        output['placement'] = 'above'
+                    elif obj.style.absoluteY < 0:
+                        output['placement'] = 'below'
 
         return output
 
