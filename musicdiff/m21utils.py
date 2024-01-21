@@ -1217,6 +1217,15 @@ class M21Utils:
                     elif obj.style.absoluteY < 0:
                         output['placement'] = 'below'
 
+        # One last style thing: lyric placement=='below' and lyric justify=='left
+        # should be ignored, since that's where lyrics go by default (and there
+        # are file formats (Humdrum) that don't let you specify anything different:
+        if isinstance(obj, m21.note.Lyric):
+            if output.get('placement') == 'below':
+                del output['placement']
+            if output.get('justify') == 'left':
+                del output['justify']
+
         return output
 
     @staticmethod
