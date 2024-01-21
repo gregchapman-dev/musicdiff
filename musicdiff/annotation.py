@@ -137,6 +137,8 @@ class AnnNote:
         # lyrics
         self.lyrics: list[str] = []
         for lyric in general_note.lyrics:
+            if not lyric.rawText:
+                continue
             lyricStr: str = ""
             if lyric.number is not None:
                 lyricStr += f"number={lyric.number}"
