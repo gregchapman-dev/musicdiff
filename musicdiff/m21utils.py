@@ -992,6 +992,16 @@ class M21Utils:
         # mm must be a MetronomeMark if we get here.
         if t.TYPE_CHECKING:
             assert isinstance(mm, m21.tempo.MetronomeMark)
+
+        # ignore "playback only" metronome marks (they are not printed)
+        if not mm.text and not mm.number and mm.numberSounding:
+            return ''
+
+        # ignore metronome marks with no text (or text=='') and no explicit number
+        # (they are not printed)
+        if not mm.text and mm.number and mm.numberImplicit:
+            return ''
+
         if mm.textImplicit is True or mm._tempoText is None:
             if mm.referent is None or mm.number is None:
                 output = 'MM:'
