@@ -15,6 +15,7 @@ from fractions import Fraction
 import math
 import sys
 import copy
+import re
 import typing as t
 from enum import IntEnum
 
@@ -997,6 +998,18 @@ class M21Utils:
         if not mm.text and (not mm.number or mm.numberImplicit):
             return ''
 
+        # special case: numberImplicit is True, and non-implicit text is of the form:
+        # SMUFLNoteCode = nnn (with no leading text).
+        # We annotate this just like f'MM:{mm.referent.fullName}={float(mm.number)}',
+        # but getting the fullName and number from parsing the text.
+        if mm.numberImplicit is True and mm.textImplicit is False:
+            noteFullName: str | None = None
+            number: float | int | None = None
+            noteFullName, number = M21Utils.parse_note_equal_num(mm.text)
+            if noteFullName is not None and number is not None:
+                output = f'MM:{noteFullName}={float(number)}'
+                return output
+
         if mm.textImplicit is True or mm._tempoText is None:
             if mm.referent is None or mm.number is None:
                 output = 'MM:'
@@ -1019,6 +1032,78 @@ class M21Utils:
         )
         return output
         # pylint: enable=protected-access
+
+    @staticmethod
+    def parse_note_equal_num(text: str) -> tuple[str | None, float | int | None]:
+        from converter21.shared import SharedConstants
+        THIN_SPACE: str = chr(0x2009)
+        HAIR_SPACE: str = chr(0x200A)
+        NBSP: str = chr(0x00A0)
+        SPACES: tuple[str, ...] = (' ', '\t', THIN_SPACE, HAIR_SPACE, NBSP)
+
+        # First strip out any spaces (including NBSP, THINSPACE,  and HAIRSPACE)
+        # (look for any SMUFL notes at the same time; bail if you find none)
+        smuflNoteFound: bool = False
+        strippedText: str = ''
+        for i, char in enumerate(text):
+            if not smuflNoteFound:
+                if char in SharedConstants.SMUFL_METRONOME_MARK_NOTE_CHARS_TO_HUMDRUM_NOTE_NAME:
+                    smuflNoteFound = True
+
+            if char in SPACES:
+                # skip all types of spaces
+                continue
+
+            strippedText += char
+
+        if not smuflNoteFound:
+            return None, None
+
+        # The entire string must now be:
+        # 1-5 SMUFL chars (quad-dotted note would be five chars), '=', int or float
+        PATTERN: str = r'^(.{1,5})=(\d+(?:\.\d*)?)$'
+        m = re.match(PATTERN, strippedText)
+        if m is None:
+            return None, None
+
+        smuflNote: str | None = None
+        num: float | None = None
+        try:
+            smuflNote = m.group(1)
+            num = float(m.group(2))
+        except Exception:
+            return None, None
+
+        if not smuflNote:
+            return None, None
+
+        # smuflNote must be a single note (SMUFL) char followed by a series of
+        # (SMUFL) metAugmentationDot chars
+        for i, char in enumerate(smuflNote):
+            if i == 0:
+                if char not in (
+                    SharedConstants.SMUFL_METRONOME_MARK_NOTE_CHARS_TO_MUSIC21_FULL_NAME
+                ):
+                    return None, None
+                continue
+
+            if char != SharedConstants.SMUFL_NAME_TO_UNICODE_CHAR['metAugmentationDot']:
+                return None, None
+
+        fullName: str = (
+            SharedConstants.SMUFL_METRONOME_MARK_NOTE_CHARS_TO_MUSIC21_FULL_NAME[smuflNote[0]]
+        )
+
+        if len(smuflNote) == 2:
+            fullName = 'Dotted ' + fullName
+        elif len(smuflNote) == 3:
+            fullName = 'Double Dotted ' + fullName
+        elif len(smuflNote) == 4:
+            fullName = 'Triple Dotted ' + fullName
+        elif len(smuflNote) == 5:
+            fullName = 'Quadruple Dotted ' + fullName
+
+        return fullName, num
 
     @staticmethod
     def barline_to_string(barline: m21.bar.Barline) -> str:
@@ -1086,7 +1171,8 @@ class M21Utils:
     @staticmethod
     def textstyle_to_dict(
         style: m21.style.TextStyle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default,
+        smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1095,7 +1181,7 @@ class M21Utils:
 
         if isinstance(style, m21.style.TextStylePlacement) and style.placement:
             output['placement'] = style.placement
-        if style.fontFamily:
+        if style.fontFamily and not smuflTextSuppressed:
             output['fontFamily'] = style.fontFamily
 
         # ignore fontSize, Humdrum can't represent it.
@@ -1172,7 +1258,8 @@ class M21Utils:
     @staticmethod
     def specificstyle_to_dict(
         style: m21.style.Style,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default,
+        smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1181,7 +1268,11 @@ class M21Utils:
             return M21Utils.notestyle_to_dict(style, detail)
         if isinstance(style, m21.style.TextStyle):
             # includes TextStylePlacement
-            return M21Utils.textstyle_to_dict(style, detail)
+            return M21Utils.textstyle_to_dict(
+                style,
+                detail,
+                smuflTextSuppressed=smuflTextSuppressed
+            )
         if isinstance(style, m21.style.BezierStyle):
             return {}  # M21Utils.bezierstyle_to_dict(style, detail)
         if isinstance(style, m21.style.LineStyle):
@@ -1193,7 +1284,8 @@ class M21Utils:
     @staticmethod
     def obj_to_styledict(
         obj: m21.base.Music21Object | m21.style.StyleMixin,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default,
+        smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1201,7 +1293,11 @@ class M21Utils:
         output: dict = {}
         if obj.hasStyleInformation:
             output = M21Utils.genericstyle_to_dict(obj.style, detail)
-            specific = M21Utils.specificstyle_to_dict(obj.style, detail)
+            specific = M21Utils.specificstyle_to_dict(
+                obj.style,
+                detail,
+                smuflTextSuppressed=smuflTextSuppressed
+            )
             for k, v in specific.items():
                 output[k] = v
 

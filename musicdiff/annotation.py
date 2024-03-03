@@ -373,7 +373,22 @@ class AnnExtra:
 
         if M21Utils.has_style(extra):
             # includes extra.placement if present
-            self.styledict = M21Utils.obj_to_styledict(extra, detail)
+
+            # special case: MM with text='SMUFLNote = nnn" is being annotated as if there is
+            # no text, so none of the text style stuff should be added.
+            smuflTextSuppressed: bool = False
+            if (isinstance(extra, m21.tempo.MetronomeMark)
+                and not extra.textImplicit
+                and extra.text
+                and not self.content.startswith('MM:TX:')
+            ):
+                smuflTextSuppressed = True
+
+            self.styledict = M21Utils.obj_to_styledict(
+                extra,
+                detail,
+                smuflTextSuppressed=smuflTextSuppressed
+            )
 
         # so far, always 1, but maybe some extra will be bigger someday
         self._notation_size: int = 1
