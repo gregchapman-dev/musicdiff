@@ -349,6 +349,11 @@ class Comparison:
                 op_list.append(("pitchtypeedit", noteNode1, noteNode2, 1, ids))
             else:  # they are two notes
                 op_list.append(("pitchnameedit", noteNode1, noteNode2, 1, ids))
+
+        # accidental and tie comparisons don't make sense for rests
+        if pitch1[0] == 'R' or pitch2[0] == 'R':
+            return op_list, cost
+
         # add for the accidentals
         if pitch1[1] != pitch2[1]:  # if the accidental is different
             cost += 1
@@ -936,6 +941,11 @@ class Comparison:
             )
             op_list.extend(lyr_op_list)
             cost += lyr_cost
+
+        # add for offset in quarter notes from start of measure (i.e. horizontal position)
+        if annNote1.offsetInMeasure != annNote2.offsetInMeasure:
+            cost += 1
+            op_list.append(("editnoteoffset", annNote1, annNote2, 1))
 
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:
