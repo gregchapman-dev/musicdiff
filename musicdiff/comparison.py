@@ -349,6 +349,11 @@ class Comparison:
                 op_list.append(("pitchtypeedit", noteNode1, noteNode2, 1, ids))
             else:  # they are two notes
                 op_list.append(("pitchnameedit", noteNode1, noteNode2, 1, ids))
+
+        # accidental and tie comparisons don't make sense for rests
+        if pitch1[0] == 'R' or pitch2[0] == 'R':
+            return op_list, cost
+
         # add for the accidentals
         if pitch1[1] != pitch2[1]:  # if the accidental is different
             cost += 1
