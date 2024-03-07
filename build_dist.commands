@@ -14,8 +14,8 @@ python3 -m build
 # Check for malformed README URLs:
 python3 -m twine check dist/*
 
-# Test-publish to testpypi:
+# Test-publish to testpypi (__token__/password for pypi):
 python3 -m twine upload --repository testpypi dist/*
 
-# If all looks good, then publish on pypi proper:
+# If all looks good, then publish on pypi proper (no password needed):
 python3 -m twine upload dist/*
