@@ -1,0 +1,46 @@
+Changes since 3.0.0:
+
+Feature-level changes:
+    - Move lyrics diff from GeneralNotesOnly detail level to AllObjects detail level.
+    - Compare GeneralNote offsets (visually, this is horizontal position in measure).
+    - compare tuplet_info (num and numBase, num format/visibility, bracket visibility),
+        not just tuplet (start/continue/stop).  This is technically a bugfix, but tuplet
+        comparisons were pretty much not working at all, so I'm calling it a new feature.
+    - Add py.typed, so clients can do mypy against musicdiff APIs.
+
+Bugfixes:
+    Metadata:
+        - Contributor might not have any names.  Deal with it.
+        - skip more metadata keys (that are specific to a particular file, so shouldn't
+            be compared against another file): 'EMD', 'EST', 'VTS', 'RLN', 'PUB'.
+        - html-unescape during annotation of metadata items.
+    Style:
+        - Ignore some style stuff we don't care about (e.g. absX/absY).
+        - Ignore fontSize, and regularize how 'bold' is represented.
+    Lyrics:
+        - Don't annotate lyric style if it is empty (hasStyleInformation could still be True).
+        - Consider lyric.syllabic == None and 'single' to be the same.
+        - Better comparison of lyrics, treat style.absoluteY as placement fallback when
+            placement is None.
+        - For lyrics, ignore placement=='below' and justify=='left', as equivalent to not
+            specifying.
+        - Ignore empty lyrics.
+    MetronomeMarks:
+        - Ignore playback-only MetronomeMarks (they're not marked invisible, but they are
+            not printed).
+        - Treat MetronomeMark with explicit number and no explicit text the same as one with no
+            explicit number and explicit text saying "x = NNN" (where x is a SMUFL note code
+            followed by 1-4 SMUFL dots).  They are printed identically, so they are the same.
+    Barlines:
+        - no specified barline is the same as normal barline (at start and end of measure,
+            that is).
+        - ignore invisible ('none') barlines.
+    Other fixes:
+        - Fix crash when diff is visualized between note with accidental and unpitched note/rest
+        - Ignore redundant system and page breaks
+        - Grace vs Appoggiatura is more complex (in music21) than I thought.
+        - Skip over non-realized ChordSymbols (realized ChordSymbols get treated as Chords)
+        - Skip over StaffGroup that contains all the staves and has neither barTogether nor
+            symbol.  Some file formats have one (MEI), and some file formats imply/don't need
+            it (MusicXML).
+
