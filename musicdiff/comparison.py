@@ -349,6 +349,7 @@ class Comparison:
                 op_list.append(("pitchtypeedit", noteNode1, noteNode2, 1, ids))
             else:  # they are two notes
                 op_list.append(("pitchnameedit", noteNode1, noteNode2, 1, ids))
+
         # add for the accidentals
         if pitch1[1] != pitch2[1]:  # if the accidental is different
             cost += 1
@@ -896,6 +897,13 @@ class Comparison:
             )
             op_list.extend(tuplet_op_list)
             cost += tuplet_cost
+        # add for the tuplet info
+        if annNote1.tuplet_info != annNote2.tuplet_info:
+            tuplet_info_op_list, tuplet_info_cost = Comparison._beamtuplet_leveinsthein_diff(
+                annNote1.tuplet_info, annNote2.tuplet_info, annNote1, annNote2, "tuplet"
+            )
+            op_list.extend(tuplet_info_op_list)
+            cost += tuplet_info_cost
         # add for the articulations
         if annNote1.articulations != annNote2.articulations:
             artic_op_list, artic_cost = Comparison._generic_leveinsthein_diff(
@@ -929,6 +937,11 @@ class Comparison:
             )
             op_list.extend(lyr_op_list)
             cost += lyr_cost
+
+        # add for offset in quarter notes from start of measure (i.e. horizontal position)
+        if annNote1.offsetInMeasure != annNote2.offsetInMeasure:
+            cost += 1
+            op_list.append(("editnoteoffset", annNote1, annNote2, 1))
 
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:

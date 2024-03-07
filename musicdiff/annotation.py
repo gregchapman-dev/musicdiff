@@ -14,11 +14,12 @@
 
 __docformat__ = "google"
 
+import html
 from fractions import Fraction
-
 import typing as t
 
 import music21 as m21
+from music21.common.numberTools import OffsetQL
 
 from musicdiff import M21Utils
 from musicdiff import DetailLevel
@@ -27,6 +28,7 @@ class AnnNote:
     def __init__(
         self,
         general_note: m21.note.GeneralNote,
+        offsetInMeasure: OffsetQL,
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
         tuplet_info: list[str],
@@ -46,6 +48,7 @@ class AnnNote:
 
         """
         self.general_note: int | str = general_note.id
+        self.offsetInMeasure: OffsetQL = offsetInMeasure
         self.beamings: list[str] = enhanced_beam_list
         self.tuplets: list[str] = tuplet_list
         self.tuplet_info: list[str] = tuplet_info
@@ -99,7 +102,21 @@ class AnnNote:
             self.graceType: str = 'acc'
             self.graceSlash: bool | None = general_note.duration.slash
         elif isinstance(general_note.duration, m21.duration.GraceDuration):
-            self.graceType = 'nonacc'
+            # might be accented or unaccented.  duration.slash isn't always reliable
+            # (historically), but we can use it as a fallback.
+            # Check duration.stealTimePrevious and duration.stealTimeFollowing first.
+            if general_note.duration.stealTimePrevious is not None:
+                self.graceType = 'unacc'
+            elif general_note.duration.stealTimeFollowing is not None:
+                self.graceType = 'acc'
+            elif general_note.duration.slash is True:
+                self.graceType = 'unacc'
+            elif general_note.duration.slash is False:
+                self.graceType = 'acc'
+            else:
+                # by default, GraceDuration with no other indications (slash is None)
+                # is assumed to be unaccented.
+                self.graceType = 'unacc'
             self.graceSlash = general_note.duration.slash
         else:
             self.graceType = ''
@@ -119,20 +136,25 @@ class AnnNote:
 
         # lyrics
         self.lyrics: list[str] = []
-        for lyric in general_note.lyrics:
-            lyricStr: str = ""
-            if lyric.number is not None:
-                lyricStr += f"number={lyric.number}"
-            if lyric._identifier is not None:
-                lyricStr += f" identifier={lyric._identifier}"
-            if lyric.syllabic is not None:
-                lyricStr += f" syllabic={lyric.syllabic}"
-            if lyric.text is not None:
-                lyricStr += f" text={lyric.text}"
-            lyricStr += f" rawText={lyric.rawText}"
-            if M21Utils.has_style(lyric):
-                lyricStr += f" style={M21Utils.obj_to_styledict(lyric, detail)}"
-            self.lyrics.append(lyricStr)
+        if DetailLevel.includesLyrics(detail):
+            for lyric in general_note.lyrics:
+                if not lyric.rawText:
+                    continue
+                lyricStr: str = ""
+                if lyric.number is not None:
+                    lyricStr += f"number={lyric.number}"
+                if lyric._identifier is not None:
+                    lyricStr += f" identifier={lyric._identifier}"
+                # ignore .syllabic and .text, what is visible is .rawText (and there
+                # are several .syllabic/.text combos that create the same .rawText).
+                lyricStr += f" rawText={lyric.rawText}"
+                if M21Utils.has_style(lyric):
+                    styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
+                    if styleDict:
+                        # sort styleDict before converting to string so we can compare strings
+                        styleDict = dict(sorted(styleDict.items()))
+                        lyricStr += f" style={styleDict}"
+                self.lyrics.append(lyricStr)
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
@@ -239,6 +261,9 @@ class AnnNote:
         if self.stemDirection != 'unspecified':
             string += f"stemDirection={self.stemDirection}"
 
+        # offset
+        string += f" {self.offsetInMeasure}"
+
         # and then the style fields
         for i, (k, v) in enumerate(self.styledict.items()):
             if i > 0:
@@ -335,6 +360,11 @@ class AnnExtra:
                 except m21.sites.SitesException:
                     endOffsetInScore = startOffsetInScore
                 self.duration = endOffsetInScore - startOffsetInScore
+        elif isinstance(extra, m21.bar.Barline):
+            # we ignore offset for barlines; barline offset is derived from the objects in the
+            # measure, which are already being compared.
+            self.offset = 0.0
+            self.duration = float(extra.duration.quarterLength)
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
@@ -344,7 +374,21 @@ class AnnExtra:
 
         if M21Utils.has_style(extra):
             # includes extra.placement if present
-            self.styledict = M21Utils.obj_to_styledict(extra, detail)
+
+            # special case: MM with text='SMUFLNote = nnn" is being annotated as if there is
+            # no text, so none of the text style stuff should be added.
+            smuflTextSuppressed: bool = False
+            if (isinstance(extra, m21.tempo.MetronomeMark)
+                    and not extra.textImplicit
+                    and extra.text
+                    and not self.content.startswith('MM:TX:')):
+                smuflTextSuppressed = True
+
+            self.styledict = M21Utils.obj_to_styledict(
+                extra,
+                detail,
+                smuflTextSuppressed=smuflTextSuppressed
+            )
 
         # so far, always 1, but maybe some extra will be bigger someday
         self._notation_size: int = 1
@@ -386,6 +430,7 @@ class AnnVoice:
     def __init__(
         self,
         voice: m21.stream.Voice | m21.stream.Measure,
+        enclosingMeasure: m21.stream.Measure,
         detail: DetailLevel = DetailLevel.Default
     ) -> None:
         """
@@ -421,9 +466,11 @@ class AnnVoice:
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
             for i, n in enumerate(note_list):
+                offset: OffsetQL = n.getOffsetInHierarchy(enclosingMeasure)
                 self.annot_notes.append(
                     AnnNote(
                         n,
+                        offset,
                         self.en_beam_list[i],
                         self.tuplet_list[i],
                         self.tuplet_info[i],
@@ -510,19 +557,19 @@ class AnnMeasure:
 
         if len(measure.voices) == 0:
             # there is a single AnnVoice (i.e. in the music21 Measure there are no voices)
-            ann_voice = AnnVoice(measure, detail)
+            ann_voice = AnnVoice(measure, measure, detail)
             if ann_voice.n_of_notes > 0:
                 self.voices_list.append(ann_voice)
         else:  # there are multiple voices (or an array with just one voice)
             for voice in measure.voices:
-                ann_voice = AnnVoice(voice, detail)
+                ann_voice = AnnVoice(voice, measure, detail)
                 if ann_voice.n_of_notes > 0:
                     self.voices_list.append(ann_voice)
         self.n_of_voices: int = len(self.voices_list)
 
         self.extras_list: list[AnnExtra] = []
         if DetailLevel.includesOtherMusicObjects(detail):
-            for extra in M21Utils.get_extras(measure, part, spannerBundle, detail):
+            for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
 
             # For correct comparison, sort the extras_list, so that any list slices
@@ -756,11 +803,24 @@ class AnnMetadataItem:
         if isinstance(value, m21.metadata.Text):
             # Create a string representing both the text and the language, but not isTranslated,
             # since isTranslated cannot be represented in many file formats.
-            self.value = str(value) + f'(language={value.language})'
+            self.value = (
+                self.make_value_string(value)
+                + f'(language={value.language})'
+            )
         elif isinstance(value, m21.metadata.Contributor):
             # Create a string (same thing: value.name.isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
-            self.value = str(value) + f'(role={value.role}, language={value._names[0].language})'
+            self.value = self.make_value_string(value)
+            roleEmitted: bool = False
+            if value.role:
+                self.value += f'(role={value.role}'
+                roleEmitted = True
+            if value._names:
+                if roleEmitted:
+                    self.value += ', '
+                self.value += f'language={value._names[0].language}'
+            if roleEmitted:
+                self.value += ')'
         else:
             self.value = value
 
@@ -790,6 +850,12 @@ class AnnMetadataItem:
             int: The notation size of the annotated metadata item
         """
         return 1
+
+    def make_value_string(self, value: m21.metadata.Contributor | m21.metadata.Text) -> str:
+        # Unescapes a bunch of stuff
+        output: str = str(value)
+        output = html.unescape(output)
+        return output
 
 
 class AnnScore:
@@ -834,6 +900,13 @@ class AnnScore:
         if DetailLevel.includesOtherMusicObjects(detail):
             # staffgroups are extras (a.k.a. OtherMusicObjects)
             for staffGroup in score[m21.layout.StaffGroup]:
+                # ignore any StaffGroup that contains all the parts, and has no symbol
+                # and has no barthru (this is just a placeholder generated by some
+                # file formats, and has the same meaning if it is missing).
+                if len(staffGroup) == len(part_to_index):
+                    if not staffGroup.symbol and not staffGroup.barTogether:
+                        continue
+
                 ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
                 if ann_staff_group.n_of_parts > 0:
                     self.staff_group_list.append(ann_staff_group)
@@ -854,6 +927,16 @@ class AnnScore:
                     # Don't compare verbatim/raw metadata ('meiraw:meihead',
                     # 'raw:freeform', 'humdrumraw:XXX'), it's often deleted
                     # when made obsolete by conversions/edits.
+                    continue
+                if key in ('humdrum:EMD', 'humdrum:EST', 'humdrum:VTS',
+                        'humdrum:RLN', 'humdrum:PUB'):
+                    # Don't compare metadata items that should never be transferred
+                    # from one file to another.  'humdrum:EMD' is a modification
+                    # description entry, humdrum:EST is "current encoding status"
+                    # (i.e. complete or some value of not complete), 'humdrum:VTS'
+                    # is a checksum of the Humdrum file, 'humdrum:RLN' is the
+                    # extended ASCII encoding of the Humdrum file, 'humdrum:PUB'
+                    # is the publication status of the file (published or not?).
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
 

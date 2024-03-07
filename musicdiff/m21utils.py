@@ -15,6 +15,7 @@ from fractions import Fraction
 import math
 import sys
 import copy
+import re
 import typing as t
 from enum import IntEnum
 
@@ -26,17 +27,18 @@ class DetailLevel(IntEnum):
     # Bit definitions are private:
     _GeneralNotes = 1
     _Extras = 2
-    _Style = 4
-    _Metadata = 8
+    _Lyrics = 4
+    _Style = 8
+    _Metadata = 16
 
     # Combinations are public (and supported on command line):
 
-    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
+    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations/lyrics)
     GeneralNotesOnly = _GeneralNotes
 
     # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
-    # TimeSignatures, TempoIndications, etc
-    AllObjects = GeneralNotesOnly | _Extras
+    # TimeSignatures, TempoIndications, Lyrics, etc
+    AllObjects = GeneralNotesOnly | _Extras | _Lyrics
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
@@ -57,6 +59,10 @@ class DetailLevel(IntEnum):
     @classmethod
     def includesOtherMusicObjects(cls, val: int) -> bool:
         return val & cls._Extras != 0
+
+    @classmethod
+    def includesLyrics(cls, val: int) -> bool:
+        return val & cls._Lyrics != 0
 
     @classmethod
     def includesStyle(cls, val: int) -> bool:
@@ -602,7 +608,7 @@ class M21Utils:
         tuplets_list: list[list[str | None]] = [
             [tup.type for tup in n.duration.tuplets] for n in note_list  # type: ignore
         ]
-        new_tuplets_list = tuplets_list.copy()
+        new_tuplets_list = copy.deepcopy(tuplets_list)
 
         # now correct the missing of "start" and add "continue" for clarity
         max_tupl_len = max([len(t) for t in tuplets_list])
@@ -642,12 +648,22 @@ class M21Utils:
         out = []
         if allowGraceNotes:
             for n in measureOrVoice.getElementsByClass('GeneralNote'):
-                if not n.style.hideObjectOnPrint:
-                    out.append(n)
+                if n.style.hideObjectOnPrint:
+                    continue
+                if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
+                    # skip non-realized ChordSymbols like it was an unsupported extra
+                    continue
+                out.append(n)
         else:
             for n in measureOrVoice.getElementsByClass('GeneralNote'):
-                if not n.style.hideObjectOnPrint and n.duration.quarterLength != 0:
-                    out.append(n)
+                if n.style.hideObjectOnPrint:
+                    continue
+                if n.duration.quarterLength == 0:
+                    continue
+                if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
+                    # skip non-realized ChordSymbols like it was an unsupported extra
+                    continue
+                out.append(n)
         return out
 
 
@@ -661,8 +677,12 @@ class M21Utils:
         """
         out: list[m21.note.GeneralNote] = []
         for n in measureOrVoice.getElementsByClass('GeneralNote'):
-            if not n.style.hideObjectOnPrint:
-                out.append(n)
+            if n.style.hideObjectOnPrint:
+                continue
+            if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
+                # skip non-realized ChordSymbols like it was an unsupported extra
+                continue
+            out.append(n)
         return out
 
     @staticmethod
@@ -731,6 +751,7 @@ class M21Utils:
     def get_extras(
         measure: m21.stream.Measure,
         part: m21.stream.Part,
+        score: m21.stream.Score,
         spannerBundle: m21.spanner.SpannerBundle,
         detail: DetailLevel = DetailLevel.Default
     ) -> list[m21.base.Music21Object]:
@@ -750,25 +771,50 @@ class M21Utils:
         )
 
         # Sort the initialList by offset in measure, so we can see which clefs are
-        # duplicates from different voices.
+        # duplicates from different voices. We use el.musicdiff_offset_in_measure
+        # later, so compute it even if list is of length 1.
+        for el in initialList:
+            el.musicdiff_offset_in_measure = el.getOffsetInHierarchy(measure)  # type: ignore
         if len(initialList) > 1:
-            for el in initialList:
-                el.musicdiff_offset_in_measure = el.getOffsetInHierarchy(measure)  # type: ignore
             initialList.sort(key=lambda el: el.musicdiff_offset_in_measure)  # type: ignore
 
         # loop over the initialList, filtering out (and complaining about) things we
         # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
-        # barlines of type 'none' (also not printed).
-        # We also try to de-duplicate redundant clefs.
+        # right/left barlines of type 'regular' with no interesting details (because
+        # no right/left barline at all in music21 means a regular, uninteresting barline).
+        # Note that we ignore all invisible barlines as well (el.type == 'none') since
+        # they are non-printed.  We also try to de-duplicate redundant clefs.
         mostRecentClef: m21.clef.Clef | None = None
         for el in initialList:
-            # we ignore hidden extras
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
+                # we ignore hidden extras
                 continue
-            if isinstance(el, m21.bar.Barline) and el.type == 'none':
-                continue
+
+            if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
+                # we ignore PageLayouts and SystemLayouts that are not in the
+                # first Part in the Score.
+                if part is not score.parts[0]:
+                    continue
+
+            if isinstance(el, m21.bar.Barline):
+                if el.type == 'none':
+                    # we ignore hidden barlines
+                    continue
+
+                barlineOffset: OffsetQL = el.musicdiff_offset_in_measure  # type: ignore
+                if ((barlineOffset in (0, measure.duration.quarterLength))
+                        and el.type == 'regular'
+                        and el.pause is None
+                        and not el.hasStyleInformation):
+                    # we ignore unadorned regular left or right barlines (since
+                    # that's what no left or right barline at all means)
+                    continue
+
             if M21Utils.extra_to_string(el, detail) == '':
+                # skip unrecognized extras.
+                # (extra_to_string complains about unrecognized extras)
                 continue
+
             if isinstance(el, m21.clef.Clef):
                 # If this clef is the same as the most recent clef seen in this
                 # measure (i.e. with no different clef between them), ignore
@@ -952,6 +998,23 @@ class M21Utils:
         # mm must be a MetronomeMark if we get here.
         if t.TYPE_CHECKING:
             assert isinstance(mm, m21.tempo.MetronomeMark)
+
+        # ignore "playback only" metronome marks (they are not printed)
+        if not mm.text and (not mm.number or mm.numberImplicit):
+            return ''
+
+        # special case: numberImplicit is True, and non-implicit text is of the form:
+        # SMUFLNoteCode = nnn (with no leading text).
+        # We annotate this just like f'MM:{mm.referent.fullName}={float(mm.number)}',
+        # but getting the fullName and number from parsing the text.
+        if mm.numberImplicit is True and mm.textImplicit is False:
+            noteFullName: str | None = None
+            number: float | int | None = None
+            noteFullName, number = M21Utils.parse_note_equal_num(mm.text)
+            if noteFullName is not None and number is not None:
+                output = f'MM:{noteFullName}={float(number)}'
+                return output
+
         if mm.textImplicit is True or mm._tempoText is None:
             if mm.referent is None or mm.number is None:
                 output = 'MM:'
@@ -974,6 +1037,78 @@ class M21Utils:
         )
         return output
         # pylint: enable=protected-access
+
+    @staticmethod
+    def parse_note_equal_num(text: str) -> tuple[str | None, float | int | None]:
+        from converter21.shared import SharedConstants
+        THIN_SPACE: str = chr(0x2009)
+        HAIR_SPACE: str = chr(0x200A)
+        NBSP: str = chr(0x00A0)
+        SPACES: tuple[str, ...] = (' ', '\t', THIN_SPACE, HAIR_SPACE, NBSP)
+
+        # First strip out any spaces (including NBSP, THINSPACE,  and HAIRSPACE)
+        # (look for any SMUFL notes at the same time; bail if you find none)
+        smuflNoteFound: bool = False
+        strippedText: str = ''
+        for i, char in enumerate(text):
+            if not smuflNoteFound:
+                if char in SharedConstants.SMUFL_METRONOME_MARK_NOTE_CHARS_TO_HUMDRUM_NOTE_NAME:
+                    smuflNoteFound = True
+
+            if char in SPACES:
+                # skip all types of spaces
+                continue
+
+            strippedText += char
+
+        if not smuflNoteFound:
+            return None, None
+
+        # The entire string must now be:
+        # 1-5 SMUFL chars (quad-dotted note would be five chars), '=', int or float
+        PATTERN: str = r'^(.{1,5})=(\d+(?:\.\d*)?)$'
+        m = re.match(PATTERN, strippedText)
+        if m is None:
+            return None, None
+
+        smuflNote: str | None = None
+        num: float | None = None
+        try:
+            smuflNote = m.group(1)
+            num = float(m.group(2))
+        except Exception:
+            return None, None
+
+        if not smuflNote:
+            return None, None
+
+        # smuflNote must be a single note (SMUFL) char followed by a series of
+        # (SMUFL) metAugmentationDot chars
+        for i, char in enumerate(smuflNote):
+            if i == 0:
+                if char not in (
+                    SharedConstants.SMUFL_METRONOME_MARK_NOTE_CHARS_TO_MUSIC21_FULL_NAME
+                ):
+                    return None, None
+                continue
+
+            if char != SharedConstants.SMUFL_NAME_TO_UNICODE_CHAR['metAugmentationDot']:
+                return None, None
+
+        fullName: str = (
+            SharedConstants.SMUFL_METRONOME_MARK_NOTE_CHARS_TO_MUSIC21_FULL_NAME[smuflNote[0]]
+        )
+
+        if len(smuflNote) == 2:
+            fullName = 'Dotted ' + fullName
+        elif len(smuflNote) == 3:
+            fullName = 'Double Dotted ' + fullName
+        elif len(smuflNote) == 4:
+            fullName = 'Triple Dotted ' + fullName
+        elif len(smuflNote) == 5:
+            fullName = 'Quadruple Dotted ' + fullName
+
+        return fullName, num
 
     @staticmethod
     def barline_to_string(barline: m21.bar.Barline) -> str:
@@ -1027,8 +1162,8 @@ class M21Utils:
 
         output: dict = {}
 
-        if style.stemStyle is not None:
-            output['stemstyle'] = M21Utils.genericstyle_to_dict(style.stemStyle)
+        # if style.stemStyle is not None:
+        #     output['stemstyle'] = M21Utils.genericstyle_to_dict(style.stemStyle)
 
         if style.accidentalStyle is not None:
             output['accidstyle'] = M21Utils.genericstyle_to_dict(style.accidentalStyle)
@@ -1041,7 +1176,8 @@ class M21Utils:
     @staticmethod
     def textstyle_to_dict(
         style: m21.style.TextStyle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default,
+        smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1050,30 +1186,44 @@ class M21Utils:
 
         if isinstance(style, m21.style.TextStylePlacement) and style.placement:
             output['placement'] = style.placement
-        if style.fontFamily:
+        if style.fontFamily and not smuflTextSuppressed:
             output['fontFamily'] = style.fontFamily
-        if style.fontSize is not None:
-            output['fontSize'] = style.fontSize
-        if style.fontStyle is not None and style.fontStyle != 'normal':
-            output['fontStyle'] = style.fontStyle
-        if style.fontWeight is not None and style.fontWeight != 'normal':
-            output['fontWeight'] = style.fontWeight
-        if style.letterSpacing is not None and style.letterSpacing != 'normal':
-            output['letterSpacing'] = style.letterSpacing
-        if style.lineHeight:
-            output['lineHeight'] = style.lineHeight
-        if style.textDirection:
-            output['textDirection'] = style.textDirection
-        if style.textRotation:
-            output['textRotation'] = style.textRotation
-        if style.language:
-            output['language'] = style.language
-        if style.textDecoration:
-            output['textDecoration'] = style.textDecoration
+
+        # ignore fontSize, Humdrum can't represent it.
+        # if style.fontSize is not None:
+            # output['fontSize'] = style.fontSize
+
+        # normalize 'bold', since sometimes it's fontStyle='bold'/'bolditalic',
+        # and sometimes it's fontWeight='bold' + fontStyle='italic' or 'normal'
+        fontStyle = style.fontStyle
+        fontWeight = style.fontWeight
+        if fontStyle == 'bold':
+            fontStyle = None
+            fontWeight = 'bold'
+        elif fontStyle == 'bolditalic':
+            fontStyle = 'italic'
+            fontWeight = 'bold'
+        if fontStyle is not None and fontStyle != 'normal':
+            output['fontStyle'] = fontStyle
+        if fontWeight is not None and fontWeight != 'normal':
+            output['fontWeight'] = fontWeight
+
+        # if style.letterSpacing is not None and style.letterSpacing != 'normal':
+        #     output['letterSpacing'] = style.letterSpacing
+        # if style.lineHeight:
+        #     output['lineHeight'] = style.lineHeight
+        # if style.textDirection:
+        #     output['textDirection'] = style.textDirection
+        # if style.textRotation:
+        #     output['textRotation'] = style.textRotation
+        # if style.language:
+        #     output['language'] = style.language
+        # if style.textDecoration:
+        #     output['textDecoration'] = style.textDecoration
         if style.justify:
             output['justify'] = style.justify
-        if style.alignHorizontal:
-            output['alignHorizontal'] = style.alignHorizontal
+        # if style.alignHorizontal:
+        #     output['alignHorizontal'] = style.alignHorizontal
         if style.alignVertical:
             output['alignVertical'] = style.alignVertical
 
@@ -1090,30 +1240,31 @@ class M21Utils:
         output: dict = {}
         if style.size is not None:
             output['size'] = style.size
-        if style.relativeX is not None:
-            output['relX'] = style.relativeX
-        if style.relativeY is not None:
-            output['relY'] = style.relativeY
-        if style.absoluteX is not None:
-            output['absX'] = style.absoluteX
-        if style.absoluteY is not None:
-            output['absY'] = style.absoluteY
+        # if style.relativeX is not None:
+            # output['relX'] = style.relativeX
+        # if style.relativeY is not None:
+            # output['relY'] = style.relativeY
+        # if style.absoluteX is not None:
+            # output['absX'] = style.absoluteX
+        # if style.absoluteY is not None:
+            # output['absY'] = style.absoluteY
         if style.enclosure is not None:
             output['encl'] = style.enclosure
         if style.fontRepresentation is not None:
             output['fontrep'] = style.fontRepresentation
         if style.color is not None:
             output['color'] = style.color
-        if style.units != 'tenths':
-            output['units'] = style.units
-        if style.hideObjectOnPrint:
-            output['hidden'] = True
+        # if style.units != 'tenths':
+            # output['units'] = style.units
+        # if style.hideObjectOnPrint:
+            # output['hidden'] = True
         return output
 
     @staticmethod
     def specificstyle_to_dict(
         style: m21.style.Style,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default,
+        smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1122,7 +1273,11 @@ class M21Utils:
             return M21Utils.notestyle_to_dict(style, detail)
         if isinstance(style, m21.style.TextStyle):
             # includes TextStylePlacement
-            return M21Utils.textstyle_to_dict(style, detail)
+            return M21Utils.textstyle_to_dict(
+                style,
+                detail,
+                smuflTextSuppressed=smuflTextSuppressed
+            )
         if isinstance(style, m21.style.BezierStyle):
             return {}  # M21Utils.bezierstyle_to_dict(style, detail)
         if isinstance(style, m21.style.LineStyle):
@@ -1134,7 +1289,8 @@ class M21Utils:
     @staticmethod
     def obj_to_styledict(
         obj: m21.base.Music21Object | m21.style.StyleMixin,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default,
+        smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1142,7 +1298,11 @@ class M21Utils:
         output: dict = {}
         if obj.hasStyleInformation:
             output = M21Utils.genericstyle_to_dict(obj.style, detail)
-            specific = M21Utils.specificstyle_to_dict(obj.style, detail)
+            specific = M21Utils.specificstyle_to_dict(
+                obj.style,
+                detail,
+                smuflTextSuppressed=smuflTextSuppressed
+            )
             for k, v in specific.items():
                 output[k] = v
 
@@ -1152,6 +1312,25 @@ class M21Utils:
                 print('placement specified twice, taking the one in .style', file=sys.stderr)
             else:
                 output['placement'] = obj.placement
+
+        if obj.hasStyleInformation and 'placement' not in output:
+            # no placement yet, use style.absoluteY (if present and non-zero), but
+            # only if obj or style has a .placement field (notes don't, for instance)
+            if hasattr(obj, 'placement') or hasattr(obj.style, 'placement'):
+                if obj.style.absoluteY is not None:
+                    if obj.style.absoluteY > 0:
+                        output['placement'] = 'above'
+                    elif obj.style.absoluteY < 0:
+                        output['placement'] = 'below'
+
+        # One last style thing: lyric placement=='below' and lyric justify=='left
+        # should be ignored, since that's where lyrics go by default (and there
+        # are file formats (Humdrum) that don't let you specify anything different:
+        if isinstance(obj, m21.note.Lyric):
+            if output.get('placement') == 'below':
+                del output['placement']
+            if output.get('justify') == 'left':
+                del output['justify']
 
         return output
 

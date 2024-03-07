@@ -785,6 +785,25 @@ class Visualization:
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
+            elif op[0] == "editnoteoffset":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note offset")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed note offset")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
             elif op[0] == "editnoteheadfill":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
@@ -893,7 +912,7 @@ class Visualization:
                     note1 = chord1.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                if note1.pitch.accidental:
+                if hasattr(note1, 'pitch') and note1.pitch.accidental:
                     note1.pitch.accidental.style.color = Visualization.INSERTED_COLOR
                 note1.style.color = Visualization.INSERTED_COLOR
                 textExp = m21.expressions.TextExpression("inserted accidental")
@@ -913,7 +932,7 @@ class Visualization:
                     note2 = chord2.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                if note2.pitch.accidental:
+                if hasattr(note2, 'pitch') and note2.pitch.accidental:
                     note2.pitch.accidental.style.color = Visualization.INSERTED_COLOR
                 note2.style.color = Visualization.INSERTED_COLOR
                 textExp = m21.expressions.TextExpression("inserted accidental")
@@ -938,7 +957,7 @@ class Visualization:
                     note1 = chord1.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                if note1.pitch.accidental:
+                if hasattr(note1, 'pitch') and note1.pitch.accidental:
                     note1.pitch.accidental.style.color = Visualization.DELETED_COLOR
                 note1.style.color = Visualization.DELETED_COLOR
                 textExp = m21.expressions.TextExpression("deleted accidental")
@@ -958,7 +977,7 @@ class Visualization:
                     note2 = chord2.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                if note2.pitch.accidental:
+                if hasattr(note2, 'pitch') and note2.pitch.accidental:
                     note2.pitch.accidental.style.color = Visualization.DELETED_COLOR
                 note2.style.color = Visualization.DELETED_COLOR
                 textExp = m21.expressions.TextExpression("deleted accidental")
@@ -984,7 +1003,7 @@ class Visualization:
                     note1 = chord1.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                if note1.pitch.accidental:
+                if hasattr(note1, 'pitch') and note1.pitch.accidental:
                     note1.pitch.accidental.style.color = Visualization.CHANGED_COLOR
                 note1.style.color = Visualization.CHANGED_COLOR
                 textExp = m21.expressions.TextExpression("changed accidental")
@@ -1004,7 +1023,7 @@ class Visualization:
                     note2 = chord2.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                if note2.pitch.accidental:
+                if hasattr(note2, 'pitch') and note2.pitch.accidental:
                     note2.pitch.accidental.style.color = Visualization.CHANGED_COLOR
                 note2.style.color = Visualization.CHANGED_COLOR
                 textExp = m21.expressions.TextExpression("changed accidental")
