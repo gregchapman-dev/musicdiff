@@ -27,17 +27,18 @@ class DetailLevel(IntEnum):
     # Bit definitions are private:
     _GeneralNotes = 1
     _Extras = 2
-    _Style = 4
-    _Metadata = 8
+    _Lyrics = 4
+    _Style = 8
+    _Metadata = 16
 
     # Combinations are public (and supported on command line):
 
-    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
+    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations/lyrics)
     GeneralNotesOnly = _GeneralNotes
 
     # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
-    # TimeSignatures, TempoIndications, etc
-    AllObjects = GeneralNotesOnly | _Extras
+    # TimeSignatures, TempoIndications, Lyrics, etc
+    AllObjects = GeneralNotesOnly | _Extras | _Lyrics
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
@@ -58,6 +59,10 @@ class DetailLevel(IntEnum):
     @classmethod
     def includesOtherMusicObjects(cls, val: int) -> bool:
         return val & cls._Extras != 0
+
+    @classmethod
+    def includesLyrics(cls, val: int) -> bool:
+        return val & cls._Lyrics != 0
 
     @classmethod
     def includesStyle(cls, val: int) -> bool:

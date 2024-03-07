@@ -136,24 +136,25 @@ class AnnNote:
 
         # lyrics
         self.lyrics: list[str] = []
-        for lyric in general_note.lyrics:
-            if not lyric.rawText:
-                continue
-            lyricStr: str = ""
-            if lyric.number is not None:
-                lyricStr += f"number={lyric.number}"
-            if lyric._identifier is not None:
-                lyricStr += f" identifier={lyric._identifier}"
-            # ignore .syllabic and .text, what is visible is .rawText (and there
-            # are several .syllabic/.text combos that create the same .rawText).
-            lyricStr += f" rawText={lyric.rawText}"
-            if M21Utils.has_style(lyric):
-                styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
-                if styleDict:
-                    # sort styleDict before converting to string so we can compare strings
-                    styleDict = dict(sorted(styleDict.items()))
-                    lyricStr += f" style={styleDict}"
-            self.lyrics.append(lyricStr)
+        if DetailLevel.includesLyrics(detail):
+            for lyric in general_note.lyrics:
+                if not lyric.rawText:
+                    continue
+                lyricStr: str = ""
+                if lyric.number is not None:
+                    lyricStr += f"number={lyric.number}"
+                if lyric._identifier is not None:
+                    lyricStr += f" identifier={lyric._identifier}"
+                # ignore .syllabic and .text, what is visible is .rawText (and there
+                # are several .syllabic/.text combos that create the same .rawText).
+                lyricStr += f" rawText={lyric.rawText}"
+                if M21Utils.has_style(lyric):
+                    styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
+                    if styleDict:
+                        # sort styleDict before converting to string so we can compare strings
+                        styleDict = dict(sorted(styleDict.items()))
+                        lyricStr += f" style={styleDict}"
+                self.lyrics.append(lyricStr)
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
@@ -378,10 +379,9 @@ class AnnExtra:
             # no text, so none of the text style stuff should be added.
             smuflTextSuppressed: bool = False
             if (isinstance(extra, m21.tempo.MetronomeMark)
-                and not extra.textImplicit
-                and extra.text
-                and not self.content.startswith('MM:TX:')
-            ):
+                    and not extra.textImplicit
+                    and extra.text
+                    and not self.content.startswith('MM:TX:')):
                 smuflTextSuppressed = True
 
             self.styledict = M21Utils.obj_to_styledict(
