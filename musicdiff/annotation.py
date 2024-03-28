@@ -28,11 +28,11 @@ class AnnNote:
     def __init__(
         self,
         general_note: m21.note.GeneralNote,
-        offsetInMeasure: OffsetQL,
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
         tuplet_info: list[str],
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel = DetailLevel.Default,
+        qlOverride: OffsetQL | None = None  # only for invisible AnnNotes (spaces)
     ) -> None:
         """
         Extend music21 GeneralNote with some precomputed, easily compared information about it.
@@ -48,13 +48,15 @@ class AnnNote:
 
         """
         self.general_note: int | str = general_note.id
-        self.offsetInMeasure: OffsetQL = offsetInMeasure
         self.beamings: list[str] = enhanced_beam_list
         self.tuplets: list[str] = tuplet_list
         self.tuplet_info: list[str] = tuplet_info
+        self.invisible: bool = M21Utils.is_invisible(general_note)
+        self.qlOverride: OffsetQL | None = None
 
         self.stylestr: str = ''
         self.styledict: dict = {}
+
         if M21Utils.has_style(general_note):
             self.styledict = M21Utils.obj_to_styledict(general_note, detail)
         self.noteshape: str = 'normal'
@@ -70,7 +72,10 @@ class AnnNote:
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tied)
         self.pitches: list[tuple[str, str, bool]]
-        if isinstance(general_note, m21.chord.ChordBase):
+        if self.invisible:
+            self.pitches = [M21Utils.note2tuple(general_note, detail)]
+            self.qlOverride = qlOverride
+        elif isinstance(general_note, m21.chord.ChordBase):
             notes: tuple[m21.note.NotRest, ...] = general_note.notes
             if hasattr(general_note, "sortDiatonicAscending"):
                 # PercussionChords don't have this
@@ -85,6 +90,9 @@ class AnnNote:
             self.pitches = [M21Utils.note2tuple(general_note, detail)]
         else:
             raise TypeError("The generalNote must be a Chord, a Rest, a Note, or an Unpitched")
+
+        # Even if invisible, we annotate the rest of this, so we can compare invisible vs.
+        # visible notes without crashing.
 
         # note head
         type_number = Fraction(
@@ -170,6 +178,11 @@ class AnnNote:
         # add for the pitches
         for pitch in self.pitches:
             size += M21Utils.pitch_size(pitch)
+        if self.invisible:
+            return size
+
+        # ==== the rest is only for visible GeneralNotes ====
+
         # add for the dots
         size += self.dots * len(self.pitches)  # one dot for each note if it's a chord
         # add for the beamings
@@ -186,6 +199,9 @@ class AnnNote:
 
     def __repr__(self) -> str:
         # does consider the MEI id!
+        if self.invisible:
+            return (f"{self.pitches},{self.qlOverride}")
+
         return (
             f"{self.pitches},{self.note_head},{self.dots},B:{self.beamings},"
             + f"T:{self.tuplets},TI:{self.tuplet_info},{self.general_note},"
@@ -207,6 +223,11 @@ class AnnNote:
             string += ","
         string = string[:-1]  # delete the last comma
         string += "]"
+        if self.invisible:
+            string += f"invisible,ql={self.qlOverride}"
+            return string
+
+        # ==== The rest is only for visible GeneralNotes ====
         string += str(self.note_head)  # add for notehead
         for _ in range(self.dots):  # add for dots
             string += "*"
@@ -261,9 +282,6 @@ class AnnNote:
         if self.stemDirection != 'unspecified':
             string += f"stemDirection={self.stemDirection}"
 
-        # offset
-        string += f" {self.offsetInMeasure}"
-
         # and then the style fields
         for i, (k, v) in enumerate(self.styledict.items()):
             if i > 0:
@@ -285,25 +303,6 @@ class AnnNote:
     def __eq__(self, other) -> bool:
         # equality does not consider the MEI id!
         return self.precomputed_str == other.precomputed_str
-
-        # if not isinstance(other, AnnNote):
-        #     return False
-        # elif self.pitches != other.pitches:
-        #     return False
-        # elif self.note_head != other.note_head:
-        #     return False
-        # elif self.dots != other.dots:
-        #     return False
-        # elif self.beamings != other.beamings:
-        #     return False
-        # elif self.tuplets != other.tuplets:
-        #     return False
-        # elif self.articulations != other.articulations:
-        #     return False
-        # elif self.expressions != other.expressions:
-        #     return False
-        # else:
-        #     return True
 
 
 class AnnExtra:
@@ -465,18 +464,35 @@ class AnnVoice:
             self.tuplet_info = M21Utils.get_tuplets_info(note_list)
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
-            for i, n in enumerate(note_list):
-                offset: OffsetQL = n.getOffsetInHierarchy(enclosingMeasure)
-                self.annot_notes.append(
-                    AnnNote(
-                        n,
-                        offset,
-                        self.en_beam_list[i],
-                        self.tuplet_list[i],
-                        self.tuplet_info[i],
-                        detail
+            i: int = 0
+            while i < len(note_list):
+                n: m21.note.GeneralNote = note_list[i]
+                if M21Utils.is_invisible(n):
+                    # Gather up any other contiguous spaces' duration and
+                    # annotate all of them as one space (because three spaces
+                    # that add up to ql=4.0 are visually and musically
+                    # identical to one space with ql=4.0).
+                    ql: OffsetQL = n.duration.quarterLength
+                    i += 1
+                    while i < len(note_list) and M21Utils.is_invisible(note_list[i]):
+                        ql += note_list[i].duration.quarterLength
+                        i += 1
+
+                    # annotate just the first space (n), with the combined ql of all of them
+                    self.annot_notes.append(
+                        AnnNote(n, [], [], [], detail, qlOverride=ql)
                     )
-                )
+                else:
+                    self.annot_notes.append(
+                        AnnNote(
+                            n,
+                            self.en_beam_list[i],
+                            self.tuplet_list[i],
+                            self.tuplet_info[i],
+                            detail
+                        )
+                    )
+                    i += 1
 
         self.n_of_notes: int = len(self.annot_notes)
         self.precomputed_str: str = self.__str__()
@@ -490,9 +506,6 @@ class AnnVoice:
             return False
 
         return self.precomputed_str == other.precomputed_str
-        # return all(
-        #     [an[0] == an[1] for an in zip(self.annot_notes, other.annot_notes)]
-        # )
 
     def notation_size(self) -> int:
         """

@@ -865,6 +865,15 @@ class Comparison:
             )
         op_list.extend(op_list_pitch)
         cost += cost_pitch
+
+        # new for space support
+        if annNote1.invisible != annNote2.invisible:
+            cost += 1
+            op_list.append(("invisedit", annNote1, annNote2, 1))
+        if annNote1.qlOverride != annNote2.qlOverride:
+            cost += 1
+            op_list.append(("invisduredit", annNote1, annNote2, 1))
+
         # add for the notehead
         if annNote1.note_head != annNote2.note_head:
             cost += 1
@@ -937,12 +946,6 @@ class Comparison:
             )
             op_list.extend(lyr_op_list)
             cost += lyr_cost
-
-        # add for offset in quarter notes from start of measure (i.e. horizontal position)
-        if annNote1.offsetInMeasure != annNote2.offsetInMeasure:
-            cost += 1
-            op_list.append(("editnoteoffset", annNote1, annNote2, 1))
-
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:
             cost += 1
