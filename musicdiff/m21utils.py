@@ -256,19 +256,13 @@ class M21Utils:
 
     @staticmethod
     def note2tuple(
-        note: m21.note.GeneralNote,
+        note: m21.note.Note | m21.note.Unpitched | m21.note.Rest,
         detail: DetailLevel = DetailLevel.Default
     ) -> tuple[str, str, bool]:
         note_pitch: str
         note_accidental: str
         note_tie: bool = False
-
-        if note.hasStyleInformation and note.style.hideObjectOnPrint:
-            # treat as a Space
-            note_pitch = "S"
-            note_accidental = "None"
-
-        elif isinstance(note, m21.note.Rest):
+        if isinstance(note, m21.note.Rest):
             note_pitch = "R"
             note_accidental = "None"
             if DetailLevel.includesStyle(detail):
@@ -287,8 +281,7 @@ class M21Utils:
             # use the displayName (e.g. 'G4') with no accidental
             note_pitch = note.displayName
             note_accidental = "None"
-
-        elif isinstance(note, m21.note.Note):
+        else:
             # pitch name (including octave, but not accidental)
             note_pitch = note.pitch.step + str(note.pitch.octave)
 
@@ -323,21 +316,15 @@ class M21Utils:
                     note_accidental = note.pitch.accidental.name
 
             # TODO: we should append editorial style info to note_accidental here ('paren', etc)
-        else:
-            raise TypeError("note2Tuple can take a Chord, but only if it is invisible")
 
-
-        # add tie information (Unpitched has this, too, but not Rest or Space, and not
-        # meaningfully in Chord either)
-        if note_pitch == "S" or isinstance(note, (m21.note.Rest, m21.chord.ChordBase)):
+        # add tie information (Unpitched has this, too, but not Rest, and not meaningfully in
+        # Chord either)
+        if isinstance(note, (m21.note.Rest, m21.chord.ChordBase)):
             note_tie = False
         else:
             note_tie = note.tie is not None and note.tie.type in ("start", "continue")
         return (note_pitch, note_accidental, note_tie)
 
-    @staticmethod
-    def is_invisible(gn: m21.base.Music21Object) -> bool:
-        return gn.hasStyleInformation and gn.style.hideObjectOnPrint
 
     @staticmethod
     def pitch_size(pitch: tuple[str, str, bool]) -> int:
@@ -661,12 +648,16 @@ class M21Utils:
         out = []
         if allowGraceNotes:
             for n in measureOrVoice.getElementsByClass('GeneralNote'):
+                if n.style.hideObjectOnPrint:
+                    continue
                 if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
                     # skip non-realized ChordSymbols like it was an unsupported extra
                     continue
                 out.append(n)
         else:
             for n in measureOrVoice.getElementsByClass('GeneralNote'):
+                if n.style.hideObjectOnPrint:
+                    continue
                 if n.duration.quarterLength == 0:
                     continue
                 if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
@@ -686,6 +677,8 @@ class M21Utils:
         """
         out: list[m21.note.GeneralNote] = []
         for n in measureOrVoice.getElementsByClass('GeneralNote'):
+            if n.style.hideObjectOnPrint:
+                continue
             if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
                 # skip non-realized ChordSymbols like it was an unsupported extra
                 continue

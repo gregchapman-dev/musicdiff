@@ -20,7 +20,6 @@ import typing as t
 import music21 as m21
 
 from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote, AnnExtra, AnnStaffGroup
-from musicdiff import M21Utils
 
 
 class Visualization:
@@ -613,29 +612,6 @@ class Visualization:
                 else:
                     chord1.activeSite.insert(chord1.offset, textExp)
 
-            elif op[0] == "invisedit":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the visible note/rest/chord
-                # using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                if not M21Utils.is_invisible(note1):
-                    note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed rest/note visibility")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                if not M21Utils.is_invisible(note2):
-                    note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed rest/note visibility")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-
             elif op[0] == "headedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
@@ -809,14 +785,14 @@ class Visualization:
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
-            elif op[0] == "editnoteoffset":
+            elif op[0] == "editspace":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
                 note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note offset")
+                textExp = m21.expressions.TextExpression("changed space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note1.activeSite.insert(note1.offset, textExp)
 
@@ -824,7 +800,45 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note offset")
+                textExp = m21.expressions.TextExpression("changed space before")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "insspace":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("inserted space before")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("inserted space before")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+
+            elif op[0] == "delspace":
+                assert isinstance(op[1], AnnNote)
+                assert isinstance(op[2], AnnNote)
+                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("deleted space before")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("deleted space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
 
