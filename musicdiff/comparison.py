@@ -938,10 +938,17 @@ class Comparison:
             op_list.extend(lyr_op_list)
             cost += lyr_cost
 
-        # add for offset in quarter notes from start of measure (i.e. horizontal position)
-        if annNote1.offsetInMeasure != annNote2.offsetInMeasure:
+        # add for gap from previous note or start of measure if first note in measure
+        # (i.e. horizontal position shift)
+        if annNote1.gap_dur != annNote2.gap_dur:
             cost += 1
-            op_list.append(("editnoteoffset", annNote1, annNote2, 1))
+            if annNote1.gap_dur == 0:
+                op_list.append(("insspace", annNote1, annNote2, 1))
+            elif annNote2.gap_dur == 0:
+                op_list.append(("delspace", annNote1, annNote2, 1))
+            else:
+                # neither is zero
+                op_list.append(("editspace", annNote1, annNote2, 1))
 
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:

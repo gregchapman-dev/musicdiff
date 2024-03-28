@@ -19,7 +19,7 @@ from fractions import Fraction
 import typing as t
 
 import music21 as m21
-from music21.common.numberTools import OffsetQL
+from music21.common.numberTools import OffsetQL, opFrac
 
 from musicdiff import M21Utils
 from musicdiff import DetailLevel
@@ -28,7 +28,7 @@ class AnnNote:
     def __init__(
         self,
         general_note: m21.note.GeneralNote,
-        offsetInMeasure: OffsetQL,
+        gap_dur: OffsetQL,
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
         tuplet_info: list[str],
@@ -39,6 +39,8 @@ class AnnNote:
 
         Args:
             general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.
+            gap_dur (OffsetQL): gap since end of last note (or since start of measure, if
+                first note in measure).  Usually zero.
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
             tuplet_list (list): A list of tuplet info about this GeneralNote.
             detail (DetailLevel): What level of detail to use during the diff.
@@ -48,7 +50,7 @@ class AnnNote:
 
         """
         self.general_note: int | str = general_note.id
-        self.offsetInMeasure: OffsetQL = offsetInMeasure
+        self.gap_dur: OffsetQL = gap_dur
         self.beamings: list[str] = enhanced_beam_list
         self.tuplets: list[str] = tuplet_list
         self.tuplet_info: list[str] = tuplet_info
@@ -244,28 +246,31 @@ class AnnNote:
 
         if len(self.articulations) > 0:  # add for articulations
             for a in self.articulations:
-                string += a
+                string += ' ' + a
         if len(self.expressions) > 0:  # add for articulations
             for e in self.expressions:
-                string += e
+                string += ' ' + e
         if len(self.lyrics) > 0:  # add for lyrics
             for lyric in self.lyrics:
-                string += lyric
+                string += ' ' + lyric
 
         if self.noteshape != 'normal':
-            string += f"noteshape={self.noteshape}"
+            string += f" noteshape={self.noteshape}"
         if self.noteheadFill is not None:
-            string += f"noteheadFill={self.noteheadFill}"
+            string += f" noteheadFill={self.noteheadFill}"
         if self.noteheadParenthesis:
-            string += f"noteheadParenthesis={self.noteheadParenthesis}"
+            string += f" noteheadParenthesis={self.noteheadParenthesis}"
         if self.stemDirection != 'unspecified':
-            string += f"stemDirection={self.stemDirection}"
+            string += f" stemDirection={self.stemDirection}"
 
-        # offset
-        string += f" {self.offsetInMeasure}"
+        # gap_dur
+        if self.gap_dur != 0:
+            string += f" spaceBefore={self.gap_dur}"
 
         # and then the style fields
         for i, (k, v) in enumerate(self.styledict.items()):
+            if i == 0:
+                string += ' '
             if i > 0:
                 string += ","
             string += f"{k}={v}"
@@ -285,25 +290,6 @@ class AnnNote:
     def __eq__(self, other) -> bool:
         # equality does not consider the MEI id!
         return self.precomputed_str == other.precomputed_str
-
-        # if not isinstance(other, AnnNote):
-        #     return False
-        # elif self.pitches != other.pitches:
-        #     return False
-        # elif self.note_head != other.note_head:
-        #     return False
-        # elif self.dots != other.dots:
-        #     return False
-        # elif self.beamings != other.beamings:
-        #     return False
-        # elif self.tuplets != other.tuplets:
-        #     return False
-        # elif self.articulations != other.articulations:
-        #     return False
-        # elif self.expressions != other.expressions:
-        #     return False
-        # else:
-        #     return True
 
 
 class AnnExtra:
@@ -466,11 +452,21 @@ class AnnVoice:
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
             for i, n in enumerate(note_list):
-                offset: OffsetQL = n.getOffsetInHierarchy(enclosingMeasure)
+                expectedOffsetInMeas: OffsetQL = 0
+                if i > 0:
+                    prevNoteStart: OffsetQL = (
+                        note_list[i - 1].getOffsetInHierarchy(enclosingMeasure)
+                    )
+                    prevNoteDurQL: OffsetQL = (
+                        note_list[i - 1].duration.quarterLength
+                    )
+                    expectedOffsetInMeas = opFrac(prevNoteStart + prevNoteDurQL)
+
+                gapDurQL: OffsetQL = n.getOffsetInHierarchy(enclosingMeasure) - expectedOffsetInMeas
                 self.annot_notes.append(
                     AnnNote(
                         n,
-                        offset,
+                        gapDurQL,
                         self.en_beam_list[i],
                         self.tuplet_list[i],
                         self.tuplet_info[i],
@@ -490,9 +486,6 @@ class AnnVoice:
             return False
 
         return self.precomputed_str == other.precomputed_str
-        # return all(
-        #     [an[0] == an[1] for an in zip(self.annot_notes, other.annot_notes)]
-        # )
 
     def notation_size(self) -> int:
         """
