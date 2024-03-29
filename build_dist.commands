@@ -3,7 +3,7 @@
 # Fix any conflicts, add, commit, push to origin
 
 # Edit setup.py to change version number and maybe dependencies.
-# MAYBE README, too, if dependencies changed.
+# MAYBE README and pypi_README, too, if dependencies changed.
 # git add setup.py README etc
 # git commit
 # git push origin
