@@ -770,6 +770,11 @@ class M21Utils:
             )
         )
 
+        # ChordSym is derived from GeneralNote, so we have to go look for it separately
+        initialList.extend(
+            list(measure.recurse().getElementsByClass(m21.harmony.ChordSymbol))
+        )
+
         # Sort the initialList by offset in measure, so we can see which clefs are
         # duplicates from different voices. We use el.musicdiff_offset_in_measure
         # later, so compute it even if list is of length 1.
@@ -1356,6 +1361,12 @@ class M21Utils:
         return ''
 
     @staticmethod
+    def chordsymbol_to_string(
+        cs: m21.harmony.ChordSymbol
+    ) -> str:
+        return f'CSYM:{cs.figure}'
+
+    @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
         if rb.overrideDisplay:
             return f'END:{rb.number,rb.overrideDisplay}:len={len(rb)}'
@@ -1424,10 +1435,11 @@ class M21Utils:
             return M21Utils.tremolo_to_string(extra)
         if isinstance(extra, m21.layout.StaffLayout):
             return M21Utils.stafflayout_to_string(extra, detail)
-        if isinstance(
-                extra,
+        if isinstance(extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
             return M21Utils.arpeggiomark_to_string(extra)
+        if isinstance(extra, m21.harmony.ChordSymbol):
+            return M21Utils.chordsymbol_to_string(extra)
 
         # Page breaks and system breaks are only paid attention to at
         # DetailLevel.AllObjectsWithStyle, because they are entirely
