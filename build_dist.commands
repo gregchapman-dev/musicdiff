@@ -27,6 +27,8 @@ python3 -m twine upload --repository testpypi dist/*
 # If all looks good, then publish on pypi proper (no password needed):
 python3 -m twine upload dist/*
 
+# Go to github and make a release there as well (tag=vN.n.n)
+
 # git checkout develop
 # git merge --squash main
 # git commit
