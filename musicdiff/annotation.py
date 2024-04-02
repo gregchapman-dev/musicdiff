@@ -351,6 +351,10 @@ class AnnExtra:
             # measure, which are already being compared.
             self.offset = 0.0
             self.duration = float(extra.duration.quarterLength)
+        elif isinstance(extra, m21.harmony.ChordSymbol):
+            # we ignore duration for ChordSymbols, it is often 0.0 or 1.0, and meaningless.
+            self.offset = float(extra.getOffsetInHierarchy(measure))
+            self.duration = 0.0
         else:
             self.offset = float(extra.getOffsetInHierarchy(measure))
             self.duration = float(extra.duration.quarterLength)
