@@ -1364,7 +1364,22 @@ class M21Utils:
     def chordsymbol_to_string(
         cs: m21.harmony.ChordSymbol
     ) -> str:
-        return f'CSYM:{cs.figure}'
+        root: str = cs.root().name
+        bass: str = cs.bass().name
+        if bass == root:
+            bass = ''
+        else:
+            bass = '/' + bass
+
+        pitches: list[str] = [p.name for p in cs.pitches]
+        pitches = sorted(pitches)  # We don't care about order beyond which is bass
+        pitchStr: str = ''
+        if pitches:
+            pitchStr = ','.join(pitches)
+        if pitchStr:
+            pitchStr = ': [' + pitchStr + ']'
+
+        return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
 
     @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
