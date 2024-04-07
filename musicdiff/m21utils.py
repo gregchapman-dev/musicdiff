@@ -1364,6 +1364,12 @@ class M21Utils:
     def chordsymbol_to_string(
         cs: m21.harmony.ChordSymbol
     ) -> str:
+        if isinstance(cs, m21.harmony.NoChord):
+            printedStr: str = cs.chordKindStr
+            if printedStr:
+                printedStr = '(' + printedStr + ')'
+            return f'CSYM:N.C.{printedStr}'
+
         root: str = cs.root().name
         bass: str = cs.bass().name
         if bass == root:
@@ -1372,10 +1378,19 @@ class M21Utils:
             bass = '/' + bass
 
         pitches: list[str] = [p.name for p in cs.pitches]
-        pitches = sorted(pitches)  # We don't care about order beyond which is bass
+        # We don't care about order beyond which is bass
+        pitches = sorted(pitches)
+        # But let's start with root for readability
+        rootedPitches: list[str] = []
+        rootIndex: int = pitches.index(root)
+        for i in range(0, len(pitches)):
+            idx: int = rootIndex + i
+            idx %= len(pitches)  # wrap around
+            rootedPitches.append(pitches[idx])
+
         pitchStr: str = ''
         if pitches:
-            pitchStr = ','.join(pitches)
+            pitchStr = ','.join(rootedPitches)
         if pitchStr:
             pitchStr = ': [' + pitchStr + ']'
 
