@@ -1394,7 +1394,11 @@ class M21Utils:
         if pitchStr:
             pitchStr = ': [' + pitchStr + ']'
 
-        return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
+        # This one is for checking I made the right chordKind (as well), which is
+        # important for checking my importers/exporters, but not really for
+        # assessing OMR.
+        return f'CSYM:{root} {cs.chordKind}({cs.chordKindStr}){bass}{pitchStr}'
+        # return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
 
     @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
