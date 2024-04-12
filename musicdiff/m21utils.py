@@ -1398,12 +1398,7 @@ class M21Utils:
         # important for checking my importers/exporters, but not really for
         # assessing OMR.
         # return f'CSYM:{root} {cs.chordKind}({cs.chordKindStr}){bass}{pitchStr}'
-        text: str
-        if hasattr(cs, 'c21_full_text'):
-            text = cs.c21_full_text  # type: ignore
-        else:
-            text = cs.chordKindStr
-        return f'CSYM:{root}{text}{bass}{pitchStr}'
+        return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
 
     @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
