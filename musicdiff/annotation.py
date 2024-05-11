@@ -578,8 +578,6 @@ class AnnMeasure:
                     self.annot_notes.extend(ann_voice.annot_notes)
 
         self.n_of_voices: int = len(self.voices_list)
-        if self.n_of_voices:
-            print('hey')
 
         # for correct comparison, sort the annot_notes list by offset in measure, and
         # then by str(AnnNote), so that any list slices that all have the same offset
