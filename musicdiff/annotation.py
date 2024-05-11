@@ -28,6 +28,7 @@ class AnnNote:
     def __init__(
         self,
         general_note: m21.note.GeneralNote,
+        enclosingMeasure: m21.stream.Measure,
         gap_dur: OffsetQL,
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
@@ -39,6 +40,7 @@ class AnnNote:
 
         Args:
             general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.
+            enclosingMeasure (music21.stream.measure): the enclosing measure
             gap_dur (OffsetQL): gap since end of last note (or since start of measure, if
                 first note in measure).  Usually zero.
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
@@ -54,6 +56,10 @@ class AnnNote:
         self.beamings: list[str] = enhanced_beam_list
         self.tuplets: list[str] = tuplet_list
         self.tuplet_info: list[str] = tuplet_info
+
+        # Some other things that are not used in comparison, but rather in
+        # sorting AnnNote lists that come from multiple AnnVoices.
+        self.offsetInMeasure: OffsetQL = general_note.getOffsetInHierarchy(enclosingMeasure)
 
         self.stylestr: str = ''
         self.styledict: dict = {}
@@ -473,6 +479,7 @@ class AnnVoice:
                 self.annot_notes.append(
                     AnnNote(
                         n,
+                        enclosingMeasure,
                         gapDurQL,
                         self.en_beam_list[i],
                         self.tuplet_list[i],
@@ -554,20 +561,35 @@ class AnnMeasure:
         """
         self.measure: int | str = measure.id
         self.voices_list: list[AnnVoice] = []
+        self.annot_notes: list[AnnNote] = []
+        self.extras_list: list[AnnExtra] = []
 
         if len(measure.voices) == 0:
             # there is a single AnnVoice (i.e. in the music21 Measure there are no voices)
             ann_voice = AnnVoice(measure, measure, detail)
             if ann_voice.n_of_notes > 0:
                 self.voices_list.append(ann_voice)
+                self.annot_notes.extend(ann_voice.annot_notes)
         else:  # there are multiple voices (or an array with just one voice)
             for voice in measure.voices:
                 ann_voice = AnnVoice(voice, measure, detail)
                 if ann_voice.n_of_notes > 0:
                     self.voices_list.append(ann_voice)
-        self.n_of_voices: int = len(self.voices_list)
+                    self.annot_notes.extend(ann_voice.annot_notes)
 
-        self.extras_list: list[AnnExtra] = []
+        self.n_of_voices: int = len(self.voices_list)
+        if self.n_of_voices:
+            print('hey')
+
+        # for correct comparison, sort the annot_notes list by offset in measure, and
+        # then by str(AnnNote), so that any list slices that all have the same offset
+        # are sorted by AnnNote content (pitch(es), notehead, etc) which are ordered
+        # in str(AnnNote) somewhat by importance, so this gives us a great chance of
+        # matching note order in both scores (and order will be a perfect match in a
+        # measure where there is no diff, or only a missing trill or something like
+        # that).
+        self.annot_notes.sort(key=lambda e: (e.offsetInMeasure, e.precomputed_str))
+
         if DetailLevel.includesOtherMusicObjects(detail):
             for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
