@@ -29,7 +29,6 @@ class AnnNote:
         self,
         general_note: m21.note.GeneralNote,
         enclosingMeasure: m21.stream.Measure,
-        gap_dur: OffsetQL,
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
         tuplet_info: list[str],
@@ -41,8 +40,6 @@ class AnnNote:
         Args:
             general_note (music21.note.GeneralNote): The music21 note/chord/rest to extend.
             enclosingMeasure (music21.stream.measure): the enclosing measure
-            gap_dur (OffsetQL): gap since end of last note (or since start of measure, if
-                first note in measure).  Usually zero.
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
             tuplet_list (list): A list of tuplet info about this GeneralNote.
             detail (DetailLevel): What level of detail to use during the diff.
@@ -52,13 +49,17 @@ class AnnNote:
 
         """
         self.general_note: int | str = general_note.id
-        self.gap_dur: OffsetQL = gap_dur
+        # self.m21Note must be cleared before comparison, or all those deepcopies will
+        # be very expensive.  We do that at end of AnnMeasure, after we have used m21Note
+        # to figure out pre-note gaps in the measure's list of notes.
+        self.m21Note: m21.note.GeneralNote | None = general_note
+        self.gap_dur: OffsetQL = 0.
         self.beamings: list[str] = enhanced_beam_list
         self.tuplets: list[str] = tuplet_list
         self.tuplet_info: list[str] = tuplet_info
 
         # Some other things that are not used in comparison, but rather in
-        # sorting AnnNote lists that come from multiple AnnVoices.
+        # sorting AnnNote lists that come from multiple VoiceAnnNotes.
         self.offsetInMeasure: OffsetQL = general_note.getOffsetInHierarchy(enclosingMeasure)
 
         self.stylestr: str = ''
@@ -425,7 +426,7 @@ class AnnExtra:
         return self.precomputed_str == other.precomputed_str
 
 
-class AnnVoice:
+class VoiceAnnNotes:
     def __init__(
         self,
         voice: m21.stream.Voice | m21.stream.Measure,
@@ -433,108 +434,51 @@ class AnnVoice:
         detail: DetailLevel = DetailLevel.Default
     ) -> None:
         """
-        Extend music21 Voice with some precomputed, easily compared information about it.
+        This is not really an annotated voice, but it gathers up AnnNotes from a real voice
+        (or a measure with no voices).
+        The reason we have to do this from a real voice is because the beams and tuplets
+        are encoded in music21 in a way that requires walking through the beamed/tupleted
+        notes in order, so notes from other voices would confuse things.
 
         Args:
             voice (music21.stream.Voice or Measure): The music21 voice to extend. This
                 can be a Measure, but only if it contains no Voices.
+            enclosingMeasure (music21.stream.Measure): the measure that contains the voice
+                (or, if voice is a measure, enclosingMeasure is voice)
             detail (DetailLevel): What level of detail to use during the diff.
                 Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
                 or Default (Default is currently equivalent to AllObjects).
         """
-        self.voice: int | str = voice.id
         note_list: list[m21.note.GeneralNote] = []
 
         if DetailLevel.includesGeneralNotes(detail):
             note_list = M21Utils.get_notes_and_gracenotes(voice)
 
-        if not note_list:
-            self.en_beam_list: list[list[str]] = []
-            self.tuplet_list: list[list[str]] = []
-            self.tuplet_info: list[list[str]] = []
-            self.annot_notes: list[AnnNote] = []
-        else:
-            self.en_beam_list = M21Utils.get_enhance_beamings(
+        self.annot_notes = []
+
+        if note_list:
+            en_beam_list = M21Utils.get_enhance_beamings(
                 note_list
             )  # beams and type (type for note shorter than quarter notes)
-            self.tuplet_list = M21Utils.get_tuplets_type(
+
+            tuplet_list = M21Utils.get_tuplets_type(
                 note_list
             )  # corrected tuplets (with "start" and "continue")
-            self.tuplet_info = M21Utils.get_tuplets_info(note_list)
-            # create a list of notes with beaming and tuplets information attached
-            self.annot_notes = []
-            for i, n in enumerate(note_list):
-                expectedOffsetInMeas: OffsetQL = 0
-                if i > 0:
-                    prevNoteStart: OffsetQL = (
-                        note_list[i - 1].getOffsetInHierarchy(enclosingMeasure)
-                    )
-                    prevNoteDurQL: OffsetQL = (
-                        note_list[i - 1].duration.quarterLength
-                    )
-                    expectedOffsetInMeas = opFrac(prevNoteStart + prevNoteDurQL)
+            tuplet_info = M21Utils.get_tuplets_info(note_list)
 
-                gapDurQL: OffsetQL = n.getOffsetInHierarchy(enclosingMeasure) - expectedOffsetInMeas
+            # create a list of notes with beaming and tuplets information attached
+            for i, n in enumerate(note_list):
                 self.annot_notes.append(
                     AnnNote(
                         n,
                         enclosingMeasure,
-                        gapDurQL,
-                        self.en_beam_list[i],
-                        self.tuplet_list[i],
-                        self.tuplet_info[i],
+                        en_beam_list[i],
+                        tuplet_list[i],
+                        tuplet_info[i],
                         detail
                     )
                 )
-
-        self.n_of_notes: int = len(self.annot_notes)
-        self.precomputed_str: str = self.__str__()
-
-    def __eq__(self, other) -> bool:
-        # equality does not consider MEI id!
-        if not isinstance(other, AnnVoice):
-            return False
-
-        if len(self.annot_notes) != len(other.annot_notes):
-            return False
-
-        return self.precomputed_str == other.precomputed_str
-
-    def notation_size(self) -> int:
-        """
-        Compute a measure of how many symbols are displayed in the score for this `AnnVoice`.
-
-        Returns:
-            int: The notation size of the annotated voice
-        """
-        return sum([an.notation_size() for an in self.annot_notes])
-
-    def __repr__(self) -> str:
-        return self.annot_notes.__repr__()
-
-    def __str__(self) -> str:
-        string = "["
-        for an in self.annot_notes:
-            string += str(an)
-            string += ","
-
-        if string[-1] == ",":
-            # delete the last comma
-            string = string[:-1]
-
-        string += "]"
-        return string
-
-    def get_note_ids(self) -> list[str | int]:
-        """
-        Computes a list of the GeneralNote ids for this `AnnVoice`.
-
-        Returns:
-            [int]: A list containing the GeneralNote ids contained in this voice
-        """
-        return [an.general_note for an in self.annot_notes]
-
 
 class AnnMeasure:
     def __init__(
@@ -560,24 +504,19 @@ class AnnMeasure:
                 or Default (Default is currently equivalent to AllObjects).
         """
         self.measure: int | str = measure.id
-        self.voices_list: list[AnnVoice] = []
         self.annot_notes: list[AnnNote] = []
         self.extras_list: list[AnnExtra] = []
 
         if len(measure.voices) == 0:
-            # there is a single AnnVoice (i.e. in the music21 Measure there are no voices)
-            ann_voice = AnnVoice(measure, measure, detail)
-            if ann_voice.n_of_notes > 0:
-                self.voices_list.append(ann_voice)
+            # there is a single VoiceAnnNotes (i.e. in the music21 Measure there are no voices)
+            ann_voice = VoiceAnnNotes(measure, measure, detail)
+            if ann_voice.annot_notes:
                 self.annot_notes.extend(ann_voice.annot_notes)
         else:  # there are multiple voices (or an array with just one voice)
             for voice in measure.voices:
-                ann_voice = AnnVoice(voice, measure, detail)
-                if ann_voice.n_of_notes > 0:
-                    self.voices_list.append(ann_voice)
+                ann_voice = VoiceAnnNotes(voice, measure, detail)
+                if ann_voice.annot_notes:
                     self.annot_notes.extend(ann_voice.annot_notes)
-
-        self.n_of_voices: int = len(self.voices_list)
 
         # for correct comparison, sort the annot_notes list by offset in measure, and
         # then by str(AnnNote), so that any list slices that all have the same offset
@@ -588,6 +527,36 @@ class AnnMeasure:
         # that).
         self.annot_notes.sort(key=lambda e: (e.offsetInMeasure, e.precomputed_str))
 
+        # Now that we are in "canonical" sort order, figure out the pre-note gaps
+        for i, an in enumerate(self.annot_notes):
+            thisNote: m21.note.GeneralNote | None = an.m21Note
+            if thisNote is None:
+                # should never happen, but...
+                continue
+
+            expectedOffsetInMeas: OffsetQL = 0  # if no previous note
+            if i > 0:
+                prevNote: m21.note.GeneralNote | None = self.annot_notes[i - 1].m21Note
+                if prevNote is not None:
+                    # should always be True
+                    prevNoteStart: OffsetQL = (
+                        prevNote.getOffsetInHierarchy(measure)
+                    )
+                    prevNoteDurQL: OffsetQL = (
+                        prevNote.duration.quarterLength
+                    )
+                    expectedOffsetInMeas = opFrac(prevNoteStart + prevNoteDurQL)
+
+            gapDurQL: OffsetQL = (
+                thisNote.getOffsetInHierarchy(measure) - expectedOffsetInMeas
+            )
+            an.gap_dur = gapDurQL
+
+        # now we clear out all an.m21Note so we don't deepcopy them
+        # a bazillion times during comparison.
+        for an in self.annot_notes:
+            an.m21Note = None
+
         if DetailLevel.includesOtherMusicObjects(detail):
             for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
@@ -596,26 +565,28 @@ class AnnMeasure:
             # that all have the same offset are sorted alphabetically.
             self.extras_list.sort(key=lambda e: (e.offset, str(e)))
 
+        self.n_of_objects = len(self.annot_notes) + len(self.extras_list)
+
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())
         self.precomputed_repr: int = hash(self.__repr__())
 
     def __str__(self) -> str:
         return (
-            str([str(v) for v in self.voices_list])
+            str([str(n) for n in self.annot_notes])
             + ' Extras:'
             + str([str(e) for e in self.extras_list])
         )
 
     def __repr__(self) -> str:
-        return self.voices_list.__repr__() + ' Extras:' + self.extras_list.__repr__()
+        return self.annot_notes.__repr__() + ' Extras:' + self.extras_list.__repr__()
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
         if not isinstance(other, AnnMeasure):
             return False
 
-        if len(self.voices_list) != len(other.voices_list):
+        if len(self.annot_notes) != len(other.annot_notes):
             return False
 
         if len(self.extras_list) != len(other.extras_list):
@@ -632,7 +603,7 @@ class AnnMeasure:
             int: The notation size of the annotated measure
         """
         return (
-            sum([v.notation_size() for v in self.voices_list])
+            sum([n.notation_size() for n in self.annot_notes])
             + sum([e.notation_size() for e in self.extras_list])
         )
 
@@ -644,8 +615,8 @@ class AnnMeasure:
             [int]: A list containing the GeneralNote ids contained in this measure
         """
         notes_id = []
-        for v in self.voices_list:
-            notes_id.extend(v.get_note_ids())
+        for n in self.annot_notes:
+            notes_id.extend(n.get_note_ids())
         return notes_id
 
 
@@ -676,7 +647,7 @@ class AnnPart:
         for measure in part.getElementsByClass("Measure"):
             # create the bar objects
             ann_bar = AnnMeasure(measure, part, score, spannerBundle, detail)
-            if ann_bar.n_of_voices > 0:
+            if ann_bar.n_of_objects > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars: int = len(self.bar_list)
         # Precomputed str to speed up the computation.

@@ -20,7 +20,7 @@ from difflib import ndiff
 # import typing as t
 import numpy as np
 
-from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnStaffGroup
+from musicdiff.annotation import AnnScore, AnnNote, AnnExtra, AnnStaffGroup
 from musicdiff.annotation import AnnMetadataItem
 from musicdiff import M21Utils
 
@@ -417,7 +417,8 @@ class Comparison:
         )
         if (
             original[0] == compare_to[0]
-        ):  # to avoid performing the _voices_coupling_recursive if it's not needed
+        ):  # to avoid performing the _extras_diff_lin and
+            # _inside_bars_diff_lin if it's not needed
             inside_bar_op_list = []
             inside_bar_cost = 0
         else:
@@ -427,10 +428,11 @@ class Comparison:
                 original[0].extras_list, compare_to[0].extras_list
             )
 
-            # run the voice coupling algorithm, and add to inside_bar_op_list and inside_bar_cost
-            inside_bar_op_list, inside_bar_cost = Comparison._voices_coupling_recursive(
-                original[0].voices_list, compare_to[0].voices_list
-            )
+            # diff all the bar notes
+            inside_bar_op_list, inside_bar_cost = Comparison._inside_bars_diff_lin(
+                original[0].annot_notes, compare_to[0].annot_notes
+            )  # compute the distance from original[0] and compare_to[i]
+
             inside_bar_op_list.extend(extras_op_list)
             inside_bar_cost += extras_cost
         cost_dict["editbar"] += inside_bar_cost
@@ -1099,64 +1101,6 @@ class Comparison:
             )
         cost["edit" + which] += generic_diff_cost
         op_list["edit" + which].extend(generic_diff_op_list)
-        # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
-        return out
-
-    @staticmethod
-    def _voices_coupling_recursive(original: list[AnnVoice], compare_to: list[AnnVoice]):
-        """
-        Compare all the possible voices permutations, considering also deletion and
-        insertion (equation on office lens).
-        original [list] -- a list of Voice
-        compare_to [list] -- a list of Voice
-        """
-        if len(original) == 0 and len(compare_to) == 0:  # stop the recursion
-            return [], 0
-
-        if len(original) == 0:
-            # insertion
-            op_list, cost = Comparison._voices_coupling_recursive(original, compare_to[1:])
-            # add for the inserted voice
-            op_list.append(("voiceins", None, compare_to[0], compare_to[0].notation_size()))
-            cost += compare_to[0].notation_size()
-            return op_list, cost
-
-        if len(compare_to) == 0:
-            # deletion
-            op_list, cost = Comparison._voices_coupling_recursive(original[1:], compare_to)
-            # add for the deleted voice
-            op_list.append(("voicedel", original[0], None, original[0].notation_size()))
-            cost += original[0].notation_size()
-            return op_list, cost
-
-        cost = {}
-        op_list = {}
-        # deletion
-        op_list["voicedel"], cost["voicedel"] = Comparison._voices_coupling_recursive(
-            original[1:], compare_to
-        )
-        op_list["voicedel"].append(
-            ("voicedel", original[0], None, original[0].notation_size())
-        )
-        cost["voicedel"] += original[0].notation_size()
-        for i, c in enumerate(compare_to):
-            # substitution
-            (
-                op_list["voicesub" + str(i)],
-                cost["voicesub" + str(i)],
-            ) = Comparison._voices_coupling_recursive(
-                original[1:], compare_to[:i] + compare_to[i + 1:]
-            )
-            if (
-                compare_to[0] != original[0]
-            ):  # add the cost of the sub and the operations from inside_bar_diff
-                op_list_inside_bar, cost_inside_bar = Comparison._inside_bars_diff_lin(
-                    original[0].annot_notes, c.annot_notes
-                )  # compute the distance from original[0] and compare_to[i]
-                op_list["voicesub" + str(i)].extend(op_list_inside_bar)
-                cost["voicesub" + str(i)] += cost_inside_bar
         # compute the minimum of the possibilities
         min_key = min(cost, key=cost.get)
         out = op_list[min_key], cost[min_key]

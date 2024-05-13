@@ -19,7 +19,7 @@ import typing as t
 
 import music21 as m21
 
-from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote, AnnExtra, AnnStaffGroup
+from musicdiff.annotation import AnnMeasure, AnnNote, AnnExtra, AnnStaffGroup
 
 
 class Visualization:
@@ -86,41 +86,6 @@ class Visualization:
                     Visualization.DELETED_COLOR
                 )  # this apparently does nothing
                 for el in measure1.recurse().notesAndRests:
-                    el.style.color = Visualization.DELETED_COLOR
-
-            # voices
-            elif op[0] == "voiceins":
-                assert isinstance(op[2], AnnVoice)
-                # color all the notes in the inserted score2 voice
-                # using Visualization.INSERTED_COLOR
-                voice2 = score2.recurse().getElementById(op[2].voice)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert voice2 is not None
-                textExp = m21.expressions.TextExpression("inserted voice")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                voice2.insert(0, textExp)
-
-                voice2.style.color = (
-                    Visualization.INSERTED_COLOR
-                )  # this apparently does nothing
-                for el in voice2.recurse().notesAndRests:
-                    el.style.color = Visualization.INSERTED_COLOR
-
-            elif op[0] == "voicedel":
-                assert isinstance(op[1], AnnVoice)
-                # color all the notes in the deleted score1 voice
-                # using Visualization.DELETED_COLOR
-                voice1 = score1.recurse().getElementById(op[1].voice)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert voice1 is not None
-                textExp = m21.expressions.TextExpression("deleted voice")
-                textExp.style.color = Visualization.DELETED_COLOR
-                voice1.insert(0, textExp)
-
-                voice1.style.color = (
-                    Visualization.DELETED_COLOR
-                )  # this apparently does nothing
-                for el in voice1.recurse().notesAndRests:
                     el.style.color = Visualization.DELETED_COLOR
 
             # extra
@@ -1442,7 +1407,7 @@ class Visualization:
 
             else:
                 print(
-                    f"Annotation type {op[0]} not yet supported for visualization",
+                    f"Annotation type {op[0]} not supported for visualization",
                     file=sys.stderr
                 )
 
