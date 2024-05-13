@@ -518,44 +518,9 @@ class AnnMeasure:
                 if ann_voice.annot_notes:
                     self.annot_notes.extend(ann_voice.annot_notes)
 
-        # for correct comparison, sort the annot_notes list by offset in measure, and
-        # then by str(AnnNote), so that any list slices that all have the same offset
-        # are sorted by AnnNote content (pitch(es), notehead, etc) which are ordered
-        # in str(AnnNote) somewhat by importance, so this gives us a great chance of
-        # matching note order in both scores (and order will be a perfect match in a
-        # measure where there is no diff, or only a missing trill or something like
-        # that).
-        self.annot_notes.sort(key=lambda e: (e.offsetInMeasure, e.precomputed_str))
-
-        # Now that we are in "canonical" sort order, figure out the pre-note gaps
-        for i, an in enumerate(self.annot_notes):
-            thisNote: m21.note.GeneralNote | None = an.m21Note
-            if thisNote is None:
-                # should never happen, but...
-                continue
-
-            expectedOffsetInMeas: OffsetQL = 0  # if no previous note
-            if i > 0:
-                prevNote: m21.note.GeneralNote | None = self.annot_notes[i - 1].m21Note
-                if prevNote is not None:
-                    # should always be True
-                    prevNoteStart: OffsetQL = (
-                        prevNote.getOffsetInHierarchy(measure)
-                    )
-                    prevNoteDurQL: OffsetQL = (
-                        prevNote.duration.quarterLength
-                    )
-                    expectedOffsetInMeas = opFrac(prevNoteStart + prevNoteDurQL)
-
-            gapDurQL: OffsetQL = (
-                thisNote.getOffsetInHierarchy(measure) - expectedOffsetInMeas
-            )
-            an.gap_dur = gapDurQL
-
-        # now we clear out all an.m21Note so we don't deepcopy them
-        # a bazillion times during comparison.
-        for an in self.annot_notes:
-            an.m21Note = None
+        # For most reliable comparison, we sort the annot_notes list by canonical voice
+        # (not by original voice).
+        self.computeCanonicalVoicing()
 
         if DetailLevel.includesOtherMusicObjects(detail):
             for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
@@ -570,6 +535,95 @@ class AnnMeasure:
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())
         self.precomputed_repr: int = hash(self.__repr__())
+
+    def computeCanonicalVoicing(self) -> None:
+        # First sort by offset (and str(AnnNote)) so we can start with a canonical order.
+        self.annot_notes.sort(key=lambda e: (e.offsetInMeasure, e.precomputed_str))
+
+        # Then walk the list, splitting overlapping notes into multiple voices/lists in
+        # a canonical (predictable) way.
+        voices: list[list[AnnNote]] = []
+        for an in self.annot_notes:
+            placedIt: bool = False
+
+            # find a voice where we can append perfectly
+            for voice in voices:
+                if self.noteFitsExactlyInVoice(an, voice):
+                    voice.append(an)
+                    placedIt = True
+                    break
+
+            if not placedIt:
+                # OK, then find a voice where we can append with a gap
+                for voice in voices:
+                    if self.noteFitsInVoiceWithGap(an, voice):
+                        voice.append(an)
+                        placedIt = True
+                        break
+
+            if not placedIt:
+                # OK, fine, start a new voice
+                voices.append([])
+                voices[-1].append(an)
+
+        # Then walk each voice, computing the pre-note gaps.
+        # Now that we are in "canonical" voice order, figure out the pre-note gaps
+        for voice in voices:
+            for i, an in enumerate(voice):
+                thisNote: m21.note.GeneralNote | None = an.m21Note
+                if thisNote is None:
+                    # should never happen, but...
+                    continue
+
+                expectedOffsetInMeas: OffsetQL = 0  # if no previous note
+                if i > 0:
+                    prevAn: AnnNote = voice[i - 1]
+                    prevNote: m21.note.GeneralNote | None = voice[i - 1].m21Note
+                    if t.TYPE_CHECKING:
+                        assert prevNote is not None
+                    expectedOffsetInMeas = opFrac(
+                        prevAn.offsetInMeasure + prevNote.quarterLength
+                    )
+
+                gapDurQL: OffsetQL = an.offsetInMeasure - expectedOffsetInMeas
+                an.gap_dur = gapDurQL
+
+        # Then recombine the canonical lists into one
+        self.annot_notes = []
+        for voice in voices:
+            self.annot_notes.extend(voice)
+
+        # now we clear out all an.m21Note so we don't deepcopy them
+        # a bazillion times during comparison.
+        for an in self.annot_notes:
+            an.m21Note = None
+
+    def noteFitsInVoice(self, an: AnnNote, voice: list[AnnNote], gapAllowed: bool = True) -> bool:
+        lastAnEndOffset: OffsetQL = 0.
+        if voice:
+            lastAn: AnnNote = voice[-1]
+            lastNote: m21.note.GeneralNote | None = lastAn.m21Note
+            if t.TYPE_CHECKING:
+                assert lastNote is not None
+            lastAnEndOffset = opFrac(
+                lastAn.offsetInMeasure + lastNote.quarterLength
+            )
+
+        if not gapAllowed:
+            if an.offsetInMeasure == lastAnEndOffset:
+                return True
+            return False
+
+        # gap is allowed
+        if an.offsetInMeasure >= lastAnEndOffset:
+            return True
+        return False
+
+    def noteFitsExactlyInVoice(self, an: AnnNote, voice: list[AnnNote]) -> bool:
+        return self.noteFitsInVoice(an, voice, gapAllowed=False)
+
+    def noteFitsInVoiceWithGap(self, an: AnnNote, voice: list[AnnNote]) -> bool:
+        return self.noteFitsInVoice(an, voice, gapAllowed=True)
 
     def __str__(self) -> str:
         return (
