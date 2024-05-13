@@ -520,6 +520,7 @@ class AnnMeasure:
 
         # For most reliable comparison, we sort the annot_notes list by canonical voice
         # (not by original voice).
+        # print(f'measure #{measure.measureNumber}')
         self.computeCanonicalVoicing()
 
         if DetailLevel.includesOtherMusicObjects(detail):
@@ -538,7 +539,23 @@ class AnnMeasure:
 
     def computeCanonicalVoicing(self) -> None:
         # First sort by offset (and str(AnnNote)) so we can start with a canonical order.
+        # print('')
+        # print('before canonical sort')
+        # for an in self.annot_notes:
+        #     print(
+        #         f'{an}, offset={an.offsetInMeasure}, '
+        #         f'ql={self.getVisualDurationQL(an.m21Note.duration)}'
+        #     )
+
         self.annot_notes.sort(key=lambda e: (e.offsetInMeasure, e.precomputed_str))
+
+        # print('')
+        # print('after canonical sort')
+        # for an in self.annot_notes:
+        #     print(
+        #         f'{an}, offset={an.offsetInMeasure}, '
+        #         f'ql={self.getVisualDurationQL(an.m21Note.duration)}'
+        #     )
 
         # Then walk the list, splitting overlapping notes into multiple voices/lists in
         # a canonical (predictable) way.
@@ -582,7 +599,7 @@ class AnnMeasure:
                     if t.TYPE_CHECKING:
                         assert prevNote is not None
                     expectedOffsetInMeas = opFrac(
-                        prevAn.offsetInMeasure + prevNote.quarterLength
+                        prevAn.offsetInMeasure + self.getVisualDurationQL(prevNote.duration)
                     )
 
                 gapDurQL: OffsetQL = an.offsetInMeasure - expectedOffsetInMeas
@@ -591,12 +608,42 @@ class AnnMeasure:
         # Then recombine the canonical lists into one
         self.annot_notes = []
         for voice in voices:
+            # print('')
+            # print(f'voice #{v}')
+            # for an in self.annot_notes:
+            #     print(
+            #         f'{an}, offset={an.offsetInMeasure}, '
+            #         f'ql={self.getVisualDurationQL(an.m21Note.duration)}'
+            #     )
             self.annot_notes.extend(voice)
+
+        # print('')
+        # print('after canonical voicing')
+        # for an in self.annot_notes:
+        #     print(
+        #         f'{an}, offset={an.offsetInMeasure}, '
+        #         f'ql={self.getVisualDurationQL(an.m21Note.duration)}'
+        #     )
 
         # now we clear out all an.m21Note so we don't deepcopy them
         # a bazillion times during comparison.
         for an in self.annot_notes:
             an.m21Note = None
+
+        # print('')
+        # print('')
+
+    @staticmethod
+    def getVisualDurationQL(dur: m21.duration.Duration) -> OffsetQL:
+        tuplets: list[m21.duration.Tuplet] | None = None
+        if dur.tuplets:
+            tuplets = list(dur.tuplets)
+
+        return m21.duration.convertTypeToQuarterLength(
+            dur.type,
+            dur.dots,
+            tuplets
+        )
 
     def noteFitsInVoice(self, an: AnnNote, voice: list[AnnNote], gapAllowed: bool = True) -> bool:
         lastAnEndOffset: OffsetQL = 0.
@@ -606,7 +653,7 @@ class AnnMeasure:
             if t.TYPE_CHECKING:
                 assert lastNote is not None
             lastAnEndOffset = opFrac(
-                lastAn.offsetInMeasure + lastNote.quarterLength
+                lastAn.offsetInMeasure + self.getVisualDurationQL(lastNote.duration)
             )
 
         if not gapAllowed:
@@ -937,6 +984,7 @@ class AnnScore:
             # create and add the AnnPart object to part_list
             # and to part_to_index dict
             part_to_index[part] = idx
+            # print(f'part #{idx}')
             ann_part = AnnPart(part, score, spannerBundle, detail)
             self.part_list.append(ann_part)
 
