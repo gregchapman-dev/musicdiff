@@ -24,53 +24,72 @@ import music21 as m21
 from music21.common.types import OffsetQL
 
 class DetailLevel(IntEnum):
-    # Bit definitions are private:
-    _GeneralNotes = 1
-    _Extras = 2
-    _Lyrics = 4
-    _Style = 8
-    _Metadata = 16
+    # Bit definitions (can be |'ed with eachother and with common combinations):
 
-    # Combinations are public (and supported on command line):
+    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
+    GeneralNotes = 1
 
-    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations/lyrics)
-    GeneralNotesOnly = _GeneralNotes
+    # If Voicing is on, we compare which voice and which chord each note is in.  By default we
+    # ignore the containing voice and chord, and just compare the individual notes themselves.
+    Voicing = 2
 
-    # Add in the "extras": Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
-    # TimeSignatures, TempoIndications, Lyrics, etc
-    AllObjects = GeneralNotesOnly | _Extras | _Lyrics
+    # Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
+    # TimeSignatures, TempoIndications, etc
+    Extras = 4
+
+    # Lyrics
+    Lyrics = 8
+
+    # Typographical stuff: placement, stem direction, color, italic/bold, etc
+    Style = 16
+
+    # Metadata: title, composer, etc
+    Metadata = 32
+
+    # Common combinations supported as names on the command line:
+
+    # Just the notes (chords, rests, unpitched, etc) and their beams/expressions/articulations
+    GeneralNotesOnly = GeneralNotes
+
+    # Add in the "extras" and lyrics: Clefs, TextExpressions, Key/KeySignatures,
+    # Barlines/Repeats, TimeSignatures, TempoIndications, Lyrics, etc
+    AllObjects = GeneralNotesOnly | Extras | Lyrics
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
-    AllObjectsWithStyle = AllObjects | _Style
+    AllObjectsWithStyle = AllObjects | Style
 
     # Various options that include Metadata:
-    MetadataOnly = _Metadata
-    GeneralNotesAndMetadata = GeneralNotesOnly | _Metadata
-    AllObjectsAndMetadata = AllObjects | _Metadata
-    AllObjectsWithStyleAndMetadata = AllObjectsWithStyle | _Metadata
+    MetadataOnly = Metadata
+    GeneralNotesAndMetadata = GeneralNotesOnly | Metadata
+    AllObjectsAndMetadata = AllObjects | Metadata
+    AllObjectsWithStyleAndMetadata = AllObjectsWithStyle | Metadata
 
     Default = AllObjects
 
     @classmethod
     def includesGeneralNotes(cls, val: int) -> bool:
-        return val & cls._GeneralNotes != 0
+        return val & cls.GeneralNotes != 0
 
     @classmethod
     def includesOtherMusicObjects(cls, val: int) -> bool:
-        return val & cls._Extras != 0
+        return val & cls.Extras != 0
 
     @classmethod
     def includesLyrics(cls, val: int) -> bool:
-        return val & cls._Lyrics != 0
+        return val & cls.Lyrics != 0
 
     @classmethod
     def includesStyle(cls, val: int) -> bool:
-        return val & cls._Style != 0
+        return val & cls.Style != 0
 
     @classmethod
     def includesMetadata(cls, val: int) -> bool:
-        return val & cls._Metadata != 0
+        return val & cls.Metadata != 0
+
+    @classmethod
+    def includesVoicing(cls, val: int) -> bool:
+        return val & cls.Voicing != 0
 
 
 class M21Utils:
@@ -637,52 +656,29 @@ class M21Utils:
 
 
     @staticmethod
-    def get_notes(
-        measureOrVoice: m21.stream.Measure | m21.stream.Voice,
-        allowGraceNotes=False
-    ) -> list[m21.note.GeneralNote]:
-        """
-        :param measureOrVoice: a music21 measure or voice
-        :return: a list of (visible) notes, eventually excluding grace notes, inside the measure
-        """
-        out = []
-        if allowGraceNotes:
-            for n in measureOrVoice.getElementsByClass('GeneralNote'):
-                if n.style.hideObjectOnPrint:
-                    continue
-                if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
-                    # skip non-realized ChordSymbols like it was an unsupported extra
-                    continue
-                out.append(n)
-        else:
-            for n in measureOrVoice.getElementsByClass('GeneralNote'):
-                if n.style.hideObjectOnPrint:
-                    continue
-                if n.duration.quarterLength == 0:
-                    continue
-                if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
-                    # skip non-realized ChordSymbols like it was an unsupported extra
-                    continue
-                out.append(n)
-        return out
-
-
-    @staticmethod
     def get_notes_and_gracenotes(
-        measureOrVoice: m21.stream.Measure | m21.stream.Voice
+        measureOrVoice: m21.stream.Measure | m21.stream.Voice,
+        recurse: bool = False
     ) -> list[m21.note.GeneralNote]:
         """
         :param measureOrVoice: a music21 measure or voice
         :return: a list of visible notes, including grace notes, inside the measure
         """
         out: list[m21.note.GeneralNote] = []
-        for n in measureOrVoice.getElementsByClass('GeneralNote'):
+        gnIterator: m21.stream.iterator.StreamIterator | m21.stream.iterator.RecursiveIterator
+        if recurse:
+            gnIterator = measureOrVoice.recurse().getElementsByClass('GeneralNote')
+        else:
+            gnIterator = measureOrVoice.getElementsByClass('GeneralNote')
+
+        for n in gnIterator:
             if n.style.hideObjectOnPrint:
                 continue
             if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
-                # skip non-realized ChordSymbols like it was an unsupported extra
+                # skip non-realized ChordSymbols (they are extras)
                 continue
             out.append(n)
+
         return out
 
     @staticmethod
@@ -757,7 +753,7 @@ class M21Utils:
     ) -> list[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
         # substreams/Voices), skipping any Streams, and GeneralNotes (which are returned
-        # from get_notes/get_notes_and_gracenotes).  We're looking for things like Clefs,
+        # from get_notes_and_gracenotes).  We're looking for things like Clefs,
         # TextExpressions, and Dynamics...
         output: list[m21.base.Music21Object] = []
         initialList: list[m21.base.Music21Object]
