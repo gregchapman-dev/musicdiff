@@ -32,9 +32,11 @@ class AnnNote:
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
         tuplet_info: list[str],
+        outer_chord: m21.chord.ChordBase | None = None,
         chord_offset: OffsetQL | None = None,  # only set if this note is inside a chord
         chord_dur_type: str | None = None,     # only set if this note is inside a chord
         chord_dur_dots: int | None = None,     # only set if this note is inside a chord
+        chord_is_grace: bool | None = None,     # only set if this note is inside a chord
         detail: DetailLevel = DetailLevel.Default,
     ) -> None:
         """
@@ -53,6 +55,13 @@ class AnnNote:
 
         """
         self.general_note: int | str = general_note.id
+        self.is_in_chord: bool = False
+        self.note_idx_in_chord: int | None = None
+        if outer_chord is not None:
+            self.general_note = outer_chord.id
+            self.is_in_chord = True
+            self.note_idx_in_chord = outer_chord.notes.index(general_note)
+
         self.gap_dur: OffsetQL = gap_dur
         self.beamings: list[str] = enhanced_beam_list
         self.tuplets: list[str] = tuplet_list
@@ -61,6 +70,8 @@ class AnnNote:
         self.note_offset: OffsetQL = 0.
         self.note_dur_type: str = ''
         self.note_dur_dots: int = 0
+        self.note_is_grace: bool = False
+
         if not DetailLevel.includesVoicing(detail):
             # if we're comparing the individual notes, we need to make a note of
             # offset and visual duration to be used later when searching for matching
@@ -72,15 +83,14 @@ class AnnNote:
             else:
                 self.note_offset = chord_offset
 
-            # visual duration
-            if chord_dur_type is None:
+            if outer_chord is None:
                 self.note_dur_type = general_note.duration.type
-            else:
-                self.note_dur_type = chord_dur_type
-            if chord_dur_dots is None:
                 self.note_dur_dots = general_note.duration.dots
+                self.note_is_grace = general_note.duration.isGrace
             else:
-                self.note_dur_dots = chord_dur_dots
+                self.note_dur_type = outer_chord.duration.type
+                self.note_dur_dots = outer_chord.duration.dots
+                self.note_is_grace = outer_chord.duration.isGrace
 
         self.stylestr: str = ''
         self.styledict: dict = {}
@@ -115,9 +125,13 @@ class AnnNote:
         else:
             raise TypeError("The generalNote must be a Chord, a Rest, a Note, or an Unpitched")
 
+        dur: m21.duration.Duration = general_note.duration
+        if outer_chord is not None:
+            dur = outer_chord.duration
+
         # note head
         type_number = Fraction(
-            M21Utils.get_type_num(general_note.duration)
+            M21Utils.get_type_num(dur)
         )
         self.note_head: int | Fraction
         if type_number >= 4:
@@ -125,31 +139,30 @@ class AnnNote:
         else:
             self.note_head = type_number
         # dots
-        self.dots: int = general_note.duration.dots
+        self.dots: int = dur.dots
         # graceness
-        if isinstance(general_note.duration, m21.duration.AppoggiaturaDuration):
-            self.graceType: str = 'acc'
-            self.graceSlash: bool | None = general_note.duration.slash
-        elif isinstance(general_note.duration, m21.duration.GraceDuration):
+        self.graceType: str = ''
+        self.graceSlash: bool | None = False
+        if isinstance(dur, m21.duration.AppoggiaturaDuration):
+            self.graceType = 'acc'
+            self.graceSlash = dur.slash
+        elif isinstance(dur, m21.duration.GraceDuration):
             # might be accented or unaccented.  duration.slash isn't always reliable
             # (historically), but we can use it as a fallback.
             # Check duration.stealTimePrevious and duration.stealTimeFollowing first.
-            if general_note.duration.stealTimePrevious is not None:
+            if dur.stealTimePrevious is not None:
                 self.graceType = 'unacc'
-            elif general_note.duration.stealTimeFollowing is not None:
+            elif dur.stealTimeFollowing is not None:
                 self.graceType = 'acc'
-            elif general_note.duration.slash is True:
+            elif dur.slash is True:
                 self.graceType = 'unacc'
-            elif general_note.duration.slash is False:
+            elif dur.slash is False:
                 self.graceType = 'acc'
             else:
                 # by default, GraceDuration with no other indications (slash is None)
                 # is assumed to be unaccented.
                 self.graceType = 'unacc'
-            self.graceSlash = general_note.duration.slash
-        else:
-            self.graceType = ''
-            self.graceSlash = False
+            self.graceSlash = dur.slash
         # articulations
         self.articulations: list[str] = [
             M21Utils.articulation_to_string(a, detail) for a in general_note.articulations
@@ -596,7 +609,7 @@ class AnnMeasure:
                     ann_voice = AnnVoice(voice, measure, detail)
                     if ann_voice.n_of_notes > 0:
                         self.voices_list.append(ann_voice)
-            self.n_of_elements: int = len(self.voices_list)
+            self.n_of_elements = len(self.voices_list)
         else:
             # we pull up all the notes in all the voices (and split any chords into
             # individual notes)
@@ -619,9 +632,9 @@ class AnnMeasure:
                 self.annot_notes = []
                 for i, n in enumerate(note_list):
                     if isinstance(n, m21.chord.ChordBase):
+                        if isinstance(n, m21.chord.Chord):
+                            n.sortDiatonicAscending(inPlace=True)
                         chord_offset: OffsetQL = n.getOffsetInHierarchy(measure)
-                        chord_dur_type: str = n.duration.type
-                        chord_dur_dots: int = n.duration.dots
                         for n1 in n.notes:
                             self.annot_notes.append(
                                 AnnNote(
@@ -630,9 +643,8 @@ class AnnMeasure:
                                     en_beam_list[i],
                                     tuplet_list[i],
                                     tuplet_info[i],
+                                    outer_chord=n,
                                     chord_offset=chord_offset,
-                                    chord_dur_type=chord_dur_type,
-                                    chord_dur_dots=chord_dur_dots,
                                     detail=detail
                                 )
                             )
@@ -648,7 +660,7 @@ class AnnMeasure:
                             )
                         )
 
-            self.n_of_elements: int = len(self.annot_notes)
+            self.n_of_elements = len(self.annot_notes)
 
         self.extras_list: list[AnnExtra] = []
         if DetailLevel.includesOtherMusicObjects(detail):
@@ -667,9 +679,9 @@ class AnnMeasure:
     def __str__(self) -> str:
         if self.includes_voicing:
             return (
-                    str([str(v) for v in self.voices_list])
-                    + ' Extras:'
-                    + str([str(e) for e in self.extras_list])
+                str([str(v) for v in self.voices_list])
+                + ' Extras:'
+                + str([str(e) for e in self.extras_list])
             )
 
         return (

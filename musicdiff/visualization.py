@@ -499,26 +499,40 @@ class Visualization:
                 assert isinstance(op[2], AnnNote)
                 # color the inserted score2 general note (note, chord, or rest)
                 # using Visualization.INSERTED_COLOR
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+                # The note that was inserted may in fact be a note within a chord,
+                # so be careful to use the chord and the note in that case for
+                # the appropriate operations.
+                noteOrChord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
-                    assert note2 is not None
+                    assert noteOrChord2 is not None
+                if op[4] is not None:
+                    note2 = noteOrChord2.notes[op[4]]
+                else:
+                    note2 = noteOrChord2
                 note2.style.color = Visualization.INSERTED_COLOR
                 textExp = m21.expressions.TextExpression(
                     f"inserted {note2.classes[0]}")
                 textExp.style.color = Visualization.INSERTED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                noteOrChord2.activeSite.insert(noteOrChord2.offset, textExp)
 
             elif op[0] == "notedel":
                 assert isinstance(op[1], AnnNote)
                 # color the deleted score1 general note (note, chord, or rest)
                 # using Visualization.DELETED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+                # The note that was deleted may in fact be a note within a chord,
+                # so be careful to use the chord and the note in that case for
+                # the appropriate operations.
+                noteOrChord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
-                    assert note1 is not None
+                    assert noteOrChord1 is not None
+                if op[4] is not None:
+                    note1 = noteOrChord1.notes[op[4]]
+                else:
+                    note1 = noteOrChord1
                 note1.style.color = Visualization.DELETED_COLOR
                 textExp = m21.expressions.TextExpression(f"deleted {note1.classes[0]}")
                 textExp.style.color = Visualization.DELETED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
+                noteOrChord1.activeSite.insert(noteOrChord1.offset, textExp)
 
             # pitch
             elif op[0] == "pitchnameedit":
@@ -530,7 +544,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert chord1 is not None
                 note1 = chord1
-                if "Chord" in chord1.classes:
+                if not note1.is_in_chord and "Chord" in chord1.classes:
                     # color just the indexed note in the chord
                     idx = op[4][0]
                     note1 = chord1.notes[idx]
@@ -548,7 +562,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert chord2 is not None
                 note2 = chord2
-                if "Chord" in chord2.classes:
+                if not note2.is_in_chord and "Chord" in chord2.classes:
                     # color just the indexed note in the chord
                     idx = op[4][1]
                     note2 = chord2.notes[idx]
@@ -570,7 +584,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert chord2 is not None
                 note2 = chord2
-                if "Chord" in chord2.classes:
+                if not note2.is_in_chord and "Chord" in chord2.classes:
                     # color just the indexed note in the chord
                     idx = op[4][1]
                     note2 = chord2.notes[idx]

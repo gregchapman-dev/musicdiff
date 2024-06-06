@@ -417,7 +417,8 @@ class Comparison:
         )
         if (
             original[0] == compare_to[0]
-        ):  # to avoid performing the _voices_coupling_recursive if it's not needed
+        ):  # to avoid performing the _voices_coupling_recursive/_notes_set_distance
+            # if it's not needed
             inside_bar_op_list = []
             inside_bar_cost = 0
         else:
@@ -427,10 +428,21 @@ class Comparison:
                 original[0].extras_list, compare_to[0].extras_list
             )
 
-            # run the voice coupling algorithm, and add to inside_bar_op_list and inside_bar_cost
-            inside_bar_op_list, inside_bar_cost = Comparison._voices_coupling_recursive(
-                original[0].voices_list, compare_to[0].voices_list
-            )
+            if original[0].includes_voicing:
+                # run the voice coupling algorithm, and add to inside_bar_op_list
+                # and inside_bar_cost
+                inside_bar_op_list, inside_bar_cost = (
+                    Comparison._voices_coupling_recursive(
+                        original[0].voices_list, compare_to[0].voices_list
+                    )
+                )
+            else:
+                # run the set distance algorithm, and add to inside_bar_op_list
+                # and inside_bar_cost
+                inside_bar_op_list, inside_bar_cost = Comparison._notes_set_distance(
+                    original[0].annot_notes, compare_to[0].annot_notes
+                )
+
             inside_bar_op_list.extend(extras_op_list)
             inside_bar_cost += extras_cost
         cost_dict["editbar"] += inside_bar_cost
@@ -1103,6 +1115,99 @@ class Comparison:
         min_key = min(cost, key=cost.get)
         out = op_list[min_key], cost[min_key]
         return out
+
+    HAVE_SEEN: list[tuple[int, int]] = []
+
+    @staticmethod
+    def _notes_set_distance(original: list[AnnNote], compare_to: list[AnnNote]):
+        """
+        Gather up pairs of matching notes (using pitch, offset, graceness, and visual duration, in
+        that order of importance).  If you can't find an exactly matching note, try again without
+        visual duration.
+        original [list] -- a list of AnnNote (which are never chords)
+        compare_to [list] -- a list of AnnNote (which are never chords)
+        """
+        # lets see if we need a memoizer
+        tup: tuple[int, int] = (id(original), id(compare_to))
+        if tup in Comparison.HAVE_SEEN:
+            print('saw a call to _notes_set_distance that could have been memoized')
+        else:
+            Comparison.HAVE_SEEN.append(tup)
+
+        paired_notes: list[tuple[AnnNote, AnnNote]] = []
+        unpaired_orig_notes: list[AnnNote] = []
+        unpaired_comp_notes: list[AnnNote] = copy.copy(compare_to)
+
+        for orig_n in original:
+            fallback: AnnNote | None = None
+            found_it: bool = False
+            for comp_n in unpaired_comp_notes:
+                if orig_n.pitches != comp_n.pitches:
+                    continue
+                if orig_n.note_offset != comp_n.note_offset:
+                    continue
+                if orig_n.note_is_grace != comp_n.note_is_grace:
+                    continue
+                if fallback is None:
+                    fallback = comp_n
+
+                if orig_n.note_dur_type != comp_n.note_dur_type:
+                    continue
+                if orig_n.note_dur_dots != comp_n.note_dur_dots:
+                    continue
+
+                # found a perfect match
+                paired_notes.append((orig_n, comp_n))
+
+                # remove comp_n from unpaired_comp_notes
+                unpaired_comp_notes.remove(comp_n)
+
+                found_it = True
+                break
+
+            if found_it:
+                # on to the next original note
+                continue
+
+            # did we find a fallback (matched except for duration)?
+            if fallback is not None:
+                paired_notes.append((orig_n, fallback))
+                continue
+
+            # we found nothing
+            unpaired_orig_notes.append(orig_n)
+
+        print('hey')
+        # compute the cost and the op_list for the many possibilities of recursion
+        cost: int = 0
+        op_list: list = []
+
+        # notedel
+        if unpaired_orig_notes:
+            for an in unpaired_orig_notes:
+                cost += an.notation_size()
+                op_list.append(("notedel", an, None, an.notation_size(), an.note_idx_in_chord))
+
+        # noteins
+        if unpaired_comp_notes:
+            for an in unpaired_comp_notes:
+                cost += an.notation_size()
+                op_list.append(("noteins", None, an, an.notation_size(), an.note_idx_in_chord))
+
+        # notesub
+        if paired_notes:
+            for ano, anc in paired_notes:
+                if ano == anc:
+                    # if equal, avoid _annotated_note_diff call
+                    notesub_op, notesub_cost = [], 0
+                else:
+                    notesub_op, notesub_cost = (
+                        Comparison._annotated_note_diff(original[0], compare_to[0])
+                    )
+                cost += notesub_cost
+                op_list.extend(notesub_op)
+
+        return op_list, cost
 
     @staticmethod
     def _voices_coupling_recursive(original: list[AnnVoice], compare_to: list[AnnVoice]):
