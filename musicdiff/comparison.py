@@ -25,6 +25,17 @@ from musicdiff.annotation import AnnMetadataItem
 from musicdiff import M21Utils
 
 # memoizers to speed up the recursive computation
+def _memoize_notes_set_distance(func):
+    mem = {}
+
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in mem:
+            mem[key] = func(original, compare_to)
+        return copy.deepcopy(mem[key])
+
+    return memoizer
+
 def _memoize_inside_bars_diff_lin(func):
     mem = {}
 
@@ -1119,6 +1130,7 @@ class Comparison:
     HAVE_SEEN: list[tuple[int, int]] = []
 
     @staticmethod
+    @_memoize_notes_set_distance
     def _notes_set_distance(original: list[AnnNote], compare_to: list[AnnNote]):
         """
         Gather up pairs of matching notes (using pitch, offset, graceness, and visual duration, in
@@ -1127,10 +1139,10 @@ class Comparison:
         original [list] -- a list of AnnNote (which are never chords)
         compare_to [list] -- a list of AnnNote (which are never chords)
         """
-        # lets see if we need a memoizer
+        # lets see if the memoizer is working
         tup: tuple[int, int] = (id(original), id(compare_to))
         if tup in Comparison.HAVE_SEEN:
-            print('saw a call to _notes_set_distance that could have been memoized')
+            print('saw a call to _notes_set_distance that should have been memoized')
         else:
             Comparison.HAVE_SEEN.append(tup)
 
@@ -1142,7 +1154,14 @@ class Comparison:
             fallback: AnnNote | None = None
             found_it: bool = False
             for comp_n in unpaired_comp_notes:
-                if orig_n.pitches != comp_n.pitches:
+                if orig_n.pitches[0][0] != comp_n.pitches[0][0]:
+                    # this pitch comparison (1) assumes the note is not a chord
+                    # (because we don't do chords when Voicing is not set, and
+                    # we only call _notes_set_distance when Voicing is not set),
+                    # and (2) only compares the visual position of the note (we
+                    # are ignoring the accidental here).  This is so that an
+                    # accidental change will show up as a pitch edit, not a
+                    # note remove/insert.
                     continue
                 if orig_n.note_offset != comp_n.note_offset:
                     continue
