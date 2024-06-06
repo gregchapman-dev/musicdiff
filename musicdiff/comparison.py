@@ -1177,7 +1177,6 @@ class Comparison:
             # we found nothing
             unpaired_orig_notes.append(orig_n)
 
-        print('hey')
         # compute the cost and the op_list for the many possibilities of recursion
         cost: int = 0
         op_list: list = []
@@ -1202,7 +1201,7 @@ class Comparison:
                     notesub_op, notesub_cost = [], 0
                 else:
                     notesub_op, notesub_cost = (
-                        Comparison._annotated_note_diff(original[0], compare_to[0])
+                        Comparison._annotated_note_diff(ano, anc)
                     )
                 cost += notesub_cost
                 op_list.extend(notesub_op)

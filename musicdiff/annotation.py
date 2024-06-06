@@ -94,17 +94,42 @@ class AnnNote:
 
         self.stylestr: str = ''
         self.styledict: dict = {}
-        if M21Utils.has_style(general_note):
-            self.styledict = M21Utils.obj_to_styledict(general_note, detail)
+
+        # we will take style from the enclosing chord (if present)
+        if outer_chord is not None:
+            if M21Utils.has_style(outer_chord):
+                self.styledict = M21Utils.obj_to_styledict(outer_chord, detail)
+        else:
+            if M21Utils.has_style(general_note):
+                self.styledict = M21Utils.obj_to_styledict(general_note, detail)
+
         self.noteshape: str = 'normal'
         self.noteheadFill: bool | None = None
         self.noteheadParenthesis: bool = False
         self.stemDirection: str = 'unspecified'
         if DetailLevel.includesStyle(detail) and isinstance(general_note, m21.note.NotRest):
-            self.noteshape = general_note.notehead
-            self.noteheadFill = general_note.noteheadFill
-            self.noteheadParenthesis = general_note.noteheadParenthesis
-            self.stemDirection = general_note.stemDirection
+            if outer_chord is None:
+                self.noteshape = general_note.notehead
+                self.noteheadFill = general_note.noteheadFill
+                self.noteheadParenthesis = general_note.noteheadParenthesis
+                self.stemDirection = general_note.stemDirection
+            else:
+                self.noteshape = outer_chord.notehead
+                self.noteheadFill = outer_chord.noteheadFill
+                self.noteheadParenthesis = outer_chord.noteheadParenthesis
+                self.stemDirection = outer_chord.stemDirection
+                # now override with the individual note settings
+                if general_note.noteheadParenthesis is not False:
+                    self.noteheadParenthesis = general_note.noteheadParenthesis
+                if general_note.notehead != 'normal':
+                    self.noteshape = general_note.notehead
+                if general_note.noteheadFill is not None:
+                    self.noteheadFill = general_note.noteheadFill
+                # Don't override chord stemDirection with note-in-chord stemDirection.
+                # That makes no sense if someone set it that way.  The chord is the
+                # master of stemDirection.  Note head stuff is a different story.
+                # if general_note.stemDirection != 'unspecified':
+                #     self.stemDirection = general_note.stemDirection
 
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tied)
@@ -595,6 +620,11 @@ class AnnMeasure:
         self.measure: int | str = measure.id
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
         self.n_of_elements: int = 0
+
+        # for debugging only
+        # self.measureNumber: int | None = measure.measureNumber
+        # if self.measureNumber == 135:
+        #     print('135')
 
         if self.includes_voicing:
             # we make an AnnVoice for each voice in the measure
