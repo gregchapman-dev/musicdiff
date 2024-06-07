@@ -32,11 +32,8 @@ class AnnNote:
         enhanced_beam_list: list[str],
         tuplet_list: list[str],
         tuplet_info: list[str],
-        outer_chord: m21.chord.ChordBase | None = None,
+        parent_chord: m21.chord.ChordBase | None = None,
         chord_offset: OffsetQL | None = None,  # only set if this note is inside a chord
-        chord_dur_type: str | None = None,     # only set if this note is inside a chord
-        chord_dur_dots: int | None = None,     # only set if this note is inside a chord
-        chord_is_grace: bool | None = None,     # only set if this note is inside a chord
         detail: DetailLevel = DetailLevel.Default,
     ) -> None:
         """
@@ -57,10 +54,15 @@ class AnnNote:
         self.general_note: int | str = general_note.id
         self.is_in_chord: bool = False
         self.note_idx_in_chord: int | None = None
-        if outer_chord is not None:
-            self.general_note = outer_chord.id
+        if parent_chord is not None:
+            # This is what visualization uses to color the note red (chord id and note idx)
+            self.general_note = parent_chord.id
             self.is_in_chord = True
-            self.note_idx_in_chord = outer_chord.notes.index(general_note)
+            self.note_idx_in_chord = parent_chord.notes.index(general_note)
+
+        # A lot of stuff is carried by the parent_chord (if present) or the
+        # general_note (if parent_chord not present); we call that the carrier
+        carrier: m21.note.GeneralNote = parent_chord or general_note
 
         self.gap_dur: OffsetQL = gap_dur
         self.beamings: list[str] = enhanced_beam_list
@@ -83,53 +85,52 @@ class AnnNote:
             else:
                 self.note_offset = chord_offset
 
-            if outer_chord is None:
-                self.note_dur_type = general_note.duration.type
-                self.note_dur_dots = general_note.duration.dots
-                self.note_is_grace = general_note.duration.isGrace
-            else:
-                self.note_dur_type = outer_chord.duration.type
-                self.note_dur_dots = outer_chord.duration.dots
-                self.note_is_grace = outer_chord.duration.isGrace
+            # visual duration and graceness
+            self.note_dur_type = carrier.duration.type
+            self.note_dur_dots = carrier.duration.dots
+            self.note_is_grace = carrier.duration.isGrace
 
-        self.stylestr: str = ''
         self.styledict: dict = {}
 
-        # we will take style from the enclosing chord (if present)
-        if outer_chord is not None:
-            if M21Utils.has_style(outer_chord):
-                self.styledict = M21Utils.obj_to_styledict(outer_chord, detail)
-        else:
-            if M21Utils.has_style(general_note):
-                self.styledict = M21Utils.obj_to_styledict(general_note, detail)
+        # we will take style from the individual note, and then override with
+        # style from the chord (following music21's MusicXML exporter).
+        if M21Utils.has_style(general_note):
+            self.styledict = M21Utils.obj_to_styledict(general_note, detail)
+
+        if parent_chord is not None:
+            if M21Utils.has_style(parent_chord):
+                parentstyledict = M21Utils.obj_to_styledict(parent_chord, detail)
+                for k, v in parentstyledict.items():
+                    self.styledict[k] = v
 
         self.noteshape: str = 'normal'
         self.noteheadFill: bool | None = None
         self.noteheadParenthesis: bool = False
         self.stemDirection: str = 'unspecified'
         if DetailLevel.includesStyle(detail) and isinstance(general_note, m21.note.NotRest):
-            if outer_chord is None:
+            if t.TYPE_CHECKING:
+                # because general_note is NotRest, parent_chord must also be (might be
+                # a chord instead of a note, but that still works)
+                assert isinstance(carrier, m21.note.NotRest)
+            self.stemDirection = carrier.stemDirection
+
+            if parent_chord is None:
                 self.noteshape = general_note.notehead
                 self.noteheadFill = general_note.noteheadFill
                 self.noteheadParenthesis = general_note.noteheadParenthesis
-                self.stemDirection = general_note.stemDirection
             else:
-                self.noteshape = outer_chord.notehead
-                self.noteheadFill = outer_chord.noteheadFill
-                self.noteheadParenthesis = outer_chord.noteheadParenthesis
-                self.stemDirection = outer_chord.stemDirection
-                # now override with the individual note settings
-                if general_note.noteheadParenthesis is not False:
+                # try general_note first, but if nothing about note head is specified,
+                # go with whatever parent_chord says.
+                if (general_note.notehead != 'normal'
+                        or general_note.noteheadParenthesis
+                        or general_note.noteheadFill is not None):
                     self.noteheadParenthesis = general_note.noteheadParenthesis
-                if general_note.notehead != 'normal':
                     self.noteshape = general_note.notehead
-                if general_note.noteheadFill is not None:
                     self.noteheadFill = general_note.noteheadFill
-                # Don't override chord stemDirection with note-in-chord stemDirection.
-                # That makes no sense if someone set it that way.  The chord is the
-                # master of stemDirection.  Note head stuff is a different story.
-                # if general_note.stemDirection != 'unspecified':
-                #     self.stemDirection = general_note.stemDirection
+                else:
+                    self.noteshape = parent_chord.notehead
+                    self.noteheadFill = parent_chord.noteheadFill
+                    self.noteheadParenthesis = parent_chord.noteheadParenthesis
 
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tied)
@@ -150,10 +151,7 @@ class AnnNote:
         else:
             raise TypeError("The generalNote must be a Chord, a Rest, a Note, or an Unpitched")
 
-        dur: m21.duration.Duration = general_note.duration
-        if outer_chord is not None:
-            dur = outer_chord.duration
-
+        dur: m21.duration.Duration = carrier.duration
         # note head
         type_number = Fraction(
             M21Utils.get_type_num(dur)
@@ -190,13 +188,13 @@ class AnnNote:
             self.graceSlash = dur.slash
         # articulations
         self.articulations: list[str] = [
-            M21Utils.articulation_to_string(a, detail) for a in general_note.articulations
+            M21Utils.articulation_to_string(a, detail) for a in carrier.articulations
         ]
         if self.articulations:
             self.articulations.sort()
         # expressions
         self.expressions: list[str] = [
-            M21Utils.expression_to_string(a, detail) for a in general_note.expressions
+            M21Utils.expression_to_string(a, detail) for a in carrier.expressions
         ]
         if self.expressions:
             self.expressions.sort()
@@ -204,7 +202,7 @@ class AnnNote:
         # lyrics
         self.lyrics: list[str] = []
         if DetailLevel.includesLyrics(detail):
-            for lyric in general_note.lyrics:
+            for lyric in carrier.lyrics:
                 if not lyric.rawText:
                     continue
                 lyricStr: str = ""
@@ -673,7 +671,7 @@ class AnnMeasure:
                                     en_beam_list[i],
                                     tuplet_list[i],
                                     tuplet_info[i],
-                                    outer_chord=n,
+                                    parent_chord=n,
                                     chord_offset=chord_offset,
                                     detail=detail
                                 )
