@@ -186,40 +186,47 @@ class AnnNote:
                 # is assumed to be unaccented.
                 self.graceType = 'unacc'
             self.graceSlash = dur.slash
-        # articulations
-        self.articulations: list[str] = [
-            M21Utils.articulation_to_string(a, detail) for a in carrier.articulations
-        ]
-        if self.articulations:
-            self.articulations.sort()
-        # expressions
-        self.expressions: list[str] = [
-            M21Utils.expression_to_string(a, detail) for a in carrier.expressions
-        ]
-        if self.expressions:
-            self.expressions.sort()
 
-        # lyrics
+        # The following (articulations, expressions, lyrics) only occur once per chord
+        # or standalone note, so we only want to annotate them once.  We annotate them
+        # on standalone notes (of course), and on the first note of a parent_chord.
+        self.articulations: list[str] = []
+        self.expressions: list[str] = []
         self.lyrics: list[str] = []
-        if DetailLevel.includesLyrics(detail):
-            for lyric in carrier.lyrics:
-                if not lyric.rawText:
-                    continue
-                lyricStr: str = ""
-                if lyric.number is not None:
-                    lyricStr += f"number={lyric.number}"
-                if lyric._identifier is not None:
-                    lyricStr += f" identifier={lyric._identifier}"
-                # ignore .syllabic and .text, what is visible is .rawText (and there
-                # are several .syllabic/.text combos that create the same .rawText).
-                lyricStr += f" rawText={lyric.rawText}"
-                if M21Utils.has_style(lyric):
-                    styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
-                    if styleDict:
-                        # sort styleDict before converting to string so we can compare strings
-                        styleDict = dict(sorted(styleDict.items()))
-                        lyricStr += f" style={styleDict}"
-                self.lyrics.append(lyricStr)
+
+        if self.note_idx_in_chord is None or self.note_idx_in_chord == 0:
+            # articulations
+            self.articulations = [
+                M21Utils.articulation_to_string(a, detail) for a in carrier.articulations
+            ]
+            if self.articulations:
+                self.articulations.sort()
+            # expressions
+            self.expressions = [
+                M21Utils.expression_to_string(a, detail) for a in carrier.expressions
+            ]
+            if self.expressions:
+                self.expressions.sort()
+            # lyrics
+            if DetailLevel.includesLyrics(detail):
+                for lyric in carrier.lyrics:
+                    if not lyric.rawText:
+                        continue
+                    lyricStr: str = ""
+                    if lyric.number is not None:
+                        lyricStr += f"number={lyric.number}"
+                    if lyric._identifier is not None:
+                        lyricStr += f" identifier={lyric._identifier}"
+                    # ignore .syllabic and .text, what is visible is .rawText (and there
+                    # are several .syllabic/.text combos that create the same .rawText).
+                    lyricStr += f" rawText={lyric.rawText}"
+                    if M21Utils.has_style(lyric):
+                        styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
+                        if styleDict:
+                            # sort styleDict before converting to string so we can compare strings
+                            styleDict = dict(sorted(styleDict.items()))
+                            lyricStr += f" style={styleDict}"
+                    self.lyrics.append(lyricStr)
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
