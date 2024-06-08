@@ -505,7 +505,7 @@ class Visualization:
                 noteOrChord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert noteOrChord2 is not None
-                if op[4] is not None:
+                if len(op) >= 5 and op[4] is not None:
                     note2 = noteOrChord2.notes[op[4]]
                 else:
                     note2 = noteOrChord2
@@ -525,7 +525,7 @@ class Visualization:
                 noteOrChord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert noteOrChord1 is not None
-                if op[4] is not None:
+                if len(op) >= 5 and op[4] is not None:
                     note1 = noteOrChord1.notes[op[4]]
                 else:
                     note1 = noteOrChord1
