@@ -1127,8 +1127,6 @@ class Comparison:
         out = op_list[min_key], cost[min_key]
         return out
 
-    HAVE_SEEN: list[tuple[int, int]] = []
-
     @staticmethod
     @_memoize_notes_set_distance
     def _notes_set_distance(original: list[AnnNote], compare_to: list[AnnNote]):
@@ -1139,13 +1137,6 @@ class Comparison:
         original [list] -- a list of AnnNote (which are never chords)
         compare_to [list] -- a list of AnnNote (which are never chords)
         """
-        # lets see if the memoizer is working
-        tup: tuple[int, int] = (id(original), id(compare_to))
-        if tup in Comparison.HAVE_SEEN:
-            print('saw a call to _notes_set_distance that should have been memoized')
-        else:
-            Comparison.HAVE_SEEN.append(tup)
-
         paired_notes: list[tuple[AnnNote, AnnNote]] = []
         unpaired_orig_notes: list[AnnNote] = []
         unpaired_comp_notes: list[AnnNote] = copy.copy(compare_to)
