@@ -1182,6 +1182,7 @@ class Comparison:
             # did we find a fallback (matched except for duration)?
             if fallback is not None:
                 paired_notes.append((orig_n, fallback))
+                unpaired_comp_notes.remove(fallback)
                 continue
 
             # we found nothing
