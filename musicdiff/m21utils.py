@@ -1401,7 +1401,7 @@ class M21Utils:
             return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
         else:
             chordKindStr: str = M21Utilities.convertChordSymbolFigureToPrintableText(
-                cs.findFigure(), removeRootName=True
+                cs.findFigure(), removeNoteNames=True
             )
             return f'CSYM:{root}{chordKindStr}{bass}{pitchStr}'
 
