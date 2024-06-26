@@ -1400,8 +1400,12 @@ class M21Utils:
         if cs.chordKindStr or cs.chordKind == 'major':
             return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
         else:
+            # no chordKindStr, so make one up.  Simplify the chord symbol first
+            # (look for a better chordKind that has fewer chordStepModifications)
+            simplerCS: m21.harmony.ChordSymbol = copy.deepcopy(cs)
+            M21Utilities.simplifyChordSymbol(simplerCS)
             chordKindStr: str = M21Utilities.convertChordSymbolFigureToPrintableText(
-                cs.findFigure(), removeNoteNames=True
+                simplerCS.findFigure(), removeNoteNames=True
             )
             return f'CSYM:{root}{chordKindStr}{bass}{pitchStr}'
 
