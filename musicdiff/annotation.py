@@ -971,7 +971,14 @@ class AnnMetadataItem:
             self.value = self.make_value_string(value)
             roleEmitted: bool = False
             if value.role:
-                self.value += f'(role={value.role}'
+                if value.role == 'poet':
+                    # special case: many MusicXML files have the lyricist listed as the poet.
+                    # We compare them as equivalent here.
+                    lyr: str = 'lyricist'
+                    self.key = lyr
+                    self.value += f'(role={lyr}'
+                else:
+                    self.value += f'(role={value.role}'
                 roleEmitted = True
             if value._names:
                 if roleEmitted:
@@ -1071,10 +1078,11 @@ class AnnScore:
 
         if DetailLevel.includesMetadata(detail) and score.metadata is not None:
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
+            # Note: we sort metadata_items_list after the fact, because sometimes
+            # (e.g. otherContributor:poet) we substitute names (e.g. lyricist:)
             allItems: list[tuple[str, t.Any]] = list(
                 score.metadata.all(returnPrimitives=True, returnSorted=False)
             )
-            allItems.sort(key=lambda each: (each[0], str(each[1])))
             for key, value in allItems:
                 if key in ('fileFormat', 'filePath', 'software'):
                     # Don't compare metadata items that are uninterestingly different.
@@ -1097,6 +1105,8 @@ class AnnScore:
                     # is the publication status of the file (published or not?).
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
+
+            self.metadata_items_list.sort(key=lambda each: (each.key, each.value))
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
