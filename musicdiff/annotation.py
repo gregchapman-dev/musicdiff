@@ -1106,7 +1106,7 @@ class AnnScore:
                     continue
                 self.metadata_items_list.append(AnnMetadataItem(key, value))
 
-            self.metadata_items_list.sort(key=lambda each: (each.key, each.value))
+            self.metadata_items_list.sort(key=lambda each: (each.key, str(each.value)))
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
