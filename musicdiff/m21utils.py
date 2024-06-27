@@ -1397,7 +1397,7 @@ class M21Utils:
         # assessing OMR.
         # return f'CSYM:{root} {cs.chordKind}({cs.chordKindStr}){bass}{pitchStr}'
 
-        if cs.chordKindStr or cs.chordKind == 'major':
+        if cs.chordKindStr:
             return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
         else:
             # no chordKindStr, so make one up.  Simplify the chord symbol first
