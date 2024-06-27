@@ -968,6 +968,12 @@ class AnnMetadataItem:
         elif isinstance(value, m21.metadata.Contributor):
             # Create a string (same thing: value.name.isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
+            if not value._names:
+                # ignore this metadata item
+                self.key = ''
+                self.value = ''
+                return
+
             self.value = self.make_value_string(value)
             roleEmitted: bool = False
             if value.role:
@@ -1104,7 +1110,9 @@ class AnnScore:
                     # extended ASCII encoding of the Humdrum file, 'humdrum:PUB'
                     # is the publication status of the file (published or not?).
                     continue
-                self.metadata_items_list.append(AnnMetadataItem(key, value))
+                ami: AnnMetadataItem = AnnMetadataItem(key, value)
+                if ami.key and ami.value:
+                    self.metadata_items_list.append(ami)
 
             self.metadata_items_list.sort(key=lambda each: (each.key, str(each.value)))
 
