@@ -1360,6 +1360,8 @@ class M21Utils:
     def chordsymbol_to_string(
         cs: m21.harmony.ChordSymbol
     ) -> str:
+        from converter21.shared import M21Utilities
+
         if isinstance(cs, m21.harmony.NoChord):
             printedStr: str = cs.chordKindStr
             if printedStr:
@@ -1394,7 +1396,18 @@ class M21Utils:
         # important for checking my importers/exporters, but not really for
         # assessing OMR.
         # return f'CSYM:{root} {cs.chordKind}({cs.chordKindStr}){bass}{pitchStr}'
-        return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
+
+        if cs.chordKindStr:
+            return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
+        else:
+            # no chordKindStr, so make one up.  Simplify the chord symbol first
+            # (look for a better chordKind that has fewer chordStepModifications)
+            simplerCS: m21.harmony.ChordSymbol = copy.deepcopy(cs)
+            M21Utilities.simplifyChordSymbol(simplerCS)
+            chordKindStr: str = M21Utilities.convertChordSymbolFigureToPrintableText(
+                simplerCS.findFigure(), removeNoteNames=True
+            )
+            return f'CSYM:{root}{chordKindStr}{bass}{pitchStr}'
 
     @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
