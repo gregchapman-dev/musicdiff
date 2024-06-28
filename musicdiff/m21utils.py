@@ -46,22 +46,18 @@ class DetailLevel(IntEnum):
     # Metadata: title, composer, etc
     Metadata = 32
 
-    # Common combinations supported as names on the command line:
-
-    # Just the notes (chords, rests, unpitched, etc) and their beams/expressions/articulations
-    GeneralNotesOnly = GeneralNotes
+    # Common combinations:
 
     # Add in the "extras" and lyrics: Clefs, TextExpressions, Key/KeySignatures,
     # Barlines/Repeats, TimeSignatures, TempoIndications, Lyrics, etc
-    AllObjects = GeneralNotesOnly | Extras | Lyrics
+    AllObjects = GeneralNotes | Extras | Lyrics
 
     # All of the above, plus typographical stuff: placement, stem direction,
     # color, italic/bold, Style, etc
     AllObjectsWithStyle = AllObjects | Style
 
     # Various options that include Metadata:
-    MetadataOnly = Metadata
-    GeneralNotesAndMetadata = GeneralNotesOnly | Metadata
+    GeneralNotesAndMetadata = GeneralNotes | Metadata
     AllObjectsAndMetadata = AllObjects | Metadata
     AllObjectsWithStyleAndMetadata = AllObjectsWithStyle | Metadata
 

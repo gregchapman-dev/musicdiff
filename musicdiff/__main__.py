@@ -40,42 +40,53 @@ if __name__ == "__main__":
     parser.add_argument(
         "-d",
         "--detail",
-        default="Default",
+        default=[],
+        nargs='*',
         choices=[
-            "GeneralNotesOnly",
+            "GeneralNotes",
+            "Extras",
+            "Lyrics",
+            "Style",
+            "Voicing",
+            "Metadata",
             "AllObjects",
-            "AllObjectsWithStyle",
-            "MetadataOnly",
-            "GeneralNotesAndMetadata",
             "AllObjectsAndMetadata",
-            "AllObjectsWithStyleAndMetadata",
-            "Default"],
-        help="set detail level"
+            "AllObjectsWithStyle",
+            "AllObjectsWithStyleAndMetadata"],
+        help="set detail level (can set multiple details)"
     )
     args = parser.parse_args()
 
-    detail: DetailLevel = DetailLevel.Default
-    if args.detail == "GeneralNotesOnly":
-        detail = DetailLevel.GeneralNotesOnly
-    elif args.detail == "AllObjects":
-        detail = DetailLevel.AllObjects
-    elif args.detail == "AllObjectsWithStyle":
-        detail = DetailLevel.AllObjectsWithStyle
-    elif args.detail == "MetadataOnly":
-        detail = DetailLevel.MetadataOnly
-    elif args.detail == "GeneralNotesAndMetadata":
-        detail = DetailLevel.GeneralNotesAndMetadata
-    elif args.detail == "AllObjectsAndMetadata":
-        detail = DetailLevel.AllObjectsAndMetadata
-    elif args.detail == "AllObjectsWithStyleAndMetadata":
-        detail = DetailLevel.AllObjectsWithStyleAndMetadata
-    elif args.detail == "Default":
-        detail = DetailLevel.Default
+    detail: int = DetailLevel.Default
+    if args.detail:
+        detail = 0
+        for det in args.detail:
+            if det == "GeneralNotes":
+                detail |= DetailLevel.GeneralNotes
+            elif det == "Extras":
+                detail |= DetailLevel.Extras
+            elif det == "Lyrics":
+                detail |= DetailLevel.Lyrics
+            elif det == "Style":
+                detail |= DetailLevel.Style
+            elif det == "Voicing":
+                detail |= DetailLevel.Voicing
+            elif det == "Metadata":
+                detail |= DetailLevel.Metadata
+            elif det == "AllObjects":
+                detail |= DetailLevel.AllObjects
+            elif det == "AllObjectsAndMetadata":
+                detail |= DetailLevel.AllObjectsAndMetadata
+            elif det == "AllObjectsWithStyle":
+                detail |= DetailLevel.AllObjectsWithStyle
+            elif det == "AllObjectsWithStyleAndMetadata":
+                detail |= DetailLevel.AllObjectsWithStyleAndMetadata
 
     # Note that diff() can take a music21 Score instead of a file, for either
     # or both arguments.
     # Note also that diff() can take str or pathlib.Path for files.
-    numDiffs: int | None = diff(args.file1, args.file2, detail=detail)
+    detailLevel: DetailLevel = detail  # type: ignore
+    numDiffs: int | None = diff(args.file1, args.file2, detail=detailLevel)
     if numDiffs is None:
         print('musicdiff failed.', file=sys.stderr)
     elif numDiffs == 0:

@@ -46,10 +46,12 @@ class AnnNote:
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
             tuplet_list (list): A list of tuplet info about this GeneralNote.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                or Default (Default is currently equivalent to AllObjects).
-
+                Default (currently AllObjects), or any combination (|) of GeneralNotes,
+                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
+                you also request GeneralNotes (because in music21, lyrics are attached to
+                notes).
         """
         self.general_note: int | str = general_note.id
         self.is_in_chord: bool = False
@@ -383,9 +385,12 @@ class AnnExtra:
                 If the extra was found in a Voice, this is the Measure that the Voice was
                 found in.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                or Default (Default is currently equivalent to AllObjects).
+                Default (currently AllObjects), or any combination (|) of GeneralNotes,
+                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
+                you also request GeneralNotes (because in music21, lyrics are attached to
+                notes).
         """
         self.extra = extra.id
         self.offset: float
@@ -498,14 +503,18 @@ class AnnVoice:
     ) -> None:
         """
         Extend music21 Voice with some precomputed, easily compared information about it.
+        Only ever called if detail includes Voicing.
 
         Args:
             voice (music21.stream.Voice or Measure): The music21 voice to extend. This
                 can be a Measure, but only if it contains no Voices.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                or Default (Default is currently equivalent to AllObjects).
+                Default (currently AllObjects), or any combination (|) of GeneralNotes,
+                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
+                you also request GeneralNotes (because in music21, lyrics are attached to
+                notes).
         """
         self.voice: int | str = voice.id
         note_list: list[m21.note.GeneralNote] = []
@@ -618,9 +627,12 @@ class AnnMeasure:
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
                 in the score.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                or Default (Default is currently equivalent to AllObjects).
+                Default (currently AllObjects), or any combination (|) of GeneralNotes,
+                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
+                you also request GeneralNotes (because in music21, lyrics are attached to
+                notes).
         """
         self.measure: int | str = measure.id
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
@@ -805,9 +817,12 @@ class AnnPart:
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in
                 the score.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                or Default (Default is currently equivalent to AllObjects).
+                Default (currently AllObjects), or any combination (|) of GeneralNotes,
+                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
+                you also request GeneralNotes (because in music21, lyrics are attached to
+                notes).
         """
         self.part: int | str = part.id
         self.bar_list: list[AnnMeasure] = []
@@ -1041,9 +1056,12 @@ class AnnScore:
         Args:
             score (music21.stream.Score): The music21 score
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                or Default (Default is currently equivalent to AllObjects).
+                Default (currently AllObjects), or any combination (|) of GeneralNotes,
+                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
+                you also request GeneralNotes (because in music21, lyrics are attached to
+                notes).
         """
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []

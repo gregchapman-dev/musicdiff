@@ -77,9 +77,12 @@ def diff(
             the only result of the call will be the return value (the number of differences).
             (default is True)
         detail (DetailLevel): What level of detail to use during the diff.
-            Can be GeneralNotesOnly, AllObjects, AllObjectsWithStyle, MetadataOnly,
+            Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
             GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-            or Default (Default is currently equivalent to AllObjects).
+            Default (currently AllObjects), or any combination (|) of GeneralNotes,
+            Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
+            you also request GeneralNotes (because in music21, lyrics are attached to
+            notes).
 
     Returns:
         int | None: The number of differences found (0 means the scores were identical,

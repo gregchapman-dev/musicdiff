@@ -12,9 +12,16 @@ Depends on [music21](https://pypi.org/project/music21) (version 9.1+),  [numpy](
 ## Usage
 On the command line:
 
-    python3 -m musicdiff file1.musicxml file2.krn
+    python3 -m musicdiff -d GeneralNotes Lyrics Style -- file1.musicxml file2.krn
 
-    positional arguments:
+    arguments:
+      -d          one or more named details to compare (default is AllObjects,
+                    a.k.a. GeneralNotes Extras Lyrics). Can be AllObjects,
+                    AllObjectsWithStyle, GeneralNotesAndMetadata, AllObjectsAndMetadata,
+                    AllObjectsWithStyleAndMetadata, or any combination of GeneralNotes,
+                    Extras, Lyrics, Style, Voicing, Metadata. Lyrics will not be
+                    compared unless you also request GeneralNotes (because in music21,
+                    Lyrics are attached to GeneralNotes).
       file1       first music score file to compare (any format music21 can parse)
       file2       second music score file to compare (any format music21 can parse)
 
