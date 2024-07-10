@@ -28,7 +28,7 @@ from musicdiff.visualization import Visualization
 
 def _getInputExtensionsList() -> list[str]:
     c = m21.converter.Converter()
-    inList = c.subconvertersList('input')
+    inList = c.subConvertersList('input')
     result = []
     for subc in inList:
         for inputExt in subc.registerInputExtensions:
@@ -37,7 +37,7 @@ def _getInputExtensionsList() -> list[str]:
 
 def _printSupportedInputFormats() -> None:
     c = m21.converter.Converter()
-    inList = c.subconvertersList('input')
+    inList = c.subConvertersList('input')
     print("Supported input formats are:", file=sys.stderr)
     for subc in inList:
         if subc.registerInputExtensions:

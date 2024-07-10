@@ -584,7 +584,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert chord2 is not None
                 note2 = chord2
-                if not note2.is_in_chord and "Chord" in chord2.classes:
+                if not op[2].is_in_chord and "Chord" in chord2.classes:
                     # color just the indexed note in the chord
                     idx = op[4][1]
                     note2 = chord2.notes[idx]
