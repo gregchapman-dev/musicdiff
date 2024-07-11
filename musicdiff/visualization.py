@@ -1966,8 +1966,6 @@ class Visualization:
             # note
             if op[0] == "noteins":
                 assert isinstance(op[2], AnnNote)
-                # color the inserted score2 general note (note, chord, or rest)
-                # using Visualization.INSERTED_COLOR
                 # The note that was inserted may in fact be a note within a chord,
                 # so be careful to use the chord and the note in that case for
                 # the appropriate operations.
@@ -1978,17 +1976,14 @@ class Visualization:
                     note2 = noteOrChord2.notes[op[4]]
                 else:
                     note2 = noteOrChord2
-                note2.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression(
-                    f"inserted {note2.classes[0]}")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                noteOrChord2.activeSite.insert(noteOrChord2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(noteOrChord2, score2)} @@\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "notedel":
                 assert isinstance(op[1], AnnNote)
-                # color the deleted score1 general note (note, chord, or rest)
-                # using Visualization.DELETED_COLOR
                 # The note that was deleted may in fact be a note within a chord,
                 # so be careful to use the chord and the note in that case for
                 # the appropriate operations.
@@ -1999,10 +1994,10 @@ class Visualization:
                     note1 = noteOrChord1.notes[op[4]]
                 else:
                     note1 = noteOrChord1
-                note1.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression(f"deleted {note1.classes[0]}")
-                textExp.style.color = Visualization.DELETED_COLOR
-                noteOrChord1.activeSite.insert(noteOrChord1.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(noteOrChord1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}){op[1].precomputed_str}\n"
+                output += newLine
                 continue
 
             # pitch
@@ -2010,254 +2005,139 @@ class Visualization:
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
-                # color the changed note (in both scores) using Visualization.CHANGED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert chord1 is not None
                 note1 = chord1
                 if not op[1].is_in_chord and "Chord" in chord1.classes:
-                    # color just the indexed note in the chord
+                    # report just the indexed note in the chord
                     idx = op[4][0]
                     note1 = chord1.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed pitch")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                if note1.activeSite is not None:
-                    note1.activeSite.insert(note1.offset, textExp)
-                else:
-                    chord1.activeSite.insert(chord1.offset, textExp)
-
                 chord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert chord2 is not None
                 note2 = chord2
                 if not op[2].is_in_chord and "Chord" in chord2.classes:
-                    # color just the indexed note in the chord
+                    # report just the indexed note in the chord
                     idx = op[4][1]
                     note2 = chord2.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed pitch")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                if note2.activeSite is not None:
-                    note2.activeSite.insert(note2.offset, textExp)
-                else:
-                    chord2.activeSite.insert(chord2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:pitch){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:pitch){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "inspitch":
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
-                # color the inserted note in score2 using Visualization.INSERTED_COLOR
                 chord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert chord2 is not None
                 note2 = chord2
                 if not op[2].is_in_chord and "Chord" in chord2.classes:
-                    # color just the indexed note in the chord
+                    # report just the indexed note in the chord
                     idx = op[4][1]
                     note2 = chord2.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.INSERTED_COLOR
-                if "Rest" in note2.classes:
-                    textExp = m21.expressions.TextExpression("inserted rest")
-                else:
-                    textExp = m21.expressions.TextExpression("inserted note")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                if note2.activeSite is not None:
-                    note2.activeSite.insert(note2.offset, textExp)
-                else:
-                    chord2.activeSite.insert(chord2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(chord2, score2)} @@\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:pitch){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "delpitch":
                 assert isinstance(op[1], AnnNote)
                 assert len(op) == 5  # the indices must be there
-                # color the deleted note in score1 using Visualization.DELETED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert chord1 is not None
                 note1 = chord1
                 if "Chord" in chord1.classes:
-                    # color just the indexed note in the chord
+                    # report just the indexed note in the chord
                     idx = op[4][0]
                     note1 = chord1.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.DELETED_COLOR
-                if "Rest" in note1.classes:
-                    textExp = m21.expressions.TextExpression("deleted rest")
-                else:
-                    textExp = m21.expressions.TextExpression("deleted note")
-                textExp.style.color = Visualization.DELETED_COLOR
-                if note1.activeSite is not None:
-                    note1.activeSite.insert(note1.offset, textExp)
-                else:
-                    chord1.activeSite.insert(chord1.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:pitch){op[1].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "headedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                # color the changed note/rest/chord (in both scores)
-                # using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note head")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note head")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:head){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:head){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "graceedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                # color the changed note/rest/chord (in both scores)
-                # using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed grace note")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed grace note")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:grace){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:grace){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "graceslashedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                # color the changed note/rest/chord (in both scores)
-                # using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed grace note slash")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed grace note slash")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:graceslash){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:graceslash){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             # beam
-            if op[0] == "insbeam":
+            if op[0] in ("insbeam", "delbeam", "editbeam"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.INSERTED_COLOR
-                if hasattr(note1, "beams"):
-                    for beam in note1.beams:
-                        beam.style.color = (
-                            Visualization.INSERTED_COLOR
-                        )  # this apparently does nothing
-                textExp = m21.expressions.TextExpression("increased flags")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.INSERTED_COLOR
-                if hasattr(note2, "beams"):
-                    for beam in note2.beams:
-                        beam.style.color = (
-                            Visualization.INSERTED_COLOR
-                        )  # this apparently does nothing
-                textExp = m21.expressions.TextExpression("increased flags")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "delbeam":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.DELETED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.DELETED_COLOR
-                if hasattr(note1, "beams"):
-                    for beam in note1.beams:
-                        beam.style.color = (
-                            Visualization.DELETED_COLOR
-                        )  # this apparently does nothing
-                textExp = m21.expressions.TextExpression("decreased flags")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.DELETED_COLOR
-                if hasattr(note2, "beams"):
-                    for beam in note2.beams:
-                        beam.style.color = (
-                            Visualization.DELETED_COLOR
-                        )  # this apparently does nothing
-                textExp = m21.expressions.TextExpression("decreased flags")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "editbeam":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                if hasattr(note1, "beams"):
-                    for beam in note1.beams:
-                        beam.style.color = (
-                            Visualization.CHANGED_COLOR
-                        )  # this apparently does nothing
-                textExp = m21.expressions.TextExpression("changed flags")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                if hasattr(note2, "beams"):
-                    for beam in note2.beams:
-                        beam.style.color = (
-                            Visualization.CHANGED_COLOR
-                        )  # this apparently does nothing
-                textExp = m21.expressions.TextExpression("changed flags")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:flagsbeams){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:flagsbeams){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "editnoteshape":
@@ -2266,78 +2146,32 @@ class Visualization:
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note shape")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note shape")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:noteshape){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:noteshape){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
-            if op[0] == "editspace":
+            if op[0] in ("editspace", "insspace", "delspace"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed space before")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed space before")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "insspace":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("inserted space before")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("inserted space before")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "delspace":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("deleted space before")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("deleted space before")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:spacebefore){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:spacebefore){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "editnoteheadfill":
@@ -2346,18 +2180,15 @@ class Visualization:
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note head fill")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note head fill")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:notefill){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:notefill){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "editnoteheadparenthesis":
@@ -2366,18 +2197,15 @@ class Visualization:
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note head paren")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed note head paren")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:noteparen){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:noteparen){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "editstemdirection":
@@ -2386,18 +2214,15 @@ class Visualization:
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed stem direction")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed stem direction")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:stemdir){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:stemdir){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             if op[0] == "editstyle":
@@ -2422,269 +2247,87 @@ class Visualization:
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression(f"changed note {changedStr}")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression(f"changed note {changedStr}")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:{changedStr}){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:{changedStr}){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             # accident
-            if op[0] == "accidentins":
+            if op[0] in ("accidentins", "accidentdel", "accidentedit"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
-                # color the modified note in both scores using Visualization.INSERTED_COLOR
                 chord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert chord1 is not None
                 note1 = chord1
                 if "Chord" in chord1.classes:
-                    # color only the indexed note's accidental in the chord
+                    # report only the indexed note's accidental in the chord
                     idx = op[4][0]
                     note1 = chord1.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                if hasattr(note1, 'pitch') and note1.pitch.accidental:
-                    note1.pitch.accidental.style.color = Visualization.INSERTED_COLOR
-                note1.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted accidental")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                if note1.activeSite is not None:
-                    note1.activeSite.insert(note1.offset, textExp)
-                else:
-                    chord1.activeSite.insert(chord1.offset, textExp)
-
                 chord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert chord2 is not None
                 note2 = chord2
                 if "Chord" in chord2.classes:
-                    # color only the indexed note's accidental in the chord
+                    # report only the indexed note's accidental in the chord
                     idx = op[4][1]
                     note2 = chord2.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                if hasattr(note2, 'pitch') and note2.pitch.accidental:
-                    note2.pitch.accidental.style.color = Visualization.INSERTED_COLOR
-                note2.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted accidental")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                if note2.activeSite is not None:
-                    note2.activeSite.insert(note2.offset, textExp)
-                else:
-                    chord2.activeSite.insert(chord2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:accid){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:accid){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
-            if op[0] == "accidentdel":
+            if op[0] in ("dotins", "dotdel"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                assert len(op) == 5  # the indices must be there
-                # color the modified note in both scores using Visualization.DELETED_COLOR
-                chord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord1 is not None
-                note1 = chord1
-                if "Chord" in chord1.classes:
-                    # color only the indexed note's accidental in the chord
-                    idx = op[4][0]
-                    note1 = chord1.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                if hasattr(note1, 'pitch') and note1.pitch.accidental:
-                    note1.pitch.accidental.style.color = Visualization.DELETED_COLOR
-                note1.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted accidental")
-                textExp.style.color = Visualization.DELETED_COLOR
-                if note1.activeSite is not None:
-                    note1.activeSite.insert(note1.offset, textExp)
-                else:
-                    chord1.activeSite.insert(chord1.offset, textExp)
-
-                chord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord2 is not None
-                note2 = chord2
-                if "Chord" in chord2.classes:
-                    # color only the indexed note's accidental in the chord
-                    idx = op[4][1]
-                    note2 = chord2.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                if hasattr(note2, 'pitch') and note2.pitch.accidental:
-                    note2.pitch.accidental.style.color = Visualization.DELETED_COLOR
-                note2.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted accidental")
-                textExp.style.color = Visualization.DELETED_COLOR
-                if note2.activeSite is not None:
-                    note2.activeSite.insert(note2.offset, textExp)
-                else:
-                    chord2.activeSite.insert(chord2.offset, textExp)
-                continue
-
-            if op[0] == "accidentedit":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                assert len(op) == 5  # the indices must be there
-                # color the changed accidental (in both scores)
-                # using Visualization.CHANGED_COLOR
-                chord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord1 is not None
-                note1 = chord1
-                if "Chord" in chord1.classes:
-                    # color just the indexed note in the chord
-                    idx = op[4][0]
-                    note1 = chord1.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                if hasattr(note1, 'pitch') and note1.pitch.accidental:
-                    note1.pitch.accidental.style.color = Visualization.CHANGED_COLOR
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed accidental")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                if note1.activeSite is not None:
-                    note1.activeSite.insert(note1.offset, textExp)
-                else:
-                    chord1.activeSite.insert(chord1.offset, textExp)
-
-                chord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord2 is not None
-                note2 = chord2
-                if "Chord" in chord2.classes:
-                    # color just the indexed note in the chord
-                    idx = op[4][1]
-                    note2 = chord2.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                if hasattr(note2, 'pitch') and note2.pitch.accidental:
-                    note2.pitch.accidental.style.color = Visualization.CHANGED_COLOR
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed accidental")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                if note2.activeSite is not None:
-                    note2.activeSite.insert(note2.offset, textExp)
-                else:
-                    chord2.activeSite.insert(chord2.offset, textExp)
-                continue
-
-            if op[0] == "dotins":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # In music21, the dots are not separately colorable from the note,
-                # so we will just color the modified note here in both scores,
-                # using Visualization.CHANGED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("inserted dot")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("inserted dot")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "dotdel":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # In music21, the dots are not separately colorable from the note,
-                # so we will just color the modified note here in both scores,
-                # using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("deleted dot")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("deleted dot")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:dots){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:dots){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             # tuplets
-            if op[0] == "instuplet":
+            if op[0] in ("instuplet", "deltuplet", "edittuplet"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("inserted tuplet")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("inserted tuplet")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "deltuplet":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("deleted tuplet")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("deleted tuplet")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "edittuplet":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed tuplet")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed tuplet")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:tuplet){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:tuplet){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             # ties
-            if op[0] == "tieins":
+            if op[0] in ("tieins", "tiedel"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -2695,270 +2338,81 @@ class Visualization:
                     assert chord1 is not None
                 note1 = chord1
                 if "Chord" in chord1.classes:
-                    # color just the indexed note in the chord
+                    # report just the indexed note in the chord
                     idx = op[4][0]
                     note1 = chord1.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted tie")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                if note1.activeSite is not None:
-                    note1.activeSite.insert(note1.offset, textExp)
-                else:
-                    chord1.activeSite.insert(chord1.offset, textExp)
-
                 chord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert chord2 is not None
                 note2 = chord2
                 if "Chord" in chord2.classes:
-                    # color just the indexed note in the chord
+                    # report just the indexed note in the chord
                     idx = op[4][1]
                     note2 = chord2.notes[idx]
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted tie")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                if note2.activeSite is not None:
-                    note2.activeSite.insert(note2.offset, textExp)
-                else:
-                    chord2.activeSite.insert(chord2.offset, textExp)
-                continue
-
-            if op[0] == "tiedel":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                assert len(op) == 5  # the indices must be there
-                # Color the modified note in both scores, using Visualization.DELETED_COLOR
-                chord1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord1 is not None
-                note1 = chord1
-                if "Chord" in chord1.classes:
-                    # color just the indexed note in the chord
-                    idx = op[4][0]
-                    note1 = chord1.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted tie")
-                textExp.style.color = Visualization.DELETED_COLOR
-                if note1.activeSite is not None:
-                    note1.activeSite.insert(note1.offset, textExp)
-                else:
-                    chord1.activeSite.insert(chord1.offset, textExp)
-
-                chord2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord2 is not None
-                note2 = chord2
-                if "Chord" in chord2.classes:
-                    # color just the indexed note in the chord
-                    idx = op[4][1]
-                    note2 = chord2.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted tie")
-                textExp.style.color = Visualization.DELETED_COLOR
-                if note2.activeSite is not None:
-                    note2.activeSite.insert(note2.offset, textExp)
-                else:
-                    chord2.activeSite.insert(chord2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:tie){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:tie){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             # expressions
-            if op[0] == "insexpression":
+            if op[0] in ("insexpression", "delexpression", "editexpression"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                # color the note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted expression")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted expression")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "delexpression":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the deleted expression in score1 using Visualization.DELETED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted expression")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted expression")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "editexpression":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed expression")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed expression")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:expression){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:expression){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             # articulations
-            if op[0] == "insarticulation":
+            if op[0] in ("insarticulation", "delarticulation", "editarticulation"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted articulation")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted articulation")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "delarticulation":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.DELETED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted articulation")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted articulation")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "editarticulation":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed articulation")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed articulation")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:articulation){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:articulation){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             # lyrics
-            if op[0] == "inslyric":
+            if op[0] in ("inslyric", "dellyric", "editlyric"):
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.INSERTED_COLOR
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note1.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted lyric")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
                 note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
-                note2.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted lyric")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "dellyric":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.DELETED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted lyric")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted lyric")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
-                continue
-
-            if op[0] == "editlyric":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                output += newLine
+                newLine = "-({note1.classes[0]}:lyric){op[1].precomputed_str}\n"
+                output += newLine
+                newLine = "+({note2.classes[0]}:lyric){op[2].precomputed_str}\n"
+                output += newLine
                 continue
 
             print(
