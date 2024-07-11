@@ -8,7 +8,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ from fractions import Fraction
 import typing as t
 
 import music21 as m21
-from music21.common.numberTools import OffsetQL, opFrac
+from music21.common import OffsetQL, opFrac
 
 from musicdiff import M21Utils
 from musicdiff import DetailLevel

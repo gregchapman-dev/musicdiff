@@ -9,7 +9,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 import sys
@@ -55,6 +55,14 @@ if __name__ == "__main__":
             "AllObjectsWithStyleAndMetadata"],
         help="set detail level (can set multiple details)"
     )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="visual",
+        choices=["visual", "text"],
+        help="'visual' is rendered to PDFs, 'text' is diff-like written to stdout"
+    )
+
     args = parser.parse_args()
 
     detail: int = DetailLevel.Default
@@ -86,7 +94,17 @@ if __name__ == "__main__":
     # or both arguments.
     # Note also that diff() can take str or pathlib.Path for files.
     detailLevel: DetailLevel = detail  # type: ignore
-    numDiffs: int | None = diff(args.file1, args.file2, detail=detailLevel)
+    visualize_diffs: bool = args.output == "visual"
+    print_text_output: bool = args.output == "text"
+
+    numDiffs: int | None = diff(
+        args.file1,
+        args.file2,
+        detail=detailLevel,
+        visualize_diffs=visualize_diffs,
+        print_text_output=print_text_output
+    )
+
     if numDiffs is None:
         print('musicdiff failed.', file=sys.stderr)
     elif numDiffs == 0:

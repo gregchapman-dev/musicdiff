@@ -7,7 +7,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ from enum import IntEnum
 
 # import sys
 import music21 as m21
-from music21.common.types import OffsetQL
+from music21.common import OffsetQL, opFrac
 
 class DetailLevel(IntEnum):
     # Bit definitions (can be |'ed with eachother and with common combinations):
@@ -1497,3 +1497,23 @@ class M21Utils:
         output: bool = hasattr(obj, 'placement') and obj.placement is not None
         output = output or obj.hasStyleInformation
         return output
+
+    @staticmethod
+    def get_part_index(part: m21.stream.Part, score: m21.stream.Score) -> int:
+        # return -1 if part not in score
+        partIdx: int = -1
+        if part is None:
+            return partIdx
+
+        for i, p in enumerate(score.parts):
+            if p is part:
+                partIdx = i
+                break
+
+        return partIdx
+
+    @staticmethod
+    def get_beats(offset: OffsetQL, ts: m21.meter.TimeSignature) -> OffsetQL:
+        wholeNotes: OffsetQL = offset / 4.0
+        beats: OffsetQL = opFrac(wholeNotes * float(ts.denominator))
+        return beats

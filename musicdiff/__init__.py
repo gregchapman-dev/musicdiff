@@ -6,7 +6,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -51,6 +51,7 @@ def diff(
     out_path2: str | Path | None = None,
     force_parse: bool = True,
     visualize_diffs: bool = True,
+    print_text_output: bool = False,
     detail: DetailLevel = DetailLevel.Default
 ) -> int | None:
     '''
@@ -88,7 +89,7 @@ def diff(
         int | None: The number of differences found (0 means the scores were identical,
             None means the diff failed)
     '''
-    # Use the new Humdrum/MEI importers from converter21 in place of the ones in music21...
+    # Use the Humdrum/MEI importers from converter21 in place of the ones in music21...
     # Comment out this line to go back to music21's built-in Humdrum/MEI importers.
     converter21.register()
 
@@ -172,17 +173,22 @@ def diff(
     diff_list, _cost = Comparison.annotated_scores_diff(annotated_score1, annotated_score2)
 
     numDiffs: int = len(diff_list)
-    if visualize_diffs and numDiffs != 0:
-        # you can change these three colors as you like...
-        # Visualization.INSERTED_COLOR = 'red'
-        # Visualization.DELETED_COLOR = 'red'
-        # Visualization.CHANGED_COLOR = 'red'
+    if numDiffs != 0:
+        if visualize_diffs:
+            # you can change these three colors as you like...
+            # Visualization.INSERTED_COLOR = 'red'
+            # Visualization.DELETED_COLOR = 'red'
+            # Visualization.CHANGED_COLOR = 'red'
 
-        # color changed/deleted/inserted notes, add descriptive text for each change, etc
-        Visualization.mark_diffs(score1, score2, diff_list)
+            # color changed/deleted/inserted notes, add descriptive text for each change, etc
+            Visualization.mark_diffs(score1, score2, diff_list)
 
-        # ask music21 to display the scores as PDFs.  Composer's name will be prepended with
-        # 'score1 ' and 'score2 ', respectively, so you can see which is which.
-        Visualization.show_diffs(score1, score2, out_path1, out_path2)
+            # ask music21 to display the scores as PDFs.  Composer's name will be prepended with
+            # 'score1 ' and 'score2 ', respectively, so you can see which is which.
+            Visualization.show_diffs(score1, score2, out_path1, out_path2)
+
+        if print_text_output:
+            text_output: str = Visualization.get_text_output(score1, score2, diff_list)
+            print(text_output)
 
     return numDiffs
