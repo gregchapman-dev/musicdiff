@@ -217,7 +217,9 @@ class AnnNote:
                     lyricStr: str = ""
                     if lyric.number is not None:
                         lyricStr += f"number={lyric.number}"
-                    if lyric._identifier is not None:
+                    if (lyric._identifier is not None
+                            and lyric._identifier != lyric.number
+                            and lyric._identifier != str(lyric.number)):
                         lyricStr += f" identifier={lyric._identifier}"
                     # ignore .syllabic and .text, what is visible is .rawText (and there
                     # are several .syllabic/.text combos that create the same .rawText).
