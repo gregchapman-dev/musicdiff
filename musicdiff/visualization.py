@@ -73,8 +73,9 @@ class Visualization:
                 )  # this apparently does nothing
                 for el in measure2.recurse().notesAndRests:
                     el.style.color = Visualization.INSERTED_COLOR
+                continue
 
-            elif op[0] == "delbar":
+            if op[0] == "delbar":
                 assert isinstance(op[1], AnnMeasure)
                 # color all the notes in the deleted score1 measure
                 # using Visualization.DELETED_COLOR
@@ -89,9 +90,10 @@ class Visualization:
                 )  # this apparently does nothing
                 for el in measure1.recurse().notesAndRests:
                     el.style.color = Visualization.DELETED_COLOR
+                continue
 
             # voices
-            elif op[0] == "voiceins":
+            if op[0] == "voiceins":
                 assert isinstance(op[2], AnnVoice)
                 # color all the notes in the inserted score2 voice
                 # using Visualization.INSERTED_COLOR
@@ -107,8 +109,9 @@ class Visualization:
                 )  # this apparently does nothing
                 for el in voice2.recurse().notesAndRests:
                     el.style.color = Visualization.INSERTED_COLOR
+                continue
 
-            elif op[0] == "voicedel":
+            if op[0] == "voicedel":
                 assert isinstance(op[1], AnnVoice)
                 # color all the notes in the deleted score1 voice
                 # using Visualization.DELETED_COLOR
@@ -124,9 +127,10 @@ class Visualization:
                 )  # this apparently does nothing
                 for el in voice1.recurse().notesAndRests:
                     el.style.color = Visualization.DELETED_COLOR
+                continue
 
             # extra
-            elif op[0] == "extrains":
+            if op[0] == "extrains":
                 assert isinstance(op[2], AnnExtra)
                 # color the extra using Visualization.INSERTED_COLOR,
                 # and add a textExpression describing the insertion.
@@ -147,8 +151,9 @@ class Visualization:
                 else:
                     # extra2 is not a spanner, put the textExp right next to it
                     extra2.activeSite.insert(extra2.offset, textExp)
+                continue
 
-            elif op[0] == "extradel":
+            if op[0] == "extradel":
                 assert isinstance(op[1], AnnExtra)
                 # color the extra using Visualization.DELETED_COLOR, and add a textExpression
                 # describing the deletion.
@@ -169,8 +174,9 @@ class Visualization:
                 else:
                     # extra1 is not a spanner, put the textExp right next to it
                     extra1.activeSite.insert(extra1.offset, textExp)
+                continue
 
-            elif op[0] == "extrasub":
+            if op[0] == "extrasub":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
@@ -213,8 +219,9 @@ class Visualization:
                     # extra is not a spanner, put the textExp right next to it
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
+                continue
 
-            elif op[0] == "extracontentedit":
+            if op[0] == "extracontentedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
@@ -236,8 +243,9 @@ class Visualization:
                 else:
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
+                continue
 
-            elif op[0] == "extraoffsetedit":
+            if op[0] == "extraoffsetedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
@@ -261,8 +269,9 @@ class Visualization:
                 else:
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
+                continue
 
-            elif op[0] == "extradurationedit":
+            if op[0] == "extradurationedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
@@ -286,8 +295,9 @@ class Visualization:
                 else:
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
+                continue
 
-            elif op[0] == "extrastyleedit":
+            if op[0] == "extrastyleedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 sd1 = op[1].styledict
@@ -328,9 +338,10 @@ class Visualization:
                 else:
                     extra1.activeSite.insert(extra1.offset, textExp1)
                     extra2.activeSite.insert(extra2.offset, textExp2)
+                continue
 
             # staff groups
-            elif op[0] == "staffgrpins":
+            if op[0] == "staffgrpins":
                 assert isinstance(op[2], AnnStaffGroup)
                 # add a textExpression describing the insertion.
                 staffGroup2 = score2.recurse().getElementById(
@@ -343,8 +354,9 @@ class Visualization:
                 # insert text at offset 0 in first measure of first part in group
                 insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp)
+                continue
 
-            elif op[0] == "staffgrpdel":
+            if op[0] == "staffgrpdel":
                 assert isinstance(op[1], AnnStaffGroup)
                 # add a textExpression describing the deletion.
                 staffGroup1 = score1.recurse().getElementById(
@@ -357,8 +369,9 @@ class Visualization:
                 # insert text at offset 0 in first measure of first part in group
                 insertionSite = staffGroup1.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp)
+                continue
 
-            elif op[0] == "staffgrpsub":
+            if op[0] == "staffgrpsub":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 # add a textExpression describing the change.
@@ -380,8 +393,9 @@ class Visualization:
                 insertionSite.insert(0, textExp1)
                 insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp2)
+                continue
 
-            elif op[0] == "staffgrpnameedit":
+            if op[0] == "staffgrpnameedit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 # add a textExpression describing the change.
@@ -403,8 +417,9 @@ class Visualization:
                 insertionSite.insert(0, textExp1)
                 insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp2)
+                continue
 
-            elif op[0] == "staffgrpabbreviationedit":
+            if op[0] == "staffgrpabbreviationedit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 # add a textExpression describing the change.
@@ -426,8 +441,9 @@ class Visualization:
                 insertionSite.insert(0, textExp1)
                 insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp2)
+                continue
 
-            elif op[0] == "staffgrpsymboledit":
+            if op[0] == "staffgrpsymboledit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 # add a textExpression describing the change.
@@ -449,8 +465,9 @@ class Visualization:
                 insertionSite.insert(0, textExp1)
                 insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp2)
+                continue
 
-            elif op[0] == "staffgrpbartogetheredit":
+            if op[0] == "staffgrpbartogetheredit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 # add a textExpression describing the change.
@@ -472,8 +489,9 @@ class Visualization:
                 insertionSite.insert(0, textExp1)
                 insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp2)
+                continue
 
-            elif op[0] == "staffgrppartindicesedit":
+            if op[0] == "staffgrppartindicesedit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 # add a textExpression describing the change.
@@ -495,9 +513,10 @@ class Visualization:
                 insertionSite.insert(0, textExp1)
                 insertionSite = staffGroup2.getFirst()[m21.stream.Measure].first()
                 insertionSite.insert(0, textExp2)
+                continue
 
             # note
-            elif op[0] == "noteins":
+            if op[0] == "noteins":
                 assert isinstance(op[2], AnnNote)
                 # color the inserted score2 general note (note, chord, or rest)
                 # using Visualization.INSERTED_COLOR
@@ -516,8 +535,9 @@ class Visualization:
                     f"inserted {note2.classes[0]}")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 noteOrChord2.activeSite.insert(noteOrChord2.offset, textExp)
+                continue
 
-            elif op[0] == "notedel":
+            if op[0] == "notedel":
                 assert isinstance(op[1], AnnNote)
                 # color the deleted score1 general note (note, chord, or rest)
                 # using Visualization.DELETED_COLOR
@@ -535,9 +555,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression(f"deleted {note1.classes[0]}")
                 textExp.style.color = Visualization.DELETED_COLOR
                 noteOrChord1.activeSite.insert(noteOrChord1.offset, textExp)
+                continue
 
             # pitch
-            elif op[0] == "pitchnameedit":
+            if op[0] == "pitchnameedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -577,8 +598,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "inspitch":
+            if op[0] == "inspitch":
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the inserted note in score2 using Visualization.INSERTED_COLOR
@@ -602,8 +624,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "delpitch":
+            if op[0] == "delpitch":
                 assert isinstance(op[1], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the deleted note in score1 using Visualization.DELETED_COLOR
@@ -627,8 +650,9 @@ class Visualization:
                     note1.activeSite.insert(note1.offset, textExp)
                 else:
                     chord1.activeSite.insert(chord1.offset, textExp)
+                continue
 
-            elif op[0] == "headedit":
+            if op[0] == "headedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed note/rest/chord (in both scores)
@@ -648,8 +672,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note head")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "graceedit":
+            if op[0] == "graceedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed note/rest/chord (in both scores)
@@ -669,8 +694,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed grace note")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "graceslashedit":
+            if op[0] == "graceslashedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed note/rest/chord (in both scores)
@@ -690,9 +716,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed grace note slash")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # beam
-            elif op[0] == "insbeam":
+            if op[0] == "insbeam":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
@@ -721,8 +748,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("increased flags")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delbeam":
+            if op[0] == "delbeam":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
@@ -751,8 +779,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("decreased flags")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editbeam":
+            if op[0] == "editbeam":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
@@ -781,8 +810,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed flags")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editnoteshape":
+            if op[0] == "editnoteshape":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -800,8 +830,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note shape")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editspace":
+            if op[0] == "editspace":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -819,8 +850,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "insspace":
+            if op[0] == "insspace":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -838,8 +870,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delspace":
+            if op[0] == "delspace":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -857,8 +890,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editnoteheadfill":
+            if op[0] == "editnoteheadfill":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -876,8 +910,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note head fill")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editnoteheadparenthesis":
+            if op[0] == "editnoteheadparenthesis":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -895,8 +930,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note head paren")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editstemdirection":
+            if op[0] == "editstemdirection":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -914,8 +950,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed stem direction")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editstyle":
+            if op[0] == "editstyle":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 sd1 = op[1].styledict
@@ -949,9 +986,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression(f"changed note {changedStr}")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # accident
-            elif op[0] == "accidentins":
+            if op[0] == "accidentins":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -995,8 +1033,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "accidentdel":
+            if op[0] == "accidentdel":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -1040,8 +1079,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "accidentedit":
+            if op[0] == "accidentedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -1086,8 +1126,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "dotins":
+            if op[0] == "dotins":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # In music21, the dots are not separately colorable from the note,
@@ -1108,8 +1149,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted dot")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "dotdel":
+            if op[0] == "dotdel":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # In music21, the dots are not separately colorable from the note,
@@ -1130,9 +1172,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted dot")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # tuplets
-            elif op[0] == "instuplet":
+            if op[0] == "instuplet":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -1150,8 +1193,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted tuplet")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "deltuplet":
+            if op[0] == "deltuplet":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -1169,8 +1213,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted tuplet")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "edittuplet":
+            if op[0] == "edittuplet":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -1188,9 +1233,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed tuplet")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # ties
-            elif op[0] == "tieins":
+            if op[0] == "tieins":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -1231,8 +1277,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "tiedel":
+            if op[0] == "tiedel":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -1272,9 +1319,10 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
             # expressions
-            elif op[0] == "insexpression":
+            if op[0] == "insexpression":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the note in both scores using Visualization.INSERTED_COLOR
@@ -1293,8 +1341,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted expression")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delexpression":
+            if op[0] == "delexpression":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the deleted expression in score1 using Visualization.DELETED_COLOR
@@ -1313,8 +1362,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted expression")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editexpression":
+            if op[0] == "editexpression":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
@@ -1333,9 +1383,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed expression")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # articulations
-            elif op[0] == "insarticulation":
+            if op[0] == "insarticulation":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
@@ -1354,8 +1405,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted articulation")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delarticulation":
+            if op[0] == "delarticulation":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
@@ -1374,8 +1426,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted articulation")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editarticulation":
+            if op[0] == "editarticulation":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note (in both scores) using Visualization.CHANGED_COLOR
@@ -1394,9 +1447,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed articulation")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # lyrics
-            elif op[0] == "inslyric":
+            if op[0] == "inslyric":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
@@ -1415,8 +1469,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted lyric")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "dellyric":
+            if op[0] == "dellyric":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
@@ -1435,8 +1490,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted lyric")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editlyric":
+            if op[0] == "editlyric":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note (in both scores) using Visualization.CHANGED_COLOR
@@ -1455,12 +1511,12 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed lyric")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            else:
-                print(
-                    f"Annotation type {op[0]} not yet supported for visualization",
-                    file=sys.stderr
-                )
+            print(
+                f"Annotation type {op[0]} not yet supported for visualization",
+                file=sys.stderr
+            )
 
     @staticmethod
     def show_diffs(
@@ -1603,8 +1659,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(measure){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "delbar":
+            if op[0] == "delbar":
                 assert isinstance(op[1], AnnMeasure)
                 measure1 = score1.recurse().getElementById(op[1].measure)  # type: ignore
                 if t.TYPE_CHECKING:
@@ -1613,9 +1670,10 @@ class Visualization:
                 output += newLine
                 newLine = "-(measure){op[1].precomputed_str}\n"
                 output += newLine
+                continue
 
             # voices
-            elif op[0] == "voiceins":
+            if op[0] == "voiceins":
                 assert isinstance(op[2], AnnVoice)
                 voice2 = score2.recurse().getElementById(op[2].voice)  # type: ignore
                 if t.TYPE_CHECKING:
@@ -1624,8 +1682,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(voice){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "voicedel":
+            if op[0] == "voicedel":
                 assert isinstance(op[1], AnnVoice)
                 voice1 = score1.recurse().getElementById(op[1].voice)  # type: ignore
                 if t.TYPE_CHECKING:
@@ -1634,9 +1693,10 @@ class Visualization:
                 output += newLine
                 newLine = "-(voice){op[1].precomputed_str}\n"
                 output += newLine
+                continue
 
             # extra
-            elif op[0] == "extrains":
+            if op[0] == "extrains":
                 assert isinstance(op[2], AnnExtra)
                 extra2 = score2.recurse().getElementById(op[2].extra)  # type: ignore
                 if t.TYPE_CHECKING:
@@ -1645,8 +1705,9 @@ class Visualization:
                 output += newLine
                 newLine = "+({extra2.classes[0]}){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "extradel":
+            if op[0] == "extradel":
                 assert isinstance(op[1], AnnExtra)
                 extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
                 if t.TYPE_CHECKING:
@@ -1655,8 +1716,9 @@ class Visualization:
                 output += newLine
                 newLine = "-({extra1.classes[0]}){op[1].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "extrasub":
+            if op[0] == "extrasub":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
@@ -1670,8 +1732,9 @@ class Visualization:
                 output += newLine
                 newLine = "+({extra2.classes[0]}){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "extracontentedit":
+            if op[0] == "extracontentedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
@@ -1685,8 +1748,9 @@ class Visualization:
                 output += newLine
                 newLine = "+({extra2.classes[0]}:content){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "extraoffsetedit":
+            if op[0] == "extraoffsetedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
@@ -1702,8 +1766,9 @@ class Visualization:
                 output += newLine
                 newLine = "+({extra2.classes[0]}:offset){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "extradurationedit":
+            if op[0] == "extradurationedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
@@ -1717,8 +1782,9 @@ class Visualization:
                 output += newLine
                 newLine = "+({extra2.classes[0]}:dur){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "extrastyleedit":
+            if op[0] == "extrastyleedit":
                 assert isinstance(op[1], AnnExtra)
                 assert isinstance(op[2], AnnExtra)
                 sd1 = op[1].styledict
@@ -1748,9 +1814,10 @@ class Visualization:
                 output += newLine
                 newLine = "+({extra2.classes[0]}:{changedStr}){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
             # staff groups
-            elif op[0] == "staffgrpins":
+            if op[0] == "staffgrpins":
                 assert isinstance(op[2], AnnStaffGroup)
                 staffGroup2 = score2.recurse().getElementById(
                     op[2].staff_group  # type: ignore
@@ -1761,8 +1828,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(StaffGroup){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "staffgrpdel":
+            if op[0] == "staffgrpdel":
                 assert isinstance(op[1], AnnStaffGroup)
                 staffGroup1 = score1.recurse().getElementById(
                     op[1].staff_group  # type: ignore
@@ -1773,8 +1841,9 @@ class Visualization:
                 output += newLine
                 newLine = "-(StaffGroup){op[1].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "staffgrpsub":
+            if op[0] == "staffgrpsub":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 staffGroup1 = score1.recurse().getElementById(
@@ -1792,8 +1861,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(StaffGroup){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "staffgrpnameedit":
+            if op[0] == "staffgrpnameedit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 staffGroup1 = score1.recurse().getElementById(
@@ -1811,8 +1881,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(StaffGroup:name){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "staffgrpabbreviationedit":
+            if op[0] == "staffgrpabbreviationedit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 staffGroup1 = score1.recurse().getElementById(
@@ -1830,8 +1901,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(StaffGroup:abbr){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "staffgrpsymboledit":
+            if op[0] == "staffgrpsymboledit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 staffGroup1 = score1.recurse().getElementById(
@@ -1849,8 +1921,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(StaffGroup:sym){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "staffgrpbartogetheredit":
+            if op[0] == "staffgrpbartogetheredit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 staffGroup1 = score1.recurse().getElementById(
@@ -1868,8 +1941,9 @@ class Visualization:
                 output += newLine
                 newLine = "+(StaffGroup:barline){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
-            elif op[0] == "staffgrppartindicesedit":
+            if op[0] == "staffgrppartindicesedit":
                 assert isinstance(op[1], AnnStaffGroup)
                 assert isinstance(op[2], AnnStaffGroup)
                 staffGroup1 = score1.recurse().getElementById(
@@ -1887,9 +1961,10 @@ class Visualization:
                 output += newLine
                 newLine = "+(StaffGroup:parts){op[2].precomputed_str}\n"
                 output += newLine
+                continue
 
             # note
-            elif op[0] == "noteins":
+            if op[0] == "noteins":
                 assert isinstance(op[2], AnnNote)
                 # color the inserted score2 general note (note, chord, or rest)
                 # using Visualization.INSERTED_COLOR
@@ -1908,8 +1983,9 @@ class Visualization:
                     f"inserted {note2.classes[0]}")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 noteOrChord2.activeSite.insert(noteOrChord2.offset, textExp)
+                continue
 
-            elif op[0] == "notedel":
+            if op[0] == "notedel":
                 assert isinstance(op[1], AnnNote)
                 # color the deleted score1 general note (note, chord, or rest)
                 # using Visualization.DELETED_COLOR
@@ -1927,9 +2003,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression(f"deleted {note1.classes[0]}")
                 textExp.style.color = Visualization.DELETED_COLOR
                 noteOrChord1.activeSite.insert(noteOrChord1.offset, textExp)
+                continue
 
             # pitch
-            elif op[0] == "pitchnameedit":
+            if op[0] == "pitchnameedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -1969,8 +2046,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "inspitch":
+            if op[0] == "inspitch":
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the inserted note in score2 using Visualization.INSERTED_COLOR
@@ -1994,8 +2072,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "delpitch":
+            if op[0] == "delpitch":
                 assert isinstance(op[1], AnnNote)
                 assert len(op) == 5  # the indices must be there
                 # color the deleted note in score1 using Visualization.DELETED_COLOR
@@ -2019,8 +2098,9 @@ class Visualization:
                     note1.activeSite.insert(note1.offset, textExp)
                 else:
                     chord1.activeSite.insert(chord1.offset, textExp)
+                continue
 
-            elif op[0] == "headedit":
+            if op[0] == "headedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed note/rest/chord (in both scores)
@@ -2040,8 +2120,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note head")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "graceedit":
+            if op[0] == "graceedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed note/rest/chord (in both scores)
@@ -2061,8 +2142,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed grace note")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "graceslashedit":
+            if op[0] == "graceslashedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed note/rest/chord (in both scores)
@@ -2082,9 +2164,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed grace note slash")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # beam
-            elif op[0] == "insbeam":
+            if op[0] == "insbeam":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
@@ -2113,8 +2196,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("increased flags")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delbeam":
+            if op[0] == "delbeam":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
@@ -2143,8 +2227,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("decreased flags")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editbeam":
+            if op[0] == "editbeam":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
@@ -2173,8 +2258,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed flags")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editnoteshape":
+            if op[0] == "editnoteshape":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2192,8 +2278,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note shape")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editspace":
+            if op[0] == "editspace":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2211,8 +2298,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "insspace":
+            if op[0] == "insspace":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2230,8 +2318,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delspace":
+            if op[0] == "delspace":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2249,8 +2338,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted space before")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editnoteheadfill":
+            if op[0] == "editnoteheadfill":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2268,8 +2358,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note head fill")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editnoteheadparenthesis":
+            if op[0] == "editnoteheadparenthesis":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2287,8 +2378,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed note head paren")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editstemdirection":
+            if op[0] == "editstemdirection":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2306,8 +2398,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed stem direction")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editstyle":
+            if op[0] == "editstyle":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 sd1 = op[1].styledict
@@ -2341,9 +2434,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression(f"changed note {changedStr}")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # accident
-            elif op[0] == "accidentins":
+            if op[0] == "accidentins":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -2387,8 +2481,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "accidentdel":
+            if op[0] == "accidentdel":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -2432,8 +2527,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "accidentedit":
+            if op[0] == "accidentedit":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -2478,8 +2574,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "dotins":
+            if op[0] == "dotins":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # In music21, the dots are not separately colorable from the note,
@@ -2500,8 +2597,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted dot")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "dotdel":
+            if op[0] == "dotdel":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # In music21, the dots are not separately colorable from the note,
@@ -2522,9 +2620,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted dot")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # tuplets
-            elif op[0] == "instuplet":
+            if op[0] == "instuplet":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2542,8 +2641,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted tuplet")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "deltuplet":
+            if op[0] == "deltuplet":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2561,8 +2661,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted tuplet")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "edittuplet":
+            if op[0] == "edittuplet":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
@@ -2580,9 +2681,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed tuplet")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # ties
-            elif op[0] == "tieins":
+            if op[0] == "tieins":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -2623,8 +2725,9 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
-            elif op[0] == "tiedel":
+            if op[0] == "tiedel":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 assert len(op) == 5  # the indices must be there
@@ -2664,9 +2767,10 @@ class Visualization:
                     note2.activeSite.insert(note2.offset, textExp)
                 else:
                     chord2.activeSite.insert(chord2.offset, textExp)
+                continue
 
             # expressions
-            elif op[0] == "insexpression":
+            if op[0] == "insexpression":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the note in both scores using Visualization.INSERTED_COLOR
@@ -2685,8 +2789,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted expression")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delexpression":
+            if op[0] == "delexpression":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the deleted expression in score1 using Visualization.DELETED_COLOR
@@ -2705,8 +2810,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted expression")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editexpression":
+            if op[0] == "editexpression":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the changed beam (in both scores) using Visualization.CHANGED_COLOR
@@ -2725,9 +2831,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed expression")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # articulations
-            elif op[0] == "insarticulation":
+            if op[0] == "insarticulation":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
@@ -2746,8 +2853,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted articulation")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "delarticulation":
+            if op[0] == "delarticulation":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
@@ -2766,8 +2874,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted articulation")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editarticulation":
+            if op[0] == "editarticulation":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note (in both scores) using Visualization.CHANGED_COLOR
@@ -2786,9 +2895,10 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed articulation")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
             # lyrics
-            elif op[0] == "inslyric":
+            if op[0] == "inslyric":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.INSERTED_COLOR
@@ -2807,8 +2917,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("inserted lyric")
                 textExp.style.color = Visualization.INSERTED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "dellyric":
+            if op[0] == "dellyric":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note in both scores using Visualization.DELETED_COLOR
@@ -2827,8 +2938,9 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("deleted lyric")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            elif op[0] == "editlyric":
+            if op[0] == "editlyric":
                 assert isinstance(op[1], AnnNote)
                 assert isinstance(op[2], AnnNote)
                 # color the modified note (in both scores) using Visualization.CHANGED_COLOR
@@ -2847,11 +2959,11 @@ class Visualization:
                 textExp = m21.expressions.TextExpression("changed lyric")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
+                continue
 
-            else:
-                print(
-                    f"Annotation type {op[0]} not yet supported for visualization",
-                    file=sys.stderr
-                )
+            print(
+                f"Annotation type {op[0]} not yet supported for visualization",
+                file=sys.stderr
+            )
 
         return output
