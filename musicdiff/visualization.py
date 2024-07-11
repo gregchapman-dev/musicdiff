@@ -1599,7 +1599,7 @@ class Visualization:
                 measure2 = score2.recurse().getElementById(op[2].measure)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert measure2 is not None
-                newLine: str = "@@ " + Visualization._location_of(measure2, score2) + " @@\n"
+                newLine: str = f"@@ {Visualization._location_of(measure2, score2)} @@\n"
                 output += newLine
                 newLine = "+(measure){op[2].precomputed_str}\n"
                 output += newLine
@@ -1609,7 +1609,7 @@ class Visualization:
                 measure1 = score1.recurse().getElementById(op[1].measure)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert measure1 is not None
-                newLine = "@@ " + Visualization._location_of(measure1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(measure1, score1)} @@\n"
                 output += newLine
                 newLine = "-(measure){op[1].precomputed_str}\n"
                 output += newLine
@@ -1620,7 +1620,7 @@ class Visualization:
                 voice2 = score2.recurse().getElementById(op[2].voice)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert voice2 is not None
-                newLine = "@@ " + Visualization._location_of(voice2, score2) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(voice2, score2)} @@\n"
                 output += newLine
                 newLine = "+(voice){op[2].precomputed_str}\n"
                 output += newLine
@@ -1630,7 +1630,7 @@ class Visualization:
                 voice1 = score1.recurse().getElementById(op[1].voice)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert voice1 is not None
-                newLine = "@@ " + Visualization._location_of(voice1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(voice1, score1)} @@\n"
                 output += newLine
                 newLine = "-(voice){op[1].precomputed_str}\n"
                 output += newLine
@@ -1641,7 +1641,7 @@ class Visualization:
                 extra2 = score2.recurse().getElementById(op[2].extra)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert extra2 is not None
-                newLine = "@@ " + Visualization._location_of(extra2, score2) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                 output += newLine
                 newLine = "+({extra2.classes[0]}){op[2].precomputed_str}\n"
                 output += newLine
@@ -1651,7 +1651,7 @@ class Visualization:
                 extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert extra1 is not None
-                newLine = "@@ " + Visualization._location_of(extra1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
                 newLine = "-({extra1.classes[0]}){op[1].precomputed_str}\n"
                 output += newLine
@@ -1664,11 +1664,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert extra1 is not None
                     assert extra2 is not None
-                newLine = "@@ " + Visualization._location_of(extra1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
                 newLine = "-({extra1.classes[0]}){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(extra2, score2) + " @@\n"
                 output += newLine
                 newLine = "+({extra2.classes[0]}){op[2].precomputed_str}\n"
                 output += newLine
@@ -1681,11 +1679,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert extra1 is not None
                     assert extra2 is not None
-                newLine = "@@ " + Visualization._location_of(extra1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
                 newLine = "-({extra1.classes[0]}:content){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(extra2, score2) + " @@\n"
                 output += newLine
                 newLine = "+({extra2.classes[0]}:content){op[2].precomputed_str}\n"
                 output += newLine
@@ -1698,11 +1694,11 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert extra1 is not None
                     assert extra2 is not None
-                newLine = "@@ " + Visualization._location_of(extra1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
                 newLine = "-({extra1.classes[0]}:offset){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "@@ " + Visualization._location_of(extra2, score2) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                 output += newLine
                 newLine = "+({extra2.classes[0]}:offset){op[2].precomputed_str}\n"
                 output += newLine
@@ -1715,11 +1711,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert extra1 is not None
                     assert extra2 is not None
-                newLine = "@@ " + Visualization._location_of(extra1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
                 newLine = "-({extra1.classes[0]}:dur){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(extra2, score2) + " @@\n"
                 output += newLine
                 newLine = "+({extra2.classes[0]}:dur){op[2].precomputed_str}\n"
                 output += newLine
@@ -1748,11 +1742,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert extra1 is not None
                     assert extra2 is not None
-                newLine = "@@ " + Visualization._location_of(extra1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
                 newLine = "-({extra1.classes[0]}:{changedStr}){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(extra2, score2) + " @@\n"
                 output += newLine
                 newLine = "+({extra2.classes[0]}:{changedStr}){op[2].precomputed_str}\n"
                 output += newLine
@@ -1765,7 +1757,7 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup2 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup2, score2) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup2, score2)} @@\n"
                 output += newLine
                 newLine = "+(StaffGroup){op[2].precomputed_str}\n"
                 output += newLine
@@ -1777,7 +1769,7 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
                 newLine = "-(StaffGroup){op[1].precomputed_str}\n"
                 output += newLine
@@ -1794,11 +1786,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
                 newLine = "-(StaffGroup){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(staffGroup2, score2) + " @@\n"
                 output += newLine
                 newLine = "+(StaffGroup){op[2].precomputed_str}\n"
                 output += newLine
@@ -1815,11 +1805,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
                 newLine = "-(StaffGroup:name){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(staffGroup2, score2) + " @@\n"
                 output += newLine
                 newLine = "+(StaffGroup:name){op[2].precomputed_str}\n"
                 output += newLine
@@ -1836,11 +1824,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
                 newLine = "-(StaffGroup:abbr){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(staffGroup2, score2) + " @@\n"
                 output += newLine
                 newLine = "+(StaffGroup:abbr){op[2].precomputed_str}\n"
                 output += newLine
@@ -1857,11 +1843,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
                 newLine = "-(StaffGroup:sym){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(staffGroup2, score2) + " @@\n"
                 output += newLine
                 newLine = "+(StaffGroup:sym){op[2].precomputed_str}\n"
                 output += newLine
@@ -1878,11 +1862,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
                 newLine = "-(StaffGroup:barline){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(staffGroup2, score2) + " @@\n"
                 output += newLine
                 newLine = "+(StaffGroup:barline){op[2].precomputed_str}\n"
                 output += newLine
@@ -1899,11 +1881,9 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ " + Visualization._location_of(staffGroup1, score1) + " @@\n"
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
                 newLine = "-(StaffGroup:parts){op[1].precomputed_str}\n"
-                output += newLine
-                newLine = "@@ " + Visualization._location_of(staffGroup2, score2) + " @@\n"
                 output += newLine
                 newLine = "+(StaffGroup:parts){op[2].precomputed_str}\n"
                 output += newLine
