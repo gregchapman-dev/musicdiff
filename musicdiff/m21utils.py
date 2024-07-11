@@ -1514,6 +1514,7 @@ class M21Utils:
 
     @staticmethod
     def get_beats(offset: OffsetQL, ts: m21.meter.TimeSignature) -> OffsetQL:
-        wholeNotes: OffsetQL = offset / 4.0
+        wholeNotes: OffsetQL = opFrac(offset / 4.0)
         beats: OffsetQL = opFrac(wholeNotes * float(ts.denominator))
+        beats = opFrac(beats + 1.0)
         return beats

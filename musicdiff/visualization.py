@@ -20,7 +20,8 @@ import typing as t
 import music21 as m21
 from music21.common import OffsetQL  # , opFrac
 
-from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote, AnnExtra, AnnStaffGroup
+from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
+from musicdiff.annotation import AnnExtra, AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
 
 
@@ -1584,7 +1585,7 @@ class Visualization:
             measStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(score)
             if partIdx != -1:
                 output = f"p{partIdx} "
-            output += f"measNum={m21obj.measureNumberWithSuffix} "
+            output += f"measNum={m21obj.measureNumberWithSuffix()} "
             output += f"scoreOffset={measStartOffset}"
             return output
 
@@ -1600,7 +1601,7 @@ class Visualization:
             voiceStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
             if partIdx != -1:
                 output = f"p{partIdx} "
-            output += f"m{meas.measureNumberWithSuffix} "
+            output += f"m{meas.measureNumberWithSuffix()} "
             ts: m21.meter.TimeSignature | None = m21obj.getContextByClass(m21.meter.TimeSignature)
             if ts is None:
                 ts = m21.meter.TimeSignature()  # 4/4
@@ -1633,7 +1634,7 @@ class Visualization:
         startOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
         if partIdx != -1:
             output = f"p{partIdx} "
-        output += f"m{meas.measureNumberWithSuffix} "
+        output += f"m{meas.measureNumberWithSuffix()} "
         ts = m21obj.getContextByClass(m21.meter.TimeSignature)
         if ts is None:
             ts = m21.meter.TimeSignature()  # 4/4
@@ -1657,7 +1658,7 @@ class Visualization:
                     assert measure2 is not None
                 newLine: str = f"@@ {Visualization._location_of(measure2, score2)} @@\n"
                 output += newLine
-                newLine = "+(measure){op[2].precomputed_str}\n"
+                newLine = f"+(measure){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1668,7 +1669,7 @@ class Visualization:
                     assert measure1 is not None
                 newLine = f"@@ {Visualization._location_of(measure1, score1)} @@\n"
                 output += newLine
-                newLine = "-(measure){op[1].precomputed_str}\n"
+                newLine = f"-(measure){op[1].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1680,7 +1681,7 @@ class Visualization:
                     assert voice2 is not None
                 newLine = f"@@ {Visualization._location_of(voice2, score2)} @@\n"
                 output += newLine
-                newLine = "+(voice){op[2].precomputed_str}\n"
+                newLine = f"+(voice){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1691,7 +1692,7 @@ class Visualization:
                     assert voice1 is not None
                 newLine = f"@@ {Visualization._location_of(voice1, score1)} @@\n"
                 output += newLine
-                newLine = "-(voice){op[1].precomputed_str}\n"
+                newLine = f"-(voice){op[1].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1703,7 +1704,7 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                 output += newLine
-                newLine = "+({extra2.classes[0]}){op[2].precomputed_str}\n"
+                newLine = f"+({extra2.classes[0]}){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1714,7 +1715,7 @@ class Visualization:
                     assert extra1 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
-                newLine = "-({extra1.classes[0]}){op[1].precomputed_str}\n"
+                newLine = f"-({extra1.classes[0]}){op[1].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1728,9 +1729,9 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
-                newLine = "-({extra1.classes[0]}){op[1].precomputed_str}\n"
+                newLine = f"-({extra1.classes[0]}){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({extra2.classes[0]}){op[2].precomputed_str}\n"
+                newLine = f"+({extra2.classes[0]}){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1744,9 +1745,9 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
-                newLine = "-({extra1.classes[0]}:content){op[1].precomputed_str}\n"
+                newLine = f"-({extra1.classes[0]}:content){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({extra2.classes[0]}:content){op[2].precomputed_str}\n"
+                newLine = f"+({extra2.classes[0]}:content){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1760,11 +1761,11 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
-                newLine = "-({extra1.classes[0]}:offset){op[1].precomputed_str}\n"
+                newLine = f"-({extra1.classes[0]}:offset){op[1].precomputed_str}\n"
                 output += newLine
                 newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                 output += newLine
-                newLine = "+({extra2.classes[0]}:offset){op[2].precomputed_str}\n"
+                newLine = f"+({extra2.classes[0]}:offset){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1778,9 +1779,9 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
-                newLine = "-({extra1.classes[0]}:dur){op[1].precomputed_str}\n"
+                newLine = f"-({extra1.classes[0]}:dur){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({extra2.classes[0]}:dur){op[2].precomputed_str}\n"
+                newLine = f"+({extra2.classes[0]}:dur){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1810,9 +1811,9 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
-                newLine = "-({extra1.classes[0]}:{changedStr}){op[1].precomputed_str}\n"
+                newLine = f"-({extra1.classes[0]}:{changedStr}){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({extra2.classes[0]}:{changedStr}){op[2].precomputed_str}\n"
+                newLine = f"+({extra2.classes[0]}:{changedStr}){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1826,7 +1827,7 @@ class Visualization:
                     assert staffGroup2 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup2, score2)} @@\n"
                 output += newLine
-                newLine = "+(StaffGroup){op[2].precomputed_str}\n"
+                newLine = f"+(StaffGroup){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1839,7 +1840,7 @@ class Visualization:
                     assert staffGroup1 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
-                newLine = "-(StaffGroup){op[1].precomputed_str}\n"
+                newLine = f"-(StaffGroup){op[1].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1857,9 +1858,9 @@ class Visualization:
                     assert staffGroup2 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
-                newLine = "-(StaffGroup){op[1].precomputed_str}\n"
+                newLine = f"-(StaffGroup){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+(StaffGroup){op[2].precomputed_str}\n"
+                newLine = f"+(StaffGroup){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1877,9 +1878,9 @@ class Visualization:
                     assert staffGroup2 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
-                newLine = "-(StaffGroup:name){op[1].precomputed_str}\n"
+                newLine = f"-(StaffGroup:name){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+(StaffGroup:name){op[2].precomputed_str}\n"
+                newLine = f"+(StaffGroup:name){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1897,9 +1898,9 @@ class Visualization:
                     assert staffGroup2 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
-                newLine = "-(StaffGroup:abbr){op[1].precomputed_str}\n"
+                newLine = f"-(StaffGroup:abbr){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+(StaffGroup:abbr){op[2].precomputed_str}\n"
+                newLine = f"+(StaffGroup:abbr){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1917,9 +1918,9 @@ class Visualization:
                     assert staffGroup2 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
-                newLine = "-(StaffGroup:sym){op[1].precomputed_str}\n"
+                newLine = f"-(StaffGroup:sym){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+(StaffGroup:sym){op[2].precomputed_str}\n"
+                newLine = f"+(StaffGroup:sym){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1937,9 +1938,9 @@ class Visualization:
                     assert staffGroup2 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
-                newLine = "-(StaffGroup:barline){op[1].precomputed_str}\n"
+                newLine = f"-(StaffGroup:barline){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+(StaffGroup:barline){op[2].precomputed_str}\n"
+                newLine = f"+(StaffGroup:barline){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1957,9 +1958,9 @@ class Visualization:
                     assert staffGroup2 is not None
                 newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
                 output += newLine
-                newLine = "-(StaffGroup:parts){op[1].precomputed_str}\n"
+                newLine = f"-(StaffGroup:parts){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+(StaffGroup:parts){op[2].precomputed_str}\n"
+                newLine = f"+(StaffGroup:parts){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1978,7 +1979,7 @@ class Visualization:
                     note2 = noteOrChord2
                 newLine = f"@@ {Visualization._location_of(noteOrChord2, score2)} @@\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -1996,7 +1997,7 @@ class Visualization:
                     note1 = noteOrChord1
                 newLine = f"@@ {Visualization._location_of(noteOrChord1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}){op[1].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2027,9 +2028,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:pitch){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:pitch){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:pitch){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:pitch){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2048,7 +2049,7 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord2, score2)} @@\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:pitch){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:pitch){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2067,7 +2068,7 @@ class Visualization:
                     assert note1 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:pitch){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:pitch){op[1].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2082,9 +2083,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:head){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:head){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:head){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:head){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2099,9 +2100,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:grace){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:grace){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:grace){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:grace){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2116,9 +2117,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:graceslash){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:graceslash){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:graceslash){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:graceslash){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2134,9 +2135,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:flagsbeams){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:flagsbeams){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:flagsbeams){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:flagsbeams){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2151,9 +2152,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:noteshape){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:noteshape){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:noteshape){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:noteshape){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2168,9 +2169,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:spacebefore){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:spacebefore){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:spacebefore){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:spacebefore){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2185,9 +2186,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:notefill){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:notefill){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:notefill){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:notefill){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2202,9 +2203,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:noteparen){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:noteparen){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:noteparen){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:noteparen){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2219,9 +2220,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:stemdir){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:stemdir){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:stemdir){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:stemdir){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2252,9 +2253,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:{changedStr}){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:{changedStr}){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:{changedStr}){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:{changedStr}){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2285,9 +2286,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:accid){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:accid){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:accid){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:accid){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2302,9 +2303,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:dots){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:dots){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:dots){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:dots){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2320,9 +2321,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:tuplet){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:tuplet){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:tuplet){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:tuplet){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2355,9 +2356,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:tie){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:tie){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:tie){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:tie){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2373,9 +2374,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:expression){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:expression){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:expression){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:expression){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2391,9 +2392,9 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:articulation){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:articulation){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:articulation){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:articulation){op[2].precomputed_str}\n"
                 output += newLine
                 continue
 
@@ -2409,9 +2410,37 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 output += newLine
-                newLine = "-({note1.classes[0]}:lyric){op[1].precomputed_str}\n"
+                newLine = f"-({note1.classes[0]}:lyric){op[1].precomputed_str}\n"
                 output += newLine
-                newLine = "+({note2.classes[0]}:lyric){op[2].precomputed_str}\n"
+                newLine = f"+({note2.classes[0]}:lyric){op[2].precomputed_str}\n"
+                output += newLine
+                continue
+
+            # metadata
+            if op[0] == "mditemins":
+                assert isinstance(op[2], AnnMetadataItem)
+                newLine = "@@ score.metadata @@\n"
+                output += newLine
+                newLine = f"+(metadata){op[2].key}:{op[2].value}\n"
+                output += newLine
+                continue
+
+            if op[0] == "mditemdel":
+                assert isinstance(op[1], AnnMetadataItem)
+                newLine = "@@ score.metadata @@\n"
+                output += newLine
+                newLine = f"-(metadata){op[1].key}:{op[1].value}\n"
+                output += newLine
+                continue
+
+            if op[0] == "mditemsub":
+                assert isinstance(op[1], AnnMetadataItem)
+                assert isinstance(op[2], AnnMetadataItem)
+                newLine = "@@ score.metadata @@\n"
+                output += newLine
+                newLine = f"-(metadata){op[1].key}:{op[1].value}\n"
+                output += newLine
+                newLine = f"+(metadata){op[2].key}:{op[2].value}\n"
                 output += newLine
                 continue
 
