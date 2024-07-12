@@ -44,7 +44,8 @@ class AnnNote:
             gap_dur (OffsetQL): gap since end of last note (or since start of measure, if
                 first note in measure).  Usually zero.
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
-            tuplet_list (list): A list of tuplet info about this GeneralNote.
+            tuplet_list (list): A list of basic tuplet info about this GeneralNote.
+            tuplet_info (list): A list of detailed tuplet info about this GeneralNote.
             detail (DetailLevel): What level of detail to use during the diff.
                 Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
                 GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
@@ -260,6 +261,175 @@ class AnnNote:
         size += len(self.lyrics)
         return size
 
+    def get_pitches_string(self) -> str:
+        string: str = "["
+        for p in self.pitches:  # add for pitches
+            string += p[0]  # pitch name and octave
+            string += p[1]  # pitch accidental
+            string += ","
+        string = string[:-1]  # delete the last comma
+        string += "]"
+        return string
+
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str
+        if name == "":
+            # a simple representation (e.g. this was inserted)
+            # just pitch(es) for now
+            string = self.get_pitches_string()
+            return string
+
+        if name == "pitch":
+            string = self.get_pitches_string()
+            string += " pitch[{idx}]={self.pitches[idx][0]}"
+            return string
+
+        if name == "head":
+            string = self.get_pitches_string()
+            if self.note_head == 4:
+                string += " head=normal"
+            else:
+                string += m21.duration.typeFromNumDict[float(self.note_head)]
+            return string
+
+        if name == "grace":
+            string = self.get_pitches_string() + " " + f"grace={self.graceType}"
+            return string
+
+        if name == "graceslash":
+            string = self.get_pitches_string()
+            if self.graceSlash:
+                string += " with grace slash"
+            else:
+                string += " with no grace slash"
+            return string
+
+        if name == "flagsbeams":
+            string = self.get_pitches_string()
+            numBeams: int = len(self.beamings)
+            if numBeams == 0:
+                string += " no flags/beams"
+                return string
+
+            if all([b == "partial" for b in self.beamings]):
+                string += f" {numBeams} flags"
+                return string
+
+            # it's beams, not flags
+            string += f" beams=["
+            for i, b in enumerate(self.beamings):
+                if i > 0:
+                    string += ", "
+                string += b
+            string += "]"
+            return string
+
+        if name == "noteshape":
+            string = self.get_pitches_string()
+            string += " noteshape={self.noteshape}"
+            return string
+
+        if name == "spacebefore":
+            string = self.get_pitches_string()
+            string += f" spacebefore={self.gap_dur}"
+
+        if name == "notefill":
+            string = self.get_pitches_string()
+            string += " noteheadFill={self.noteheadFill}"
+            return string
+
+        if name == "noteparen":
+            string = self.get_pitches_string()
+            string += " noteheadParenthesis={self.noteheadParenthesis}"
+            return string
+
+        if name == "stemdir":
+            string = self.get_pitches_string()
+            string += " stemDirection={self.stemDirection}"
+            return string
+
+        if name == "style":
+            string = self.get_pitches_string()
+            changedKeys: list[str] = changedStr.split(',')
+            if not changedKeys:
+                string += " changedStyle={}"
+                return string
+
+            string += " changedStyle={"
+            for i, k in enumerate(changedKeys):
+                if i > 0:
+                    string += ", "
+                string += f"{k}:{self.styledict[k]}"
+            string += "}"
+            return string
+
+        if name == "accid":
+            string = self.get_pitches_string()
+            string += " accid[{idx}]={self.pitches[idx][1]}"
+            return string
+
+        if name == "dots":
+            string = self.get_pitches_string()
+            string += " dots={self.dots}"
+
+        if name == "tuplet":
+            string = self.get_pitches_string()
+            string += " tuplets=["
+            for i, (tup, ti) in enumerate(zip(self.tuplets, self.tuplet_info)):
+                if i > 0:
+                    string += ", "
+                if ti != "":
+                    ti = "(" + ti + ")"
+                if tup == "start":
+                    string += "start" + ti
+                elif tup == "continue":
+                    string += "continue" + ti
+                elif tup == "stop":
+                    string += "stop" + ti
+
+            string += "]"
+            return string
+
+        if name == "tie":
+            string = self.get_pitches_string()
+            if self.pitches[idx][2]:
+                string += " tied"
+            else:
+                string += " not tied"
+            return string
+
+        if name == "expression":
+            string = self.get_pitches_string()
+            string += " expressions=["
+            for i, exp in enumerate(self.expressions):
+                if i > 0:
+                    string += ", "
+                string += exp
+            string += "]"
+            return string
+
+        if name == "artic":
+            string = self.get_pitches_string()
+            string += " articulations=["
+            for i, artic in enumerate(self.articulations):
+                if i > 0:
+                    string += ", "
+                string += artic
+            string += "]"
+            return string
+
+        if name == "lyric":
+            string = self.get_pitches_string()
+            string += " lyrics=["
+            for i, lyric in enumerate(self.lyrics):
+                if i > 0:
+                    string += ", "
+                string += lyric
+            string += "]"
+            return string
+
+        return ""  # should never get here
+
     def __repr__(self) -> str:
         # does consider the MEI id!
         return (
@@ -289,7 +459,7 @@ class AnnNote:
         if self.graceType:
             string += self.graceType
             if self.graceSlash:
-                string += '/'
+                string += "/"
         if len(self.beamings) > 0:  # add for beaming
             string += "B"
             for b in self.beamings:
@@ -320,21 +490,21 @@ class AnnNote:
 
         if len(self.articulations) > 0:  # add for articulations
             for a in self.articulations:
-                string += ' ' + a
+                string += " " + a
         if len(self.expressions) > 0:  # add for articulations
             for e in self.expressions:
-                string += ' ' + e
+                string += " " + e
         if len(self.lyrics) > 0:  # add for lyrics
             for lyric in self.lyrics:
-                string += ' ' + lyric
+                string += " " + lyric
 
-        if self.noteshape != 'normal':
+        if self.noteshape != "normal":
             string += f" noteshape={self.noteshape}"
         if self.noteheadFill is not None:
             string += f" noteheadFill={self.noteheadFill}"
         if self.noteheadParenthesis:
             string += f" noteheadParenthesis={self.noteheadParenthesis}"
-        if self.stemDirection != 'unspecified':
+        if self.stemDirection != "unspecified":
             string += f" stemDirection={self.stemDirection}"
 
         # gap_dur
@@ -344,7 +514,7 @@ class AnnNote:
         # and then the style fields
         for i, (k, v) in enumerate(self.styledict.items()):
             if i == 0:
-                string += ' '
+                string += " "
             if i > 0:
                 string += ","
             string += f"{k}={v}"
