@@ -1584,8 +1584,7 @@ class Visualization:
             partIdx: int = M21Utils.get_part_index(part, score)
             measStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(score)
             if partIdx != -1:
-                output = f"p{partIdx} "
-            output += f"measNum={m21obj.measureNumberWithSuffix()} "
+                output = f"part {partIdx}, "
             output += f"scoreOffset={measStartOffset}"
             return output
 
@@ -1600,13 +1599,13 @@ class Visualization:
             partIdx = M21Utils.get_part_index(part, score)
             voiceStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
             if partIdx != -1:
-                output = f"p{partIdx} "
-            output += f"m{meas.measureNumberWithSuffix()} "
+                output = f"part {partIdx}, "
+            output += f"measure {meas.measureNumberWithSuffix()}, "
             ts: m21.meter.TimeSignature | None = m21obj.getContextByClass(m21.meter.TimeSignature)
             if ts is None:
                 ts = m21.meter.TimeSignature()  # 4/4
             fractionalBeats: OffsetQL = M21Utils.get_beats(voiceStartOffset, ts)
-            output += f"b{fractionalBeats}"
+            output += f"beat {fractionalBeats}"
             return output
 
         # spanner
@@ -1634,13 +1633,13 @@ class Visualization:
         partIdx = M21Utils.get_part_index(part, score)
         startOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
         if partIdx != -1:
-            output = f"p{partIdx} "
-        output += f"m{meas.measureNumberWithSuffix()} "
+            output = f"part {partIdx}, "
+        output += f"measure {meas.measureNumberWithSuffix()}, "
         ts = m21obj.getContextByClass(m21.meter.TimeSignature)
         if ts is None:
             ts = m21.meter.TimeSignature()  # 4/4
         fractionalBeats = M21Utils.get_beats(startOffset, ts)
-        output += f"b{fractionalBeats}"
+        output += f"beat {fractionalBeats}"
         return output
 
     @staticmethod
@@ -1821,8 +1820,8 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 output += newLine
-                style1: str = op[1].readable_str('style', changedStr)
-                style2: str = op[2].readable_str('style', changedStr)
+                style1: str = op[1].readable_str('style', changedStr=changedStr)
+                style2: str = op[2].readable_str('style', changedStr=changedStr)
                 newLine = f"-({extra1.classes[0]}:{changedStr}){style1}\n"
                 output += newLine
                 if op[1].offset != op[2].offset:
@@ -1840,7 +1839,7 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup2 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"+(StaffGroup){op[2].readable_str()}\n"
                 output += newLine
@@ -1853,7 +1852,7 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup){op[1].readable_str()}\n"
                 output += newLine
@@ -1871,7 +1870,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup){op[1].readable_str()}\n"
                 output += newLine
@@ -1891,7 +1890,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:name){op[1].readable_str('name')}\n"
                 output += newLine
@@ -1911,7 +1910,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:abbr){op[1].readable_str('abbr')}\n"
                 output += newLine
@@ -1931,7 +1930,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:sym){op[1].readable_str('sym')}\n"
                 output += newLine
@@ -1951,7 +1950,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:barline){op[1].readable_str('barline')}\n"
                 output += newLine
@@ -1971,7 +1970,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ score StaffGroups @@\n"
+                newLine = "@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:parts){op[1].readable_str('parts')}\n"
                 output += newLine

@@ -265,7 +265,8 @@ class AnnNote:
         string: str = "["
         for p in self.pitches:  # add for pitches
             string += p[0]  # pitch name and octave
-            string += p[1]  # pitch accidental
+            if p[1] != "None":
+                string += p[1]  # pitch accidental
             string += ","
         string = string[:-1]  # delete the last comma
         string += "]"
@@ -311,12 +312,15 @@ class AnnNote:
                 string += " no flags/beams"
                 return string
 
-            if all([b == "partial" for b in self.beamings]):
-                string += f" {numBeams} flags"
+            if all(b == "partial" for b in self.beamings):
+                if numBeams == 1:
+                    string += f" {numBeams} flag"
+                else:
+                    string += f" {numBeams} flags"
                 return string
 
             # it's beams, not flags
-            string += f" beams=["
+            string += " beams=["
             for i, b in enumerate(self.beamings):
                 if i > 0:
                     string += ", "
@@ -326,7 +330,7 @@ class AnnNote:
 
         if name == "noteshape":
             string = self.get_pitches_string()
-            string += " noteshape={self.noteshape}"
+            string += f" noteshape={self.noteshape}"
             return string
 
         if name == "spacebefore":
@@ -335,17 +339,17 @@ class AnnNote:
 
         if name == "notefill":
             string = self.get_pitches_string()
-            string += " noteheadFill={self.noteheadFill}"
+            string += f" noteheadFill={self.noteheadFill}"
             return string
 
         if name == "noteparen":
             string = self.get_pitches_string()
-            string += " noteheadParenthesis={self.noteheadParenthesis}"
+            string += f" noteheadParenthesis={self.noteheadParenthesis}"
             return string
 
         if name == "stemdir":
             string = self.get_pitches_string()
-            string += " stemDirection={self.stemDirection}"
+            string += f" stemDirection={self.stemDirection}"
             return string
 
         if name == "style":
@@ -365,12 +369,12 @@ class AnnNote:
 
         if name == "accid":
             string = self.get_pitches_string()
-            string += " accid[{idx}]={self.pitches[idx][1]}"
+            string += f" accid[{idx}]={self.pitches[idx][1]}"
             return string
 
         if name == "dots":
             string = self.get_pitches_string()
-            string += " dots={self.dots}"
+            string += f" dots={self.dots}"
 
         if name == "tuplet":
             string = self.get_pitches_string()
@@ -645,6 +649,42 @@ class AnnExtra:
         """
         return self._notation_size
 
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str = self.content
+        if name == "":
+            if self.duration > 0:
+                string += f" dur={self.duration}"
+            if self.numNotes != 1:
+                string += f" numNotes={self.numNotes}"
+            return string
+
+        if name == "content":
+            return string
+
+        if name == "offset":
+            # offset change will be obvious in the location line
+            return string
+
+        if name == "duration":
+            string += f" dur={self.duration}"
+            return string
+
+        if name == "style":
+            changedKeys: list[str] = changedStr.split(',')
+            if not changedKeys:
+                string += " changedStyle={}"
+                return string
+
+            string += " changedStyle={"
+            for i, k in enumerate(changedKeys):
+                if i > 0:
+                    string += ", "
+                string += f"{k}:{self.styledict[k]}"
+            string += "}"
+            return string
+
+        return ""  # should never get here
+
     def __repr__(self) -> str:
         return str(self)
 
@@ -754,6 +794,19 @@ class AnnVoice:
         """
         return sum([an.notation_size() for an in self.annot_notes])
 
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str = "["
+        for an in self.annot_notes:
+            string += an.readable_str()
+            string += ","
+
+        if string[-1] == ",":
+            # delete the last comma
+            string = string[:-1]
+
+        string += "]"
+        return string
+
     def __repr__(self) -> str:
         return self.annot_notes.__repr__()
 
@@ -810,8 +863,8 @@ class AnnMeasure:
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
         self.n_of_elements: int = 0
 
-        # for debugging only
-        # self.measureNumber: int | None = measure.measureNumber
+        # for text output only (see self.readable_str())
+        self.measureNumber: int | None = measure.measureNumberWithSuffix()
         # if self.measureNumber == 135:
         #     print('135')
 
@@ -934,6 +987,10 @@ class AnnMeasure:
 
         return self.precomputed_str == other.precomputed_str
         # return all([v[0] == v[1] for v in zip(self.voices_list, other.voices_list)])
+
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str = f"measure {self.measureNumber}"
+        return string
 
     def notation_size(self) -> int:
         """
@@ -1118,6 +1175,33 @@ class AnnStaffGroup:
 
         return True
 
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str = f"StaffGroup{self.part_indices}"
+        if name == "":
+            return string
+
+        if name == "name":
+            string += f" name={self.name}"
+            return string
+
+        if name == "abbr":
+            string += f" abbr={self.abbreviation}"
+            return string
+
+        if name == "sym":
+            string += f" sym={self.symbol}"
+            return string
+
+        if name == "barline":
+            string += f" barTogether={self.barTogether}"
+            return string
+
+        if name == "parts":
+            # main string already has parts in it
+            return string
+
+        return ""
+
     def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnStaffGroup`.
@@ -1193,6 +1277,9 @@ class AnnMetadataItem:
             return False
 
         return True
+
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        return str(self)
 
     def __str__(self) -> str:
         return self.__repr__()
