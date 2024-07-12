@@ -1607,6 +1607,7 @@ class Visualization:
                 ts = m21.meter.TimeSignature()  # 4/4
             fractionalBeats: OffsetQL = M21Utils.get_beats(voiceStartOffset, ts)
             output += f"b{fractionalBeats}"
+            return output
 
         # spanner
         if isinstance(m21obj, m21.spanner.Spanner):
@@ -1825,7 +1826,7 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup2 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup2, score2)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"+(StaffGroup){op[2].precomputed_str}\n"
                 output += newLine
@@ -1838,7 +1839,7 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup){op[1].precomputed_str}\n"
                 output += newLine
@@ -1856,7 +1857,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup){op[1].precomputed_str}\n"
                 output += newLine
@@ -1876,7 +1877,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:name){op[1].precomputed_str}\n"
                 output += newLine
@@ -1896,7 +1897,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:abbr){op[1].precomputed_str}\n"
                 output += newLine
@@ -1916,7 +1917,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:sym){op[1].precomputed_str}\n"
                 output += newLine
@@ -1936,7 +1937,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:barline){op[1].precomputed_str}\n"
                 output += newLine
@@ -1956,7 +1957,7 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                newLine = f"@@ score StaffGroups @@\n"
                 output += newLine
                 newLine = f"-(StaffGroup:parts){op[1].precomputed_str}\n"
                 output += newLine
@@ -2419,7 +2420,7 @@ class Visualization:
             # metadata
             if op[0] == "mditemins":
                 assert isinstance(op[2], AnnMetadataItem)
-                newLine = "@@ score.metadata @@\n"
+                newLine = "@@ score Metadata @@\n"
                 output += newLine
                 newLine = f"+(metadata){op[2].key}:{op[2].value}\n"
                 output += newLine
@@ -2427,7 +2428,7 @@ class Visualization:
 
             if op[0] == "mditemdel":
                 assert isinstance(op[1], AnnMetadataItem)
-                newLine = "@@ score.metadata @@\n"
+                newLine = "@@ score Metadata @@\n"
                 output += newLine
                 newLine = f"-(metadata){op[1].key}:{op[1].value}\n"
                 output += newLine
@@ -2436,7 +2437,7 @@ class Visualization:
             if op[0] == "mditemsub":
                 assert isinstance(op[1], AnnMetadataItem)
                 assert isinstance(op[2], AnnMetadataItem)
-                newLine = "@@ score.metadata @@\n"
+                newLine = "@@ score Metadata @@\n"
                 output += newLine
                 newLine = f"-(metadata){op[1].key}:{op[1].value}\n"
                 output += newLine

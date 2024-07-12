@@ -1513,6 +1513,20 @@ class M21Utils:
         return partIdx
 
     @staticmethod
+    def get_measure_number(meas: m21.stream.Measure, part: m21.stream.Part) -> str:
+        output: str = meas.measureNumberWithSuffix()
+        if output:
+            return output
+
+        # fall back to measure index within part
+        for i, m in enumerate(part[m21.stream.Measure]):
+            if m is meas:
+                output = str(i)
+                break
+
+        return output
+
+    @staticmethod
     def get_beats(offset: OffsetQL, ts: m21.meter.TimeSignature) -> OffsetQL:
         wholeNotes: OffsetQL = opFrac(offset / 4.0)
         beats: OffsetQL = opFrac(wholeNotes * float(ts.denominator))
