@@ -77,6 +77,19 @@ class AnnNote:
         self.note_dur_dots: int = 0
         self.note_is_grace: bool = False
 
+        # fullNameSuffix is only for text output, it is not involved in comparison at all.
+        # It is of the form "Dotted Quarter Rest", etc.
+        self.fullNameSuffix: str = general_note.duration.fullName
+        if isinstance(general_note, m21.note.Rest):
+            self.fullNameSuffix += " Rest"
+        elif isinstance(general_note, m21.chord.ChordBase):
+            self.fullNameSuffix += " Chord"
+        elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched)):
+            self.fullNameSuffix += " Note"
+        else:
+            self.fullNameSuffix += " Note"
+        self.fullNameSuffix = self.fullNameSuffix.lower()
+
         if not DetailLevel.includesVoicing(detail):
             # if we're comparing the individual notes, we need to make a note of
             # offset and visual duration to be used later when searching for matching
@@ -261,178 +274,235 @@ class AnnNote:
         size += len(self.lyrics)
         return size
 
-    def get_pitches_string(self) -> str:
-        string: str = "["
-        for p in self.pitches:  # add for pitches
-            string += p[0]  # pitch name and octave
-            if p[1] != "None":
-                string += p[1]  # pitch accidental
-            string += ","
-        string = string[:-1]  # delete the last comma
-        string += "]"
+    def get_identifying_string(self, name: str = "") -> str:
+        string: str = ""
+        if self.fullNameSuffix.endswith("rest"):
+            string = self.fullNameSuffix
+        elif self.fullNameSuffix.endswith("note"):
+            string = self.pitches[0][0]
+            if self.pitches[0][1] != "None":
+                string += " " + self.pitches[0][1]
+            string += " (" + self.fullNameSuffix + ")"
+        elif self.fullNameSuffix.endswith("chord"):
+            string = "["
+            for p in self.pitches:  # add for pitches
+                string += p[0]  # pitch name and octave
+                if p[1] != "None":
+                    string += " " + p[1]  # pitch accidental
+                string += ","
+            string = string[:-1]  # delete the last comma
+            string += "] (" + self.fullNameSuffix + ")"
         return string
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str
-        if name == "":
-            # a simple representation (e.g. this was inserted)
-            # just pitch(es) for now
-            string = self.get_pitches_string()
-            return string
-
+        string: str = self.get_identifying_string(name)
         if name == "pitch":
-            string = self.get_pitches_string()
-            string += " pitch[{idx}]={self.pitches[idx][0]}"
-            return string
-
-        if name == "head":
-            string = self.get_pitches_string()
-            if self.note_head == 4:
-                string += " head=normal"
-            else:
-                string += m21.duration.typeFromNumDict[float(self.note_head)]
-            return string
-
-        if name == "grace":
-            string = self.get_pitches_string() + " " + f"grace={self.graceType}"
-            return string
-
-        if name == "graceslash":
-            string = self.get_pitches_string()
-            if self.graceSlash:
-                string += " with grace slash"
-            else:
-                string += " with no grace slash"
-            return string
-
-        if name == "flagsbeams":
-            string = self.get_pitches_string()
-            numBeams: int = len(self.beamings)
-            if numBeams == 0:
-                string += " no flags/beams"
-                return string
-
-            if all(b == "partial" for b in self.beamings):
-                if numBeams == 1:
-                    string += f" {numBeams} flag"
-                else:
-                    string += f" {numBeams} flags"
-                return string
-
-            # it's beams, not flags
-            string += " beams=["
-            for i, b in enumerate(self.beamings):
-                if i > 0:
-                    string += ", "
-                string += b
-            string += "]"
-            return string
-
-        if name == "noteshape":
-            string = self.get_pitches_string()
-            string += f" noteshape={self.noteshape}"
-            return string
-
-        if name == "spacebefore":
-            string = self.get_pitches_string()
-            string += f" spacebefore={self.gap_dur}"
-
-        if name == "notefill":
-            string = self.get_pitches_string()
-            string += f" noteheadFill={self.noteheadFill}"
-            return string
-
-        if name == "noteparen":
-            string = self.get_pitches_string()
-            string += f" noteheadParenthesis={self.noteheadParenthesis}"
-            return string
-
-        if name == "stemdir":
-            string = self.get_pitches_string()
-            string += f" stemDirection={self.stemDirection}"
-            return string
-
-        if name == "style":
-            string = self.get_pitches_string()
-            changedKeys: list[str] = changedStr.split(',')
-            if not changedKeys:
-                string += " changedStyle={}"
-                return string
-
-            string += " changedStyle={"
-            for i, k in enumerate(changedKeys):
-                if i > 0:
-                    string += ", "
-                string += f"{k}:{self.styledict[k]}"
-            string += "}"
+            # this is only for "pitch", not for "" (pitches are in identifying string)
+            if self.fullNameSuffix.endswith("chord"):
+                string += f", pitch[{idx}]={self.pitches[idx][0]}"
             return string
 
         if name == "accid":
-            string = self.get_pitches_string()
-            string += f" accid[{idx}]={self.pitches[idx][1]}"
+            # this is only for "accid" (indexed in a chord), not for "", or for "accid" on a note
+            # (accidental is in identifying string)
+            if self.fullNameSuffix.endswith("chord"):
+                string += f", accid[{idx}]={self.pitches[idx][1]}"
             return string
+
+        if name == "head":
+            # this is only for "head", not for "" (head is implied by identifying string)
+            if self.note_head == 4:
+                string += ", head=normal"
+            else:
+                string += f", head={m21.duration.typeFromNumDict[float(self.note_head)]}"
+            if name:
+                return string
 
         if name == "dots":
-            string = self.get_pitches_string()
-            string += f" dots={self.dots}"
-
-        if name == "tuplet":
-            string = self.get_pitches_string()
-            string += " tuplets=["
-            for i, (tup, ti) in enumerate(zip(self.tuplets, self.tuplet_info)):
-                if i > 0:
-                    string += ", "
-                if ti != "":
-                    ti = "(" + ti + ")"
-                if tup == "start":
-                    string += "start" + ti
-                elif tup == "continue":
-                    string += "continue" + ti
-                elif tup == "stop":
-                    string += "stop" + ti
-
-            string += "]"
+            # this is only for "dots", not for "" (dots is in identifying string)
+            string += f", dots={self.dots}"
             return string
 
-        if name == "tie":
-            string = self.get_pitches_string()
-            if self.pitches[idx][2]:
-                string += " tied"
+        if not name or name == "flagsbeams":
+            numBeams: int = len(self.beamings)
+            # Flags are implied by identifying string, so do not belong when name=="".
+            # And "no beams" is boring for name=="".  Non-zero beams, though, we always
+            # want to see.
+            if numBeams == 0:
+                if name:
+                    string += ", no flags/beams"
+                    return string
+            elif all(b == "partial" for b in self.beamings):
+                if name:
+                    if numBeams == 1:
+                        string += f", {numBeams} flag"
+                    else:
+                        string += f", {numBeams} flags"
+                    return string
             else:
-                string += " not tied"
-            return string
+                # it's beams, not flags
+                if numBeams == 1:
+                    string += f", {numBeams} beam="
+                else:
+                    string += f", {numBeams} beams=["
+                for i, b in enumerate(self.beamings):
+                    if i > 0:
+                        string += ", "
+                    string += b
+                if numBeams > 1:
+                    string += "]"
+                if name:
+                    return string
 
-        if name == "expression":
-            string = self.get_pitches_string()
-            string += " expressions=["
-            for i, exp in enumerate(self.expressions):
-                if i > 0:
-                    string += ", "
-                string += exp
-            string += "]"
-            return string
+        if not name or name == "tuplet":
+            if name or self.tuplets:
+                string += ", tuplets=["
+                for i, (tup, ti) in enumerate(zip(self.tuplets, self.tuplet_info)):
+                    if i > 0:
+                        string += ", "
+                    if ti != "":
+                        ti = "(" + ti + ")"
+                    if tup == "start":
+                        string += "start" + ti
+                    elif tup == "continue":
+                        string += "continue" + ti
+                    elif tup == "stop":
+                        string += "stop" + ti
 
-        if name == "artic":
-            string = self.get_pitches_string()
-            string += " articulations=["
-            for i, artic in enumerate(self.articulations):
-                if i > 0:
-                    string += ", "
-                string += artic
-            string += "]"
-            return string
+                string += "]"
+                if name:
+                    return string
 
-        if name == "lyric":
-            string = self.get_pitches_string()
-            string += " lyrics=["
-            for i, lyric in enumerate(self.lyrics):
-                if i > 0:
-                    string += ", "
-                string += lyric
-            string += "]"
-            return string
+        if not name or name == "tie":
+            if self.pitches[idx][2]:
+                string += ", tied"
+            elif name:
+                string += ", not tied"
+            if name:
+                return string
 
-        return ""  # should never get here
+
+        if not name or name == "grace":
+            if not name:
+                if self.graceType:
+                    string += f", grace={self.graceType}"
+            else:
+                string += f", grace={self.graceType}"
+            if name:
+                return string
+
+        if not name or name == "graceslash":
+            if self.graceType:
+                if self.graceSlash:
+                    string += ", with grace slash"
+                else:
+                    string += ", with no grace slash"
+            if name:
+                return string
+
+        if not name or name == "noteshape":
+            if not name:
+                if self.noteshape != "normal":
+                    string += f", noteshape={self.noteshape}"
+            else:
+                string += f", noteshape={self.noteshape}"
+            if name:
+                return string
+
+        if not name or name == "notefill":
+            if not name:
+                if self.noteheadFill is not None:
+                    string += f", noteheadFill={self.noteheadFill}"
+            else:
+                string += f", noteheadFill={self.noteheadFill}"
+            if name:
+                return string
+
+        if not name or name == "noteparen":
+            if not name:
+                if self.noteheadParenthesis:
+                    string += f", noteheadParenthesis={self.noteheadParenthesis}"
+            else:
+                string += f", noteheadParenthesis={self.noteheadParenthesis}"
+            if name:
+                return string
+
+        if not name or name == "stemdir":
+            if not name:
+                if self.stemDirection != "unspecified":
+                    string += f", stemDirection={self.stemDirection}"
+            else:
+                string += f", stemDirection={self.stemDirection}"
+            if name:
+                return string
+
+        if not name or name == "spacebefore":
+            if not name:
+                if self.gap_dur != 0:
+                    string += f", spacebefore={self.gap_dur}"
+            else:
+                string += f", spacebefore={self.gap_dur}"
+            if name:
+                return string
+
+        if not name or name == "artic":
+            if name or self.articulations:
+                string += ", articulations=["
+                for i, artic in enumerate(self.articulations):
+                    if i > 0:
+                        string += ", "
+                    string += artic
+                string += "]"
+            if name:
+                return string
+
+        if not name or name == "expression":
+            if name or self.expressions:
+                string += ", expressions=["
+                for i, exp in enumerate(self.expressions):
+                    if i > 0:
+                        string += ", "
+                    string += exp
+                string += "]"
+            if name:
+                return string
+
+        if not name or name == "lyric":
+            if name or self.lyrics:
+                string += ", lyrics=["
+                for i, lyric in enumerate(self.lyrics):
+                    if i > 0:
+                        string += ", "
+                    string += lyric
+                string += "]"
+            if name:
+                return string
+
+        if not name or name == "style":
+            if name or self.styledict:
+                allOfThem: bool = False
+                changedKeys: list[str] = []
+                if changedStr:
+                    changedKeys = changedStr.split(",")
+                else:
+                    # pylint: disable=consider-iterating-dictionary
+                    changedKeys = [str(k) for k in self.styledict.keys()]
+                    # pylint: enable=consider-iterating-dictionary
+                    allOfThem = True
+
+                if allOfThem:
+                    string += ", style={"
+                else:
+                    string += ", changedStyle={"
+                for i, k in enumerate(changedKeys):
+                    if i > 0:
+                        string += ", "
+                    string += f"{k}:{self.styledict[k]}"
+                string += "}"
+            if name:
+                return string
+
+        return string
 
     def __repr__(self) -> str:
         # does consider the MEI id!
