@@ -1576,16 +1576,22 @@ class Visualization:
     def _location_of(m21obj: m21.base.Music21Object, score: m21.stream.Score) -> str:
         output: str
 
+        if isinstance(m21obj, (m21.metadata.Metadata, m21.layout.StaffGroup)):
+            # These are not in the timeline.  Put them first (there may be a
+            # a part 0/measure 0, but the first beat of that measure is beat 1).
+            output = "part 0, measure 0, beat 0.0"
+            return output
+
         # measure
         if isinstance(m21obj, m21.stream.Measure):
             part: m21.stream.Stream | None = score.containerInHierarchy(m21obj)
             if not isinstance(part, m21.stream.Part):
                 return ""
             partIdx: int = M21Utils.get_part_index(part, score)
-            measStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(score)
-            if partIdx != -1:
-                output = f"part {partIdx}, "
-            output += f"scoreOffset={measStartOffset}"
+            output = f"part {partIdx}, "
+            output += f"measure {M21Utils.get_measure_number_with_suffix(m21obj, part)}, "
+            fractionalBeats: OffsetQL = 1.
+            output += f"beat {fractionalBeats}"
             return output
 
         # voice
@@ -1600,11 +1606,11 @@ class Visualization:
             voiceStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
             if partIdx != -1:
                 output = f"part {partIdx}, "
-            output += f"measure {meas.measureNumberWithSuffix()}, "
+            output += f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
             ts: m21.meter.TimeSignature | None = m21obj.getContextByClass(m21.meter.TimeSignature)
             if ts is None:
                 ts = m21.meter.TimeSignature()  # 4/4
-            fractionalBeats: OffsetQL = M21Utils.get_beats(voiceStartOffset, ts)
+            fractionalBeats = M21Utils.get_beats(voiceStartOffset, ts)
             output += f"beat {fractionalBeats}"
             return output
 
@@ -1634,7 +1640,7 @@ class Visualization:
         startOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
         if partIdx != -1:
             output = f"part {partIdx}, "
-        output += f"measure {meas.measureNumberWithSuffix()}, "
+        output += f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
         ts = m21obj.getContextByClass(m21.meter.TimeSignature)
         if ts is None:
             ts = m21.meter.TimeSignature()  # 4/4
@@ -1648,7 +1654,10 @@ class Visualization:
         score2: m21.stream.Score,
         operations: list[tuple]
     ) -> str:
-        output: str = ""
+        output: str
+        outputList: list[str] = []
+        oneOutput: str  # one string, multiple lines (with \n at end of all but last line)
+
         for op in operations:
             # bar
             if op[0] == "insbar":
@@ -1657,9 +1666,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert measure2 is not None
                 newLine: str = f"@@ {Visualization._location_of(measure2, score2)} @@\n"
-                output += newLine
-                newLine = f"+(measure) {op[2].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"+(measure) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "delbar":
@@ -1668,9 +1678,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert measure1 is not None
                 newLine = f"@@ {Visualization._location_of(measure1, score1)} @@\n"
-                output += newLine
-                newLine = f"-(measure) {op[1].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-(measure) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # voices
@@ -1680,9 +1691,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert voice2 is not None
                 newLine = f"@@ {Visualization._location_of(voice2, score2)} @@\n"
-                output += newLine
-                newLine = f"+(voice) {op[2].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"+(voice) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "voicedel":
@@ -1691,9 +1703,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert voice1 is not None
                 newLine = f"@@ {Visualization._location_of(voice1, score1)} @@\n"
-                output += newLine
-                newLine = f"-(voice) {op[1].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-(voice) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # extra
@@ -1703,9 +1716,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                output += newLine
-                newLine = f"+({extra2.classes[0]}) {op[2].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"+({extra2.classes[0]}) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "extradel":
@@ -1714,9 +1728,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert extra1 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
-                output += newLine
-                newLine = f"-({extra1.classes[0]}) {op[1].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-({extra1.classes[0]}) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "extrasub":
@@ -1728,14 +1743,19 @@ class Visualization:
                     assert extra1 is not None
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
-                output += newLine
-                newLine = f"-({extra1.classes[0]}) {op[1].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-({extra1.classes[0]}) {op[1].readable_str()}"
+                oneOutput += newLine
                 if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                    output += newLine
-                newLine = f"+({extra2.classes[0]}) {op[2].readable_str()}\n"
-                output += newLine
+                    oneOutput = newLine
+                else:
+                    oneOutput += '\n'
+
+                newLine = f"+({extra2.classes[0]}) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "extracontentedit":
@@ -1747,14 +1767,18 @@ class Visualization:
                     assert extra1 is not None
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
-                output += newLine
-                newLine = f"-({extra1.classes[0]}:content) {op[1].readable_str('content')}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-({extra1.classes[0]}:content) {op[1].readable_str('content')}"
+                oneOutput += newLine
                 if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                    output += newLine
-                newLine = f"+({extra2.classes[0]}:content) {op[2].readable_str('content')}\n"
-                output += newLine
+                    oneOutput = newLine
+                else:
+                    oneOutput += '\n'
+                newLine = f"+({extra2.classes[0]}:content) {op[2].readable_str('content')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "extraoffsetedit":
@@ -1766,13 +1790,16 @@ class Visualization:
                     assert extra1 is not None
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
-                output += newLine
-                newLine = f"-({extra1.classes[0]}:offset) {op[1].readable_str('offset')}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-({extra1.classes[0]}:offset) {op[1].readable_str('offset')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+
                 newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                output += newLine
-                newLine = f"+({extra2.classes[0]}:offset) {op[2].readable_str('offset')}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"+({extra2.classes[0]}:offset) {op[2].readable_str('offset')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "extradurationedit":
@@ -1784,14 +1811,18 @@ class Visualization:
                     assert extra1 is not None
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
-                output += newLine
-                newLine = f"-({extra1.classes[0]}:dur) {op[1].readable_str('duration')}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-({extra1.classes[0]}:dur) {op[1].readable_str('duration')}"
+                oneOutput += newLine
                 if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                    output += newLine
-                newLine = f"+({extra2.classes[0]}:dur) {op[2].readable_str('duration')}\n"
-                output += newLine
+                    oneOutput += newLine
+                else:
+                    oneOutput += "\n"
+                newLine = f"+({extra2.classes[0]}:dur) {op[2].readable_str('duration')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "extrastyleedit":
@@ -1819,16 +1850,19 @@ class Visualization:
                     assert extra1 is not None
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 style1: str = op[1].readable_str('style', changedStr=changedStr)
                 style2: str = op[2].readable_str('style', changedStr=changedStr)
-                newLine = f"-({extra1.classes[0]}:{changedStr}) {style1}\n"
-                output += newLine
+                newLine = f"-({extra1.classes[0]}:{changedStr}) {style1}"
+                oneOutput += newLine
                 if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                    output += newLine
-                newLine = f"+({extra2.classes[0]}:{changedStr}) {style2}\n"
-                output += newLine
+                    oneOutput = newLine
+                else:
+                    oneOutput += "\n"
+                newLine = f"+({extra2.classes[0]}:{changedStr}) {style2}"
+                oneOutput += newLine
                 continue
 
             # staff groups
@@ -1839,10 +1873,11 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup2 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
-                newLine = f"+(StaffGroup) {op[2].readable_str()}\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup2, score2)} @@\n"
+                oneOutput = newLine
+                newLine = f"+(StaffGroup) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "staffgrpdel":
@@ -1852,10 +1887,11 @@ class Visualization:
                 )
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
-                newLine = f"-(StaffGroup) {op[1].readable_str()}\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(StaffGroup) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "staffgrpsub":
@@ -1870,12 +1906,13 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                oneOutput = newLine
                 newLine = f"-(StaffGroup) {op[1].readable_str()}\n"
-                output += newLine
-                newLine = f"+(StaffGroup) {op[2].readable_str()}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+(StaffGroup) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "staffgrpnameedit":
@@ -1890,12 +1927,13 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                oneOutput = newLine
                 newLine = f"-(StaffGroup:name) {op[1].readable_str('name')}\n"
-                output += newLine
-                newLine = f"+(StaffGroup:name) {op[2].readable_str('name')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+(StaffGroup:name) {op[2].readable_str('name')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "staffgrpabbreviationedit":
@@ -1910,12 +1948,13 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                oneOutput = newLine
                 newLine = f"-(StaffGroup:abbr) {op[1].readable_str('abbr')}\n"
-                output += newLine
-                newLine = f"+(StaffGroup:abbr) {op[2].readable_str('abbr')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+(StaffGroup:abbr) {op[2].readable_str('abbr')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "staffgrpsymboledit":
@@ -1930,12 +1969,13 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                oneOutput = newLine
                 newLine = f"-(StaffGroup:sym) {op[1].readable_str('sym')}\n"
-                output += newLine
-                newLine = f"+(StaffGroup:sym) {op[2].readable_str('sym')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+(StaffGroup:sym) {op[2].readable_str('sym')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "staffgrpbartogetheredit":
@@ -1950,12 +1990,13 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                oneOutput = newLine
                 newLine = f"-(StaffGroup:barline) {op[1].readable_str('barline')}\n"
-                output += newLine
-                newLine = f"+(StaffGroup:barline) {op[2].readable_str('barline')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+(StaffGroup:barline) {op[2].readable_str('barline')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "staffgrppartindicesedit":
@@ -1970,12 +2011,13 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert staffGroup1 is not None
                     assert staffGroup2 is not None
-                newLine = "@@ score StaffGroups @@\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(staffGroup1, score1)} @@\n"
+                oneOutput = newLine
                 newLine = f"-(StaffGroup:parts) {op[1].readable_str('parts')}\n"
-                output += newLine
-                newLine = f"+(StaffGroup:parts) {op[2].readable_str('parts')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+(StaffGroup:parts) {op[2].readable_str('parts')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # note
@@ -1992,9 +2034,10 @@ class Visualization:
                 else:
                     note2 = noteOrChord2
                 newLine = f"@@ {Visualization._location_of(noteOrChord2, score2)} @@\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}) {op[2].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"+({note2.classes[0]}) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "notedel":
@@ -2010,9 +2053,10 @@ class Visualization:
                 else:
                     note1 = noteOrChord1
                 newLine = f"@@ {Visualization._location_of(noteOrChord1, score1)} @@\n"
-                output += newLine
-                newLine = f"-({note1.classes[0]}) {op[1].readable_str()}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-({note1.classes[0]}) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # pitch
@@ -2043,11 +2087,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:pitch) {op[1].readable_str('pitch', idx=idx)}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:pitch) {op[2].readable_str('pitch', idx=idx)}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:pitch) {op[2].readable_str('pitch', idx=idx)}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "inspitch":
@@ -2066,9 +2111,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord2, score2)} @@\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:pitch) {op[2].readable_str('pitch', idx=idx)}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"+({note2.classes[0]}:pitch) {op[2].readable_str('pitch', idx=idx)}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "delpitch":
@@ -2087,9 +2133,10 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note1 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                output += newLine
-                newLine = f"-({note1.classes[0]}:pitch) {op[1].readable_str('pitch', idx=idx)}\n"
-                output += newLine
+                oneOutput = newLine
+                newLine = f"-({note1.classes[0]}:pitch) {op[1].readable_str('pitch', idx=idx)}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "headedit":
@@ -2102,11 +2149,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:head) {op[1].readable_str('head')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:head) {op[2].readable_str('head')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:head) {op[2].readable_str('head')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "graceedit":
@@ -2119,11 +2167,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:grace) {op[1].readable_str('grace')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:grace) {op[2].readable_str('grace')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:grace) {op[2].readable_str('grace')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "graceslashedit":
@@ -2136,11 +2185,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:graceslash) {op[1].readable_str('graceslash')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:graceslash) {op[2].readable_str('graceslash')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:graceslash) {op[2].readable_str('graceslash')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # beam
@@ -2154,11 +2204,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:flagsbeams) {op[1].readable_str('flagsbeams')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:flagsbeams) {op[2].readable_str('flagsbeams')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:flagsbeams) {op[2].readable_str('flagsbeams')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "editnoteshape":
@@ -2171,11 +2222,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:noteshape) {op[1].readable_str('noteshape')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:noteshape) {op[2].readable_str('noteshape')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:noteshape) {op[2].readable_str('noteshape')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] in ("editspace", "insspace", "delspace"):
@@ -2188,11 +2240,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:spacebefore) {op[1].readable_str('spacebefore')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:spacebefore) {op[2].readable_str('spacebefore')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:spacebefore) {op[2].readable_str('spacebefore')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "editnoteheadfill":
@@ -2205,11 +2258,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:notefill) {op[1].readable_str('notefill')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:notefill) {op[2].readable_str('notefill')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:notefill) {op[2].readable_str('notefill')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "editnoteheadparenthesis":
@@ -2222,11 +2276,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:noteparen) {op[1].readable_str('noteparen')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:noteparen) {op[2].readable_str('noteparen')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:noteparen) {op[2].readable_str('noteparen')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "editstemdirection":
@@ -2239,11 +2294,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:stemdir) {op[1].readable_str('stemdir')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:stemdir) {op[2].readable_str('stemdir')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:stemdir) {op[2].readable_str('stemdir')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "editstyle":
@@ -2274,11 +2330,12 @@ class Visualization:
                 style1 = op[1].readable_str('style', changedStr=changedStr)
                 style2 = op[2].readable_str('style', changedStr=changedStr)
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:{changedStr}) {style1}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:{changedStr}) {style2}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:{changedStr}) {style2}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # accident
@@ -2309,11 +2366,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:accid) {op[1].readable_str('accid', idx=idx)}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:accid) {op[2].readable_str('accid', idx=idx)}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:accid) {op[2].readable_str('accid', idx=idx)}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] in ("dotins", "dotdel"):
@@ -2326,11 +2384,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:dots) {op[1].readable_str('dots')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:dots) {op[2].readable_str('dots')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:dots) {op[2].readable_str('dots')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # tuplets
@@ -2344,11 +2403,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:tuplet) {op[1].readable_str('tuplet')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:tuplet) {op[2].readable_str('tuplet')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:tuplet) {op[2].readable_str('tuplet')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # ties
@@ -2381,11 +2441,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:tie) {op[1].readable_str('tie', idx=idx)}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:tie) {op[2].readable_str('tie', idx=idx)}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:tie) {op[2].readable_str('tie', idx=idx)}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # expressions
@@ -2399,11 +2460,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:expression) {op[1].readable_str('expression')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:expression) {op[2].readable_str('expression')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:expression) {op[2].readable_str('expression')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # articulations
@@ -2417,11 +2479,12 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:artic) {op[1].readable_str('artic')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:artic) {op[2].readable_str('artic')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:artic) {op[2].readable_str('artic')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # lyrics
@@ -2435,39 +2498,43 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                output += newLine
+                oneOutput = newLine
                 newLine = f"-({note1.classes[0]}:lyric) {op[1].readable_str('lyric')}\n"
-                output += newLine
-                newLine = f"+({note2.classes[0]}:lyric) {op[2].readable_str('lyric')}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+({note2.classes[0]}:lyric) {op[2].readable_str('lyric')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # metadata
             if op[0] == "mditemins":
                 assert isinstance(op[2], AnnMetadataItem)
-                newLine = "@@ score Metadata @@\n"
-                output += newLine
-                newLine = f"+(metadata) {op[1].readable_str()}\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"+(metadata) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "mditemdel":
                 assert isinstance(op[1], AnnMetadataItem)
-                newLine = "@@ score Metadata @@\n"
-                output += newLine
-                newLine = f"-(metadata) {op[1].readable_str()}\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(metadata) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             if op[0] == "mditemsub":
                 assert isinstance(op[1], AnnMetadataItem)
                 assert isinstance(op[2], AnnMetadataItem)
-                newLine = "@@ score Metadata @@\n"
-                output += newLine
+                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
+                oneOutput = newLine
                 newLine = f"-(metadata) {op[1].readable_str()}\n"
-                output += newLine
-                newLine = f"+(metadata) {op[2].readable_str()}\n"
-                output += newLine
+                oneOutput += newLine
+                newLine = f"+(metadata) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             print(
@@ -2475,4 +2542,5 @@ class Visualization:
                 file=sys.stderr
             )
 
+        output = '\n'.join(outputList)
         return output

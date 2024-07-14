@@ -1512,8 +1512,22 @@ class M21Utils:
 
         return partIdx
 
+#     @staticmethod
+#     def get_measure_number(meas: m21.stream.Measure, part: m21.stream.Part) -> int:
+#         output: int = meas.number
+#         if output:
+#             return output
+#
+#         # fall back to measure index within part
+#         for i, m in enumerate(part[m21.stream.Measure]):
+#             if m is meas:
+#                 output = i
+#                 break
+#
+#         return output
+
     @staticmethod
-    def get_measure_number(meas: m21.stream.Measure, part: m21.stream.Part) -> str:
+    def get_measure_number_with_suffix(meas: m21.stream.Measure, part: m21.stream.Part) -> str:
         output: str = meas.measureNumberWithSuffix()
         if output:
             return output

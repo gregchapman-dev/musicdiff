@@ -934,7 +934,7 @@ class AnnMeasure:
         self.n_of_elements: int = 0
 
         # for text output only (see self.readable_str())
-        self.measureNumber: int | None = measure.measureNumberWithSuffix()
+        self.measureNumber: str = M21Utils.get_measure_number_with_suffix(measure, part)
         # if self.measureNumber == 135:
         #     print('135')
 
