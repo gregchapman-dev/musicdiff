@@ -15,10 +15,12 @@ __docformat__ = "google"
 
 from pathlib import Path
 import sys
+import re
 import typing as t
+from fractions import Fraction
 
 import music21 as m21
-from music21.common import OffsetQL  # , opFrac
+from music21.common import OffsetQL, opFrac
 
 from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
 from musicdiff.annotation import AnnExtra, AnnStaffGroup, AnnMetadataItem
@@ -2542,5 +2544,62 @@ class Visualization:
                 file=sys.stderr
             )
 
+        # Sort by measure number (int), then measure number suffix (str), then part
+        # number, and then beat (as parsed from "@@ part 2, measure 3b, beat 1.5 @@")
+        # The goal is for all measure 5's to be printed first (part 0's measure 5
+        # first), with the contents of each measure 5 coming out in beat order.
+        LOC_PATTERN: str = r"\@\@ part (\d+), measure (\d+)(\w*), beat (\d+|\d+[./]\d+) \@\@"
+        def measNum(s: str) -> int:
+            m = re.match(LOC_PATTERN, s)
+            if not m:
+                return -1
+            measNumStr: str = m.group(2)
+            measNum: int = -1
+            try:
+                measNum = int(measNumStr)
+            except Exception:
+                pass
+            return measNum
+
+        def measSuf(s: str) -> str:
+            m = re.match(LOC_PATTERN, s)
+            if not m:
+                return ''
+            measSuf: str = m.group(3)
+            return measSuf
+
+        def partIdx(s: str) -> int:
+            m = re.match(LOC_PATTERN, s)
+            if not m:
+                return -1
+            partIdxStr: str = m.group(1)
+            partIdx: int = -1
+            try:
+                partIdx = int(partIdxStr)
+            except Exception:
+                pass
+            return partIdx
+
+        def beat(s: str) -> OffsetQL:
+            # can be of the form "n/m" (Fraction) or "n.m" (float)
+            m = re.match(LOC_PATTERN, s)
+            if not m:
+                return 0.
+            beatStr: str = m.group(4)
+            beats: OffsetQL = 0.
+            beatsFrac: Fraction = Fraction(0, 1)
+            beatsFloat: float = 0.
+            try:
+                if "/" in beatStr:
+                    beatsFrac = Fraction(beatStr)
+                    beats = opFrac(beatsFrac)
+                else:
+                    beatsFloat = float(beatStr)
+                    beats = opFrac(beatsFloat)
+            except Exception:
+                pass
+            return beats
+
+        outputList.sort(key=lambda s: (measNum(s), measSuf(s), partIdx(s), beat(s)))
         output = '\n'.join(outputList)
         return output
