@@ -1580,8 +1580,8 @@ class Visualization:
 
         if isinstance(m21obj, (m21.metadata.Metadata, m21.layout.StaffGroup)):
             # These are not in the timeline.  Put them first (there may be a
-            # a part 0/measure 0, but the first beat of that measure is beat 1).
-            output = "measure 0, part 0, beat 0.0"
+            # a measure 0/staff 0, but the first beat of that measure is beat 1).
+            output = "measure 0, staff 0, beat 0.0"
             return output
 
         # measure
@@ -1591,7 +1591,7 @@ class Visualization:
                 return ""
             partIdx: int = M21Utils.get_part_index(part, score)
             output = f"measure {M21Utils.get_measure_number_with_suffix(m21obj, part)}, "
-            output += f"part {partIdx}, "
+            output += f"staff {partIdx}, "
             fractionalBeats: OffsetQL = 1.
             output += f"beat {fractionalBeats}"
             return output
@@ -1608,7 +1608,7 @@ class Visualization:
             voiceStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
             output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
             if partIdx != -1:
-                output += f"part {partIdx}, "
+                output += f"staff {partIdx}, "
             ts: m21.meter.TimeSignature | None = m21obj.getContextByClass(m21.meter.TimeSignature)
             if ts is None:
                 ts = m21.meter.TimeSignature()  # 4/4
@@ -1642,7 +1642,7 @@ class Visualization:
         startOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
         output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
         if partIdx != -1:
-            output += f"part {partIdx}, "
+            output += f"staff {partIdx}, "
         ts = m21obj.getContextByClass(m21.meter.TimeSignature)
         if ts is None:
             ts = m21.meter.TimeSignature()  # 4/4
@@ -2545,10 +2545,10 @@ class Visualization:
             )
 
         # Sort by measure number (int), then measure number suffix (str), then part
-        # number, and then beat (as parsed from "@@ part 2, measure 3b, beat 1.5 @@")
-        # The goal is for all measure 5's to be printed first (part 0's measure 5
-        # first), with the contents of each measure 5 coming out in beat order.
-        LOC_PATTERN: str = r"\@\@ measure (\d+)(\w*), part (\d+), beat (\d+|\d+[./]\d+) \@\@"
+        # number, and then beat (as parsed from "@@ measure 3b, staff 2, beat 1.5 @@")
+        # The goal is for all measure 0's to be printed first (with measure 0's staff 0
+        # first), with the contents of each staff of each measure coming out in beat order.
+        LOC_PATTERN: str = r"\@\@ measure (\d+)(\w*), staff (\d+), beat (\d+|\d+[./]\d+) \@\@"
         def measNum(s: str) -> int:
             m = re.match(LOC_PATTERN, s)
             if not m:
