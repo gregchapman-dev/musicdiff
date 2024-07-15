@@ -52,7 +52,7 @@ def diff(
     force_parse: bool = True,
     visualize_diffs: bool = True,
     print_text_output: bool = False,
-    detail: DetailLevel = DetailLevel.Default
+    detail: DetailLevel | int = DetailLevel.Default
 ) -> int | None:
     '''
     Compare two musical scores and optionally save/display the differences as two marked-up
@@ -77,7 +77,7 @@ def diff(
         visualize_diffs (bool): Whether or not to render diffs as marked up PDFs. If False,
             the only result of the call will be the return value (the number of differences).
             (default is True)
-        detail (DetailLevel): What level of detail to use during the diff.
+        detail (DetailLevel | int): What level of detail to use during the diff.
             Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
             GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
             Default (currently AllObjects), or any combination (|) of GeneralNotes,

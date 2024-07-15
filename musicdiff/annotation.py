@@ -34,7 +34,7 @@ class AnnNote:
         tuplet_info: list[str],
         parent_chord: m21.chord.ChordBase | None = None,
         chord_offset: OffsetQL | None = None,  # only set if this note is inside a chord
-        detail: DetailLevel = DetailLevel.Default,
+        detail: DetailLevel | int = DetailLevel.Default,
     ) -> None:
         """
         Extend music21 GeneralNote with some precomputed, easily compared information about it.
@@ -616,7 +616,7 @@ class AnnExtra:
         extra: m21.base.Music21Object,
         measure: m21.stream.Measure,
         score: m21.stream.Score,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
         """
         Extend music21 non-GeneralNote and non-Stream objects with some precomputed,
@@ -781,7 +781,7 @@ class AnnVoice:
         self,
         voice: m21.stream.Voice | m21.stream.Measure,
         enclosingMeasure: m21.stream.Measure,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
         """
         Extend music21 Voice with some precomputed, easily compared information about it.
@@ -910,7 +910,7 @@ class AnnMeasure:
         part: m21.stream.Part,
         score: m21.stream.Score,
         spannerBundle: m21.spanner.SpannerBundle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
         """
         Extend music21 Measure with some precomputed, easily compared information about it.
@@ -1104,7 +1104,7 @@ class AnnPart:
         part: m21.stream.Part,
         score: m21.stream.Score,
         spannerBundle: m21.spanner.SpannerBundle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ):
         """
         Extend music21 Part/PartStaff with some precomputed, easily compared information about it.
@@ -1180,7 +1180,7 @@ class AnnStaffGroup:
         self,
         staff_group: m21.layout.StaffGroup,
         part_to_index: dict[m21.stream.Part, int],
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
         """
         Take a StaffGroup and store it as an annotated object.
@@ -1377,7 +1377,7 @@ class AnnScore:
     def __init__(
         self,
         score: m21.stream.Score,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
         """
         Take a music21 score and store it as a sequence of Full Trees.

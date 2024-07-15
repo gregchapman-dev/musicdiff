@@ -93,14 +93,13 @@ if __name__ == "__main__":
     # Note that diff() can take a music21 Score instead of a file, for either
     # or both arguments.
     # Note also that diff() can take str or pathlib.Path for files.
-    detailLevel: DetailLevel = detail  # type: ignore
     visualize_diffs: bool = args.output == "visual"
     print_text_output: bool = args.output == "text"
 
     numDiffs: int | None = diff(
         args.file1,
         args.file2,
-        detail=detailLevel,
+        detail=detail,
         visualize_diffs=visualize_diffs,
         print_text_output=print_text_output
     )

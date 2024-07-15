@@ -134,7 +134,7 @@ class M21Utils:
     @staticmethod
     def expression_to_string(
         expr: m21.expressions.Expression,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         theName: str = ''
         placement: str | None = None
@@ -242,7 +242,7 @@ class M21Utils:
     @staticmethod
     def tremolo_to_string(
         expr: m21.expressions.Tremolo | m21.expressions.TremoloSpanner,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         if isinstance(expr, m21.expressions.Tremolo):
             return 'bTrem'
@@ -253,7 +253,7 @@ class M21Utils:
     @staticmethod
     def articulation_to_string(
         artic: m21.articulations.Articulation,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         theName: str = artic.name
 
@@ -272,7 +272,7 @@ class M21Utils:
     @staticmethod
     def note2tuple(
         note: m21.note.Note | m21.note.Unpitched | m21.note.Rest,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> tuple[str, str, bool]:
         note_pitch: str
         note_accidental: str
@@ -577,7 +577,7 @@ class M21Utils:
     @staticmethod
     def get_tuplets_info(
         note_list: list[m21.note.GeneralNote],
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> list[list[str]]:
         """
         for each note return a list of tuple(str, str) with the tuplet type string and a string
@@ -745,7 +745,7 @@ class M21Utils:
         part: m21.stream.Part,
         score: m21.stream.Score,
         spannerBundle: m21.spanner.SpannerBundle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> list[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
         # substreams/Voices), skipping any Streams, and GeneralNotes (which are returned
@@ -1152,7 +1152,7 @@ class M21Utils:
     @staticmethod
     def notestyle_to_dict(
         style: m21.style.NoteStyle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1173,7 +1173,7 @@ class M21Utils:
     @staticmethod
     def textstyle_to_dict(
         style: m21.style.TextStyle,
-        detail: DetailLevel = DetailLevel.Default,
+        detail: DetailLevel | int = DetailLevel.Default,
         smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
@@ -1229,7 +1229,7 @@ class M21Utils:
     @staticmethod
     def genericstyle_to_dict(
         style: m21.style.Style,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1260,7 +1260,7 @@ class M21Utils:
     @staticmethod
     def specificstyle_to_dict(
         style: m21.style.Style,
-        detail: DetailLevel = DetailLevel.Default,
+        detail: DetailLevel | int = DetailLevel.Default,
         smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
@@ -1286,7 +1286,7 @@ class M21Utils:
     @staticmethod
     def obj_to_styledict(
         obj: m21.base.Music21Object | m21.style.StyleMixin,
-        detail: DetailLevel = DetailLevel.Default,
+        detail: DetailLevel | int = DetailLevel.Default,
         smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
@@ -1415,7 +1415,7 @@ class M21Utils:
     @staticmethod
     def stafflayout_to_string(
         sl: m21.layout.StaffLayout,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         output: str = ''
         if sl.staffLines is not None:
@@ -1448,7 +1448,7 @@ class M21Utils:
     @staticmethod
     def extra_to_string(
         extra: m21.base.Music21Object,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
             return M21Utils.keysig_to_string(extra)
