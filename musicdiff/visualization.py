@@ -1581,7 +1581,7 @@ class Visualization:
         if isinstance(m21obj, (m21.metadata.Metadata, m21.layout.StaffGroup)):
             # These are not in the timeline.  Put them first (there may be a
             # a part 0/measure 0, but the first beat of that measure is beat 1).
-            output = "part 0, measure 0, beat 0.0"
+            output = "measure 0, part 0, beat 0.0"
             return output
 
         # measure
@@ -1590,8 +1590,8 @@ class Visualization:
             if not isinstance(part, m21.stream.Part):
                 return ""
             partIdx: int = M21Utils.get_part_index(part, score)
-            output = f"part {partIdx}, "
-            output += f"measure {M21Utils.get_measure_number_with_suffix(m21obj, part)}, "
+            output = f"measure {M21Utils.get_measure_number_with_suffix(m21obj, part)}, "
+            output += f"part {partIdx}, "
             fractionalBeats: OffsetQL = 1.
             output += f"beat {fractionalBeats}"
             return output
@@ -1606,9 +1606,9 @@ class Visualization:
                 return ""
             partIdx = M21Utils.get_part_index(part, score)
             voiceStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
+            output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
             if partIdx != -1:
-                output = f"part {partIdx}, "
-            output += f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
+                output += f"part {partIdx}, "
             ts: m21.meter.TimeSignature | None = m21obj.getContextByClass(m21.meter.TimeSignature)
             if ts is None:
                 ts = m21.meter.TimeSignature()  # 4/4
@@ -1640,9 +1640,9 @@ class Visualization:
             return ""
         partIdx = M21Utils.get_part_index(part, score)
         startOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
+        output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
         if partIdx != -1:
-            output = f"part {partIdx}, "
-        output += f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
+            output += f"part {partIdx}, "
         ts = m21obj.getContextByClass(m21.meter.TimeSignature)
         if ts is None:
             ts = m21.meter.TimeSignature()  # 4/4
@@ -2548,12 +2548,12 @@ class Visualization:
         # number, and then beat (as parsed from "@@ part 2, measure 3b, beat 1.5 @@")
         # The goal is for all measure 5's to be printed first (part 0's measure 5
         # first), with the contents of each measure 5 coming out in beat order.
-        LOC_PATTERN: str = r"\@\@ part (\d+), measure (\d+)(\w*), beat (\d+|\d+[./]\d+) \@\@"
+        LOC_PATTERN: str = r"\@\@ measure (\d+)(\w*), part (\d+), beat (\d+|\d+[./]\d+) \@\@"
         def measNum(s: str) -> int:
             m = re.match(LOC_PATTERN, s)
             if not m:
                 return -1
-            measNumStr: str = m.group(2)
+            measNumStr: str = m.group(1)
             measNum: int = -1
             try:
                 measNum = int(measNumStr)
@@ -2565,14 +2565,14 @@ class Visualization:
             m = re.match(LOC_PATTERN, s)
             if not m:
                 return ''
-            measSuf: str = m.group(3)
+            measSuf: str = m.group(2)
             return measSuf
 
         def partIdx(s: str) -> int:
             m = re.match(LOC_PATTERN, s)
             if not m:
                 return -1
-            partIdxStr: str = m.group(1)
+            partIdxStr: str = m.group(3)
             partIdx: int = -1
             try:
                 partIdx = int(partIdxStr)
