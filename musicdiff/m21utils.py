@@ -670,10 +670,19 @@ class M21Utils:
         for n in gnIterator:
             if n.style.hideObjectOnPrint:
                 continue
-            if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
-                # skip non-realized ChordSymbols (they are extras)
+            if isinstance(n, m21.harmony.ChordSymbol):
+                # skip ChordSymbols (they are extras, not notes)
                 continue
             out.append(n)
+
+        return out
+
+    @staticmethod
+    def get_lyrics_holders(measure: m21.stream.Measure) -> list[m21.note.GeneralNote]:
+        out: list[m21.note.GeneralNote] = []
+        for n in M21Utils.get_notes_and_gracenotes(measure, recurse=True):
+            if n.lyrics:
+                out.append(n)
 
         return out
 

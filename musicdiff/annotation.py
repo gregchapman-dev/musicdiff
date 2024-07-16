@@ -776,6 +776,112 @@ class AnnExtra:
         return self.precomputed_str == other.precomputed_str
 
 
+class AnnLyric:
+    def __init__(
+        self,
+        lyricHolder: m21.note.GeneralNote,  # note containing the lyric
+        lyric: m21.note.Lyric,  # the lyric itself
+        measure: m21.stream.Measure,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> None:
+        """
+        Extend a lyric from a music21 GeneralNote with some precomputed, easily
+        compared information about it.
+
+        Args:
+            lyricHolder (music21.note.GeneralNote): The note/chord/rest containing the lyric.
+            lyric (music21.note.Lyric): The music21 Lyric object to extend.
+            measure (music21.stream.Measure): The music21 Measure the lyric was found in.
+                If the lyric was found in a Voice, this is the Measure that the lyric was
+                found in.
+            detail (DetailLevel): What level of detail to use during the diff.
+                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
+                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
+                Default (currently AllObjects), or any combination (|) of GeneralNotes,
+                Extras, Lyrics, Style, Voicing, Metadata.
+        """
+        self.lyricHolder = lyricHolder.id
+        self.offset = float(lyricHolder.getOffsetInHierarchy(measure))
+        self.duration = float(lyricHolder.duration.quarterLength)
+
+        # for sorting purposes only (among lyrics with the same timestamp)
+        self.verse_id: int | str | None = None
+
+        self.lyric: str = ""
+        if lyric.number is not None:
+            self.verse_id = lyric.number
+            self.lyric += f"number={lyric.number}"
+
+        if (lyric._identifier is not None
+                and lyric._identifier != lyric.number
+                and lyric._identifier != str(lyric.number)):
+            self.lyric += f" identifier={lyric._identifier}"
+            self.verse_id = lyric._identifier
+
+        if self.verse_id is None:
+            self.verse_id = 0
+
+        # ignore .syllabic and .text, what is visible is .rawText (and there
+        # are several .syllabic/.text combos that create the same .rawText).
+        self.lyric += f" rawText={lyric.rawText}"
+
+        if M21Utils.has_style(lyric):
+            styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
+            if styleDict:
+                # sort styleDict before converting to string so we can compare strings
+                styleDict = dict(sorted(styleDict.items()))
+                self.lyric += f" style={styleDict}"
+
+        self._notation_size: int = 1
+
+        # precomputed representations for faster comparison
+        self.precomputed_str: str = self.__str__()
+
+    def notation_size(self) -> int:
+        """
+        Compute a measure of how many symbols are displayed in the score for this `AnnLyric`.
+
+        Returns:
+            int: The notation size of the annotated extra
+        """
+        return self._notation_size
+
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str = self.lyric
+        if name == "":
+            if self.duration > 0:
+                string += f" dur={self.duration}"
+            return string
+
+        if name == "content":
+            return string
+
+        if name == "offset":
+            # offset change will be obvious in the @@ location @@ line
+            return string
+
+        if name == "duration":
+            string += f" dur={self.duration}"
+            return string
+
+        return ""  # should never get here
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __str__(self) -> str:
+        """
+        Returns:
+            str: the compared representation of the AnnLyric. Does not consider music21 id.
+        """
+        string = f'{self.lyric},off={self.offset},dur={self.duration}'
+        return string
+
+    def __eq__(self, other) -> bool:
+        # equality does not consider the MEI id!
+        return self.precomputed_str == other.precomputed_str
+
+
 class AnnVoice:
     def __init__(
         self,
@@ -1010,32 +1116,44 @@ class AnnMeasure:
                 self.extras_list.append(AnnExtra(extra, measure, score, detail))
             self.n_of_elements += len(self.extras_list)
 
-            # For correct comparison, sort the extras_list, so that any list slices
+            # For correct comparison, sort the extras_list, so that any extras
             # that all have the same offset are sorted alphabetically.
             self.extras_list.sort(key=lambda e: (e.offset, str(e)))
+
+        self.lyrics_list: list[AnnLyric] = []
+        if DetailLevel.includesLyrics(detail):
+            for lyricHolder in M21Utils.get_lyrics_holders(measure):
+                for lyric in lyricHolder.lyrics:
+                    self.lyrics_list.append(AnnLyric(lyricHolder, lyric, measure, detail))
+            self.n_of_elements += len(self.lyrics_list)
+
+            # For correct comparison, sort the lyrics_list, so that any lyrics
+            # that all have the same offset are sorted by verse id.
+            self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.verse_id))
 
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())
         self.precomputed_repr: int = hash(self.__repr__())
 
     def __str__(self) -> str:
+        output: str = ''
         if self.includes_voicing:
-            return (
-                str([str(v) for v in self.voices_list])
-                + ' Extras:'
-                + str([str(e) for e in self.extras_list])
-            )
-
-        return (
-            str([str(n) for n in self.annot_notes])
-            + ' Extras:'
-            + str([str(e) for e in self.extras_list])
-        )
+            output += str([str(v) for v in self.voices_list])
+        else:
+            output += str([str(n) for n in self.annot_notes])
+        output += ' Extras:' + str([str(e) for e in self.extras_list])
+        output += ' Lyrics:' + str([str(lyr) for lyr in self.lyrics_list])
+        return output
 
     def __repr__(self) -> str:
+        output: str = ''
         if self.includes_voicing:
-            return self.voices_list.__repr__() + ' Extras:' + self.extras_list.__repr__()
-        return self.annot_notes.__repr__() + ' Extras:' + self.extras_list.__repr__()
+            output += self.voices_list.__repr__()
+        else:
+            output += self.annot_notes.__repr__()
+        output += ' Extras:' + self.extras_list.__repr__()
+        output += ' Lyrics:' + self.lyrics_list.__repr__()
+        return output
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
@@ -1053,6 +1171,9 @@ class AnnMeasure:
             return False
 
         if len(self.extras_list) != len(other.extras_list):
+            return False
+
+        if len(self.lyrics_list) != len(other.lyrics_list):
             return False
 
         return self.precomputed_str == other.precomputed_str
