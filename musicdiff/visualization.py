@@ -1499,7 +1499,28 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
                 continue
 
-            if op[0] == "lyricverseidedit":
+            if op[0] == "lyricnumedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric verse num")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric verse num")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+                continue
+
+            if op[0] == "lyricidedit":
                 assert isinstance(op[1], AnnLyric)
                 assert isinstance(op[2], AnnLyric)
                 # color the modified note (in both scores) using Visualization.CHANGED_COLOR
@@ -2628,7 +2649,7 @@ class Visualization:
                 outputList.append(oneOutput)
                 continue
 
-            if op[0] == "lyricverseidedit":
+            if op[0] == "lyricnumedit":
                 assert isinstance(op[1], AnnLyric)
                 assert isinstance(op[2], AnnLyric)
                 note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
@@ -2639,7 +2660,7 @@ class Visualization:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-(Lyric:verseid) {op[1].readable_str('verseid')}\n"
+                newLine = f"-(Lyric:number) {op[1].readable_str('number')}\n"
                 oneOutput += newLine
                 if op[1].offset != op[2].offset:
                     outputList.append(oneOutput)
@@ -2647,7 +2668,31 @@ class Visualization:
                     oneOutput = newLine
                 else:
                     oneOutput += '\n'
-                newLine = f"+(Lyric:verseid) {op[2].readable_str('verseid')}"
+                newLine = f"+(Lyric:number) {op[2].readable_str('number')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "lyricidedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(Lyric:id) {op[1].readable_str('id')}\n"
+                oneOutput += newLine
+                if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
+                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
+                    oneOutput = newLine
+                else:
+                    oneOutput += '\n'
+                newLine = f"+(Lyric:id) {op[2].readable_str('id')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
                 continue

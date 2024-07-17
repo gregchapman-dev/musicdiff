@@ -15,7 +15,6 @@
 __docformat__ = "google"
 
 import html
-import re
 from fractions import Fraction
 import typing as t
 
@@ -811,41 +810,24 @@ class AnnLyric:
         """
         self.lyric_holder = lyric_holder.id
 
-        # for comparison: lyric, verse_id, offset, styledict
+        # for comparison: lyric, number, identifier, offset, styledict
         self.lyric: str = ""
-        self.verse_id: str = ""
+        self.number: int = 0
+        self.identifier: str = ""
         self.offset = float(lyric_holder.getOffsetInHierarchy(measure))
         self.styledict: dict[str, str] = {}
-
-        # for sorting: integer verse_ids and string verse_ids whose value starts with a scannable
-        # integer go first (sorted by that int and then the rest of the string if there is one),
-        # then the non-scannable strings go last (sorted by string).
-        # We sort by a tuple of [groupNum, verseNum, string].
-        self.sort_by_id: tuple[int, int, str] = (0, 0, "")
 
         # ignore .syllabic and .text, what is visible is .rawText (and there
         # are several .syllabic/.text combos that create the same .rawText).
         self.lyric = lyric.rawText
 
         if lyric.number is not None:
-            self.verse_id = str(lyric.number)
-            self.sort_by_id = (0, lyric.number, "")
+            self.number = lyric.number
 
         if (lyric._identifier is not None
                 and lyric._identifier != lyric.number
                 and lyric._identifier != str(lyric.number)):
-            self.verse_id = lyric._identifier
-            PATTERN: str = r"^(\d*)(.*)"
-            m = re.match(PATTERN, lyric._identifier)
-            if m:
-                self.sort_by_id = (0, int(m.group(1)), m.group(2))
-            else:
-                # non-scannable string, goes in second group (but still sorted)
-                self.sort_by_id = (1, 0, lyric._identifier)
-
-        if self.verse_id is None:
-            self.verse_id = ""
-            self.sort_by_id = (0, 0, "")  # sort this one to beginning of the list
+            self.identifier = lyric._identifier
 
         if M21Utils.has_style(lyric):
             self.styledict = M21Utils.obj_to_styledict(lyric, detail)
@@ -870,8 +852,10 @@ class AnnLyric:
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = f'"{self.lyric}"'
         if name == "":
-            if self.verse_id is not None:
-                string += f", verseid={self.verse_id}"
+            if self.number is not None:
+                string += f", num={self.number}"
+            if self.identifier is not None:
+                string += f", id={self.identifier}"
             if self.styledict:
                 string += f" style={self.styledict}"
             return string
@@ -883,8 +867,12 @@ class AnnLyric:
             string += f" offset={self.offset}"
             return string
 
-        if name == "verseid":
-            string += f", verseid={self.verse_id}"
+        if name == "num":
+            string += f", num={self.number}"
+            return string
+
+        if name == "id":
+            string += f", id={self.identifier}"
             return string
 
         if name == "style":
@@ -902,7 +890,7 @@ class AnnLyric:
             str: the compared representation of the AnnLyric. Does not consider music21 id.
         """
         string = (
-            f"{self.lyric},verseid={self.verse_id}"
+            f"{self.lyric},num={self.number},id={self.identifier}"
             + f",off={self.offset},style={self.styledict}"
         )
         return string
@@ -1158,12 +1146,9 @@ class AnnMeasure:
             self.n_of_elements += len(self.lyrics_list)
 
             # For correct comparison, sort the lyrics_list, so that any lyrics
-            # that all have the same offset are sorted by verse id (which we have
-            # carefully computed as a tuple, so that verse ids that are
-            # strings (e.g. "2-3") get sorted in with verse ids that are ints (e.g. 2)
-            # as appropriate; see AnnLyric.sort_by_id calculation).
+            # that all have the same offset are sorted by verse number.
             if self.lyrics_list:
-                self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.sort_by_id))
+                self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.number))
 
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())

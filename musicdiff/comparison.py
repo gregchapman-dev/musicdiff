@@ -802,13 +802,15 @@ class Comparison:
             cost += content_cost
             op_list.append(("lyricedit", annLyric1, annLyric2, content_cost))
 
-        # add for the verse_id
-        if annLyric1.verse_id != annLyric2.verse_id:
-            verse_id_cost: int = (
-                Comparison._strings_leveinshtein_distance(annLyric1.verse_id, annLyric2.verse_id)
-            )
-            cost += verse_id_cost
-            op_list.append(("lyricverseidedit", annLyric1, annLyric2, verse_id_cost))
+        # add for the number
+        if annLyric1.number != annLyric2.number:
+            cost += 1
+            op_list.append(("lyricnumedit", annLyric1, annLyric2, 1))
+
+        # add for the identifier
+        if annLyric1.identifier != annLyric2.identifier:
+            cost += 1
+            op_list.append(("lyricidedit", annLyric1, annLyric2, 1))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
