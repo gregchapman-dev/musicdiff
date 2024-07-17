@@ -851,7 +851,7 @@ class AnnLyric:
         if name == "":
             if self.number is not None:
                 string += f", num={self.number}"
-            if self.identifier is not None:
+            if self.identifier:  # not None and != ""
                 string += f", id={self.identifier}"
             if self.styledict:
                 string += f" style={self.styledict}"

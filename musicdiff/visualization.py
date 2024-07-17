@@ -1832,15 +1832,12 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-({extra1.classes[0]}) {op[1].readable_str()}"
+                newLine = f"-({extra1.classes[0]}) {op[1].readable_str()}\n"
                 oneOutput += newLine
                 if op[1].offset != op[2].offset:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += '\n'
-
                 newLine = f"+({extra2.classes[0]}) {op[2].readable_str()}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
@@ -1856,14 +1853,12 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-({extra1.classes[0]}:content) {op[1].readable_str('content')}"
+                newLine = f"-({extra1.classes[0]}:content) {op[1].readable_str('content')}\n"
                 oneOutput += newLine
                 if op[1].offset != op[2].offset:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += '\n'
                 newLine = f"+({extra2.classes[0]}:content) {op[2].readable_str('content')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
@@ -2618,8 +2613,6 @@ class Visualization:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += '\n'
                 newLine = f"+(Lyric) {op[2].readable_str('')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
@@ -2642,8 +2635,6 @@ class Visualization:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += '\n'
                 newLine = f"+(Lyric:rawtext) {op[2].readable_str('rawtext')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
@@ -2666,8 +2657,6 @@ class Visualization:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += '\n'
                 newLine = f"+(Lyric:number) {op[2].readable_str('number')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
@@ -2690,8 +2679,6 @@ class Visualization:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += '\n'
                 newLine = f"+(Lyric:id) {op[2].readable_str('id')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
@@ -2734,8 +2721,6 @@ class Visualization:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += '\n'
                 newLine = f"+(Lyric:style) {op[2].readable_str('style')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
