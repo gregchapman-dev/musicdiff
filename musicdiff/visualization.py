@@ -2778,7 +2778,9 @@ class Visualization:
         # number, and then beat (as parsed from "@@ measure 3b, staff 2, beat 1.5 @@")
         # The goal is for all measure 0's to be printed first (with measure 0's staff 0
         # first), with the contents of each staff of each measure coming out in beat order.
-        LOC_PATTERN: str = r"\@\@ measure (\d+)(\w*), staff (\d+), beat (\d+|\d+[./]\d+) \@\@"
+        LOC_PATTERN: str = (
+            r"\@\@ measure (\d+)(\w*), staff (\d+), beat (\d+|\d+[./]\d+|\d+ \d+/\d+) \@\@"
+        )
         def measNum(s: str) -> int:
             m = re.match(LOC_PATTERN, s)
             if not m:
@@ -2811,7 +2813,7 @@ class Visualization:
             return partIdx
 
         def beat(s: str) -> OffsetQL:
-            # can be of the form "n/m" (Fraction) or "n.m" (float)
+            # can be of the form "j n/m" (mixed), "n/m" (Fraction), or "n.m" (float)
             m = re.match(LOC_PATTERN, s)
             if not m:
                 return 0.
@@ -2820,7 +2822,14 @@ class Visualization:
             beatsFrac: Fraction = Fraction(0, 1)
             beatsFloat: float = 0.
             try:
-                if "/" in beatStr:
+                if " " in beatStr and "/" in beatStr:
+                    # mixed fraction "j n/m"
+                    nums: list[str] = beatStr.split(' ')
+                    wholeNum: int = int(nums[0])
+                    frac: Fraction = Fraction(nums[1])
+                    beats = opFrac(wholeNum + frac)
+                elif "/" in beatStr:
+                    # fraction
                     beatsFrac = Fraction(beatStr)
                     beats = opFrac(beatsFrac)
                 else:
