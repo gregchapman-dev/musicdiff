@@ -23,7 +23,7 @@ import music21 as m21
 from music21.common import OffsetQL, opFrac
 
 from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
-from musicdiff.annotation import AnnExtra, AnnStaffGroup, AnnMetadataItem
+from musicdiff.annotation import AnnExtra, AnnLyric, AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
 
 
@@ -1453,19 +1453,10 @@ class Visualization:
                 continue
 
             # lyrics
-            if op[0] == "inslyric":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.INSERTED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.INSERTED_COLOR
-                textExp = m21.expressions.TextExpression("inserted lyric")
-                textExp.style.color = Visualization.INSERTED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+            if op[0] == "lyricins":
+                assert isinstance(op[2], AnnLyric)
+                # color the note with the lyric using Visualization.INSERTED_COLOR
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 note2.style.color = Visualization.INSERTED_COLOR
@@ -1474,32 +1465,24 @@ class Visualization:
                 note2.activeSite.insert(note2.offset, textExp)
                 continue
 
-            if op[0] == "dellyric":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note in both scores using Visualization.DELETED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+            if op[0] == "lyricdel":
+                assert isinstance(op[1], AnnLyric)
+                # color the note with the lyric using Visualization.DELETED_COLOR
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
                 note1.style.color = Visualization.DELETED_COLOR
                 textExp = m21.expressions.TextExpression("deleted lyric")
                 textExp.style.color = Visualization.DELETED_COLOR
                 note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.DELETED_COLOR
-                textExp = m21.expressions.TextExpression("deleted lyric")
-                textExp.style.color = Visualization.DELETED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
                 continue
 
-            if op[0] == "editlyric":
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+            if op[0] in ("lyricsub", "lyricedit"):
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                # color the note with changed lyric (in both scores) using
+                # Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
                 note1.style.color = Visualization.CHANGED_COLOR
@@ -1507,11 +1490,74 @@ class Visualization:
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note1.activeSite.insert(note1.offset, textExp)
 
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 note2.style.color = Visualization.CHANGED_COLOR
                 textExp = m21.expressions.TextExpression("changed lyric")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+                continue
+
+            if op[0] == "lyricverseidedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric verse id")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric verse id")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+                continue
+
+            if op[0] == "lyricoffsetedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric offset")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric offset")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note2.activeSite.insert(note2.offset, textExp)
+                continue
+
+            if op[0] == "lyricstyleedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note1.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric style")
+                textExp.style.color = Visualization.CHANGED_COLOR
+                note1.activeSite.insert(note1.offset, textExp)
+
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                note2.style.color = Visualization.CHANGED_COLOR
+                textExp = m21.expressions.TextExpression("changed lyric style")
                 textExp.style.color = Visualization.CHANGED_COLOR
                 note2.activeSite.insert(note2.offset, textExp)
                 continue
@@ -1577,6 +1623,10 @@ class Visualization:
     @staticmethod
     def _location_of(m21obj: m21.base.Music21Object, score: m21.stream.Score) -> str:
         output: str
+        meas: m21.stream.Stream | None
+        part: m21.stream.Stream | None
+        partIdx: int
+        fractionalBeats: OffsetQL
 
         if isinstance(m21obj, (m21.metadata.Metadata, m21.layout.StaffGroup)):
             # These are not in the timeline.  Put them first (there may be a
@@ -1584,21 +1634,36 @@ class Visualization:
             output = "measure 0, staff 0, beat 0.0"
             return output
 
-        # measure
-        if isinstance(m21obj, m21.stream.Measure):
-            part: m21.stream.Stream | None = score.containerInHierarchy(m21obj)
+        if isinstance(m21obj, m21.spanner.RepeatBracket):
+            # spans measures, location is start of first measure in RepeatBracket
+            meas = m21obj.getFirst()
+            if not isinstance(meas, m21.stream.Measure):
+                return ""
+            part = score.containerInHierarchy(meas)
             if not isinstance(part, m21.stream.Part):
                 return ""
-            partIdx: int = M21Utils.get_part_index(part, score)
+            partIdx = M21Utils.get_part_index(part, score)
+            output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
+            output += f"staff {partIdx}, "
+            fractionalBeats = 1.
+            output += f"beat {fractionalBeats}"
+            return output
+
+        # measure
+        if isinstance(m21obj, m21.stream.Measure):
+            part = score.containerInHierarchy(m21obj)
+            if not isinstance(part, m21.stream.Part):
+                return ""
+            partIdx = M21Utils.get_part_index(part, score)
             output = f"measure {M21Utils.get_measure_number_with_suffix(m21obj, part)}, "
             output += f"staff {partIdx}, "
-            fractionalBeats: OffsetQL = 1.
+            fractionalBeats = 1.
             output += f"beat {fractionalBeats}"
             return output
 
         # voice
         if isinstance(m21obj, m21.stream.Voice):
-            meas: m21.stream.Stream | None = score.containerInHierarchy(m21obj)
+            meas = score.containerInHierarchy(m21obj)
             if not isinstance(meas, m21.stream.Measure):
                 return ""
             part = score.containerInHierarchy(meas)
@@ -2490,20 +2555,142 @@ class Visualization:
                 continue
 
             # lyrics
-            if op[0] in ("inslyric", "dellyric", "editlyric"):
-                assert isinstance(op[1], AnnNote)
-                assert isinstance(op[2], AnnNote)
-                note1 = score1.recurse().getElementById(op[1].general_note)  # type: ignore
+            if op[0] == "lyricins":
+                assert isinstance(op[2], AnnLyric)
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
+                oneOutput = newLine
+                newLine = f"+(Lyric) {op[2].readable_str('')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "lyricdel":
+                assert isinstance(op[1], AnnLyric)
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note1 is not None
-                note2 = score2.recurse().getElementById(op[2].general_note)  # type: ignore
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(Lyric) {op[1].readable_str('')}\n"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "lyricsub":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert note2 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:lyric) {op[1].readable_str('lyric')}\n"
+                newLine = f"-(Lyric) {op[1].readable_str('')}\n"
                 oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:lyric) {op[2].readable_str('lyric')}"
+                if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
+                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
+                    oneOutput = newLine
+                else:
+                    oneOutput += '\n'
+                newLine = f"+(Lyric) {op[2].readable_str('')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "lyricedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(Lyric:rawtext) {op[1].readable_str('rawtext')}\n"
+                oneOutput += newLine
+                if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
+                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
+                    oneOutput = newLine
+                else:
+                    oneOutput += '\n'
+                newLine = f"+(Lyric:rawtext) {op[2].readable_str('rawtext')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "lyricverseidedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(Lyric:verseid) {op[1].readable_str('verseid')}\n"
+                oneOutput += newLine
+                if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
+                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
+                    oneOutput = newLine
+                else:
+                    oneOutput += '\n'
+                newLine = f"+(Lyric:verseid) {op[2].readable_str('verseid')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "lyricoffsetedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(Lyric:offset) {op[1].readable_str('offset')}\n"
+                oneOutput += newLine
+                newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
+                oneOutput += newLine
+                newLine = f"+(Lyric:offset) {op[2].readable_str('offset')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "lyricstyleedit":
+                assert isinstance(op[1], AnnLyric)
+                assert isinstance(op[2], AnnLyric)
+                note1 = score1.recurse().getElementById(op[1].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note1 is not None
+                note2 = score2.recurse().getElementById(op[2].lyric_holder)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert note2 is not None
+                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(Lyric:style) {op[1].readable_str('style')}\n"
+                oneOutput += newLine
+                if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
+                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
+                    oneOutput = newLine
+                else:
+                    oneOutput += '\n'
+                newLine = f"+(Lyric:style) {op[2].readable_str('style')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
                 continue

@@ -20,8 +20,8 @@ from difflib import ndiff
 # import typing as t
 import numpy as np
 
-from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnStaffGroup
-from musicdiff.annotation import AnnMetadataItem
+from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnLyric
+from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
 
 # memoizers to speed up the recursive computation
@@ -48,6 +48,17 @@ def _memoize_inside_bars_diff_lin(func):
     return memoizer
 
 def _memoize_extras_diff_lin(func):
+    mem = {}
+
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in mem:
+            mem[key] = func(original, compare_to)
+        return copy.deepcopy(mem[key])
+
+    return memoizer
+
+def _memoize_lyrics_diff_lin(func):
     mem = {}
 
     def memoizer(original, compare_to):
@@ -439,6 +450,11 @@ class Comparison:
                 original[0].extras_list, compare_to[0].extras_list
             )
 
+            # diff the bar lyrics (with lists of AnnLyrics instead of lists of AnnExtras)
+            lyrics_op_list, lyrics_cost = Comparison._lyrics_diff_lin(
+                original[0].lyrics_list, compare_to[0].lyrics_list
+            )
+
             if original[0].includes_voicing:
                 # run the voice coupling algorithm, and add to inside_bar_op_list
                 # and inside_bar_cost
@@ -456,6 +472,9 @@ class Comparison:
 
             inside_bar_op_list.extend(extras_op_list)
             inside_bar_cost += extras_cost
+            inside_bar_op_list.extend(lyrics_op_list)
+            inside_bar_cost += lyrics_cost
+
         cost_dict["editbar"] += inside_bar_cost
         op_list_dict["editbar"].extend(inside_bar_op_list)
         # compute the minimum of the possibilities
@@ -517,6 +536,65 @@ class Comparison:
             )
         cost["extrasub"] += extrasub_cost
         op_list["extrasub"].extend(extrasub_op)
+        # compute the minimum of the possibilities
+        min_key = min(cost, key=cost.get)
+        out = op_list[min_key], cost[min_key]
+        return out
+
+    @staticmethod
+    @_memoize_lyrics_diff_lin
+    def _lyrics_diff_lin(original, compare_to):
+        # original and compare to are two lists of AnnLyric
+        if len(original) == 0 and len(compare_to) == 0:
+            return [], 0
+
+        if len(original) == 0:
+            cost = 0
+            op_list, cost = Comparison._lyrics_diff_lin(original, compare_to[1:])
+            op_list.append(("lyricins", None, compare_to[0], compare_to[0].notation_size()))
+            cost += compare_to[0].notation_size()
+            return op_list, cost
+
+        if len(compare_to) == 0:
+            cost = 0
+            op_list, cost = Comparison._lyrics_diff_lin(original[1:], compare_to)
+            op_list.append(("lyricdel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
+            return op_list, cost
+
+        # compute the cost and the op_list for the many possibilities of recursion
+        cost = {}
+        op_list = {}
+        # lyricdel
+        op_list["lyricdel"], cost["lyricdel"] = Comparison._lyrics_diff_lin(
+            original[1:], compare_to
+        )
+        cost["lyricdel"] += original[0].notation_size()
+        op_list["lyricdel"].append(
+            ("lyricdel", original[0], None, original[0].notation_size())
+        )
+        # lyricins
+        op_list["lyricins"], cost["lyricins"] = Comparison._lyrics_diff_lin(
+            original, compare_to[1:]
+        )
+        cost["lyricins"] += compare_to[0].notation_size()
+        op_list["lyricins"].append(
+            ("lyricins", None, compare_to[0], compare_to[0].notation_size())
+        )
+        # lyricsub
+        op_list["lyricsub"], cost["lyricsub"] = Comparison._lyrics_diff_lin(
+            original[1:], compare_to[1:]
+        )
+        if (
+            original[0] == compare_to[0]
+        ):  # avoid call another function if they are equal
+            lyricsub_op, lyricsub_cost = [], 0
+        else:
+            lyricsub_op, lyricsub_cost = (
+                Comparison._annotated_lyric_diff(original[0], compare_to[0])
+            )
+        cost["lyricsub"] += lyricsub_cost
+        op_list["lyricsub"].extend(lyricsub_op)
         # compute the minimum of the possibilities
         min_key = min(cost, key=cost.get)
         out = op_list[min_key], cost[min_key]
@@ -703,6 +781,49 @@ class Comparison:
         if annExtra1.styledict != annExtra2.styledict:
             cost += 1
             op_list.append(("extrastyleedit", annExtra1, annExtra2, 1))
+
+        return op_list, cost
+
+    @staticmethod
+    def _annotated_lyric_diff(annLyric1: AnnLyric, annLyric2: AnnLyric):
+        """
+        Compute the differences between two annotated lyrics.
+        Each annotated lyric consists of five values: lyric, verse_id, offset, duration,
+        and styledict.
+        """
+        cost = 0
+        op_list = []
+
+        # add for the content
+        if annLyric1.lyric != annLyric2.lyric:
+            content_cost: int = (
+                Comparison._strings_leveinshtein_distance(annLyric1.lyric, annLyric2.lyric)
+            )
+            cost += content_cost
+            op_list.append(("lyricedit", annLyric1, annLyric2, content_cost))
+
+        # add for the verse_id
+        if annLyric1.verse_id != annLyric2.verse_id:
+            verse_id_cost: int = (
+                Comparison._strings_leveinshtein_distance(annLyric1.verse_id, annLyric2.verse_id)
+            )
+            cost += verse_id_cost
+            op_list.append(("lyricverseidedit", annLyric1, annLyric2, verse_id_cost))
+
+        # add for the offset
+        # Note: offset here is a float, and some file formats have only four
+        # decimal places of precision.  So we should not compare exactly here.
+        if Comparison._areDifferentEnough(annLyric1.offset, annLyric2.offset):
+            # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
+            # min cost is 1, though, don't round down to zero.
+            offset_cost: int = int(min(1, abs(annLyric1.offset - annLyric2.offset)))
+            cost += offset_cost
+            op_list.append(("lyricoffsetedit", annLyric1, annLyric2, offset_cost))
+
+        # add for the style
+        if annLyric1.styledict != annLyric2.styledict:
+            cost += 1
+            op_list.append(("lyricstyleedit", annLyric1, annLyric2, 1))
 
         return op_list, cost
 
@@ -949,17 +1070,6 @@ class Comparison:
             )
             op_list.extend(expr_op_list)
             cost += expr_cost
-        # add for the lyrics
-        if annNote1.lyrics != annNote2.lyrics:
-            lyr_op_list, lyr_cost = Comparison._generic_leveinsthein_diff(
-                annNote1.lyrics,
-                annNote2.lyrics,
-                annNote1,
-                annNote2,
-                "lyric",
-            )
-            op_list.extend(lyr_op_list)
-            cost += lyr_cost
 
         # add for gap from previous note or start of measure if first note in measure
         # (i.e. horizontal position shift)

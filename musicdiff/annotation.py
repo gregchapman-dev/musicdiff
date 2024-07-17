@@ -15,6 +15,7 @@
 __docformat__ = "google"
 
 import html
+import re
 from fractions import Fraction
 import typing as t
 
@@ -732,7 +733,7 @@ class AnnExtra:
             return string
 
         if name == "offset":
-            # offset change will be obvious in the location line
+            string += f" offset={self.offset}"
             return string
 
         if name == "duration":
@@ -779,7 +780,7 @@ class AnnExtra:
 class AnnLyric:
     def __init__(
         self,
-        lyricHolder: m21.note.GeneralNote,  # note containing the lyric
+        lyric_holder: m21.note.GeneralNote,  # note containing the lyric
         lyric: m21.note.Lyric,  # the lyric itself
         measure: m21.stream.Measure,
         detail: DetailLevel | int = DetailLevel.Default
@@ -789,7 +790,7 @@ class AnnLyric:
         compared information about it.
 
         Args:
-            lyricHolder (music21.note.GeneralNote): The note/chord/rest containing the lyric.
+            lyric_holder (music21.note.GeneralNote): The note/chord/rest containing the lyric.
             lyric (music21.note.Lyric): The music21 Lyric object to extend.
             measure (music21.stream.Measure): The music21 Measure the lyric was found in.
                 If the lyric was found in a Voice, this is the Measure that the lyric was
@@ -800,37 +801,49 @@ class AnnLyric:
                 Default (currently AllObjects), or any combination (|) of GeneralNotes,
                 Extras, Lyrics, Style, Voicing, Metadata.
         """
-        self.lyricHolder = lyricHolder.id
-        self.offset = float(lyricHolder.getOffsetInHierarchy(measure))
-        self.duration = float(lyricHolder.duration.quarterLength)
+        self.lyric_holder = lyric_holder.id
 
-        # for sorting purposes only (among lyrics with the same timestamp)
-        self.verse_id: int | str | None = None
-
+        # for comparison: lyric, verse_id, offset, styledict
         self.lyric: str = ""
+        self.verse_id: str = ""
+        self.offset = float(lyric_holder.getOffsetInHierarchy(measure))
+        self.styledict: dict[str, str] = {}
+
+        # for sorting: integer verse_ids and string verse_ids whose value starts with a scannable
+        # integer go first (sorted by that int and then the rest of the string if there is one),
+        # then the non-scannable strings go last (sorted by string).
+        # We sort by a tuple of [groupNum, verseNum, string].
+        self.sort_by_id: tuple[int, int, str] = (0, 0, "")
+
+        # ignore .syllabic and .text, what is visible is .rawText (and there
+        # are several .syllabic/.text combos that create the same .rawText).
+        self.lyric = lyric.rawText
+
         if lyric.number is not None:
-            self.verse_id = lyric.number
-            self.lyric += f"number={lyric.number}"
+            self.verse_id = str(lyric.number)
+            self.sort_by_id = (0, lyric.number, "")
 
         if (lyric._identifier is not None
                 and lyric._identifier != lyric.number
                 and lyric._identifier != str(lyric.number)):
-            self.lyric += f" identifier={lyric._identifier}"
             self.verse_id = lyric._identifier
+            PATTERN: str = r"^(\d*)(.*)"
+            m = re.match(PATTERN, lyric._identifier)
+            if m:
+                self.sort_by_id = (0, int(m.group(1)), m.group(2))
+            else:
+                # non-scannable string, goes in second group (but still sorted)
+                self.sort_by_id = (1, 0, lyric._identifier)
 
         if self.verse_id is None:
-            self.verse_id = 0
-
-        # ignore .syllabic and .text, what is visible is .rawText (and there
-        # are several .syllabic/.text combos that create the same .rawText).
-        self.lyric += f" rawText={lyric.rawText}"
+            self.verse_id = ""
+            self.sort_by_id = (0, 0, "")  # sort this one to beginning of the list
 
         if M21Utils.has_style(lyric):
-            styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
-            if styleDict:
+            self.styledict = M21Utils.obj_to_styledict(lyric, detail)
+            if self.styledict:
                 # sort styleDict before converting to string so we can compare strings
-                styleDict = dict(sorted(styleDict.items()))
-                self.lyric += f" style={styleDict}"
+                self.styledict = dict(sorted(self.styledict.items()))
 
         self._notation_size: int = 1
 
@@ -847,21 +860,27 @@ class AnnLyric:
         return self._notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = self.lyric
+        string: str = f'"{self.lyric}"'
         if name == "":
-            if self.duration > 0:
-                string += f" dur={self.duration}"
+            if self.verse_id is not None:
+                string += f", verseid={self.verse_id}"
+            if self.styledict:
+                string += f" style={self.styledict}"
             return string
 
-        if name == "content":
+        if name == "rawtext":
             return string
 
         if name == "offset":
-            # offset change will be obvious in the @@ location @@ line
+            string += f" offset={self.offset}"
             return string
 
-        if name == "duration":
-            string += f" dur={self.duration}"
+        if name == "verseid":
+            string += f", verseid={self.verse_id}"
+            return string
+
+        if name == "style":
+            string += f" style={self.styledict}"
             return string
 
         return ""  # should never get here
@@ -874,7 +893,10 @@ class AnnLyric:
         Returns:
             str: the compared representation of the AnnLyric. Does not consider music21 id.
         """
-        string = f'{self.lyric},off={self.offset},dur={self.duration}'
+        string = (
+            f"{self.lyric},verseid={self.verse_id}"
+            + f",off={self.offset},style={self.styledict}"
+        )
         return string
 
     def __eq__(self, other) -> bool:
@@ -1122,14 +1144,18 @@ class AnnMeasure:
 
         self.lyrics_list: list[AnnLyric] = []
         if DetailLevel.includesLyrics(detail):
-            for lyricHolder in M21Utils.get_lyrics_holders(measure):
-                for lyric in lyricHolder.lyrics:
-                    self.lyrics_list.append(AnnLyric(lyricHolder, lyric, measure, detail))
+            for lyric_holder in M21Utils.get_lyrics_holders(measure):
+                for lyric in lyric_holder.lyrics:
+                    self.lyrics_list.append(AnnLyric(lyric_holder, lyric, measure, detail))
             self.n_of_elements += len(self.lyrics_list)
 
             # For correct comparison, sort the lyrics_list, so that any lyrics
-            # that all have the same offset are sorted by verse id.
-            self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.verse_id))
+            # that all have the same offset are sorted by verse id (which we have
+            # carefully computed as a tuple, so that verse ids that are
+            # strings (e.g. "2-3") get sorted in with verse ids that are ints (e.g. 2)
+            # as appropriate; see AnnLyric.sort_by_id calculation).
+            if self.lyrics_list:
+                self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.sort_by_id))
 
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())
