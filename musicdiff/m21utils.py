@@ -589,7 +589,8 @@ class M21Utils:
             for tup in n.duration.tuplets:
                 if tup.type == "start":
                     # music21 only pays attention to number and bracket visibility/placement
-                    # on the start note of a tuplet.
+                    # on the start note of a tuplet.  TODO: Should I pass in/use result of
+                    # get_tuplets_type?  It has more (implied) starts than the actual tuplets do.
                     if tup.tupletActualShow in ("number", "both"):
                         if tup.tupletNormalShow in ("number", "both"):
                             new_info = str(tup.numberNotesActual) + ":" + str(tup.numberNotesNormal)
@@ -608,6 +609,9 @@ class M21Utils:
                         if tup.placement is not None:
                             new_info = new_info + tup.placement
                     tuplet_info_list_for_note.append(new_info)
+                else:
+                    # notes that don't start a tuplet have no info that anyone looks at
+                    tuplet_info_list_for_note.append("")
             str_list.append(tuplet_info_list_for_note)
         return str_list
 
