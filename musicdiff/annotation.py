@@ -495,10 +495,14 @@ class AnnNote:
                     string += ", style={"
                 else:
                     string += ", changedStyle={"
+
+                needsComma: bool = False
                 for i, k in enumerate(changedKeys):
-                    if i > 0:
-                        string += ", "
-                    string += f"{k}:{self.styledict[k]}"
+                    if k in self.styledict:
+                        if needsComma:
+                            string += ", "
+                        string += f"{k}:{self.styledict[k]}"
+                        needsComma = True
                 string += "}"
             if name:
                 return string
@@ -747,10 +751,14 @@ class AnnExtra:
                 return string
 
             string += " changedStyle={"
+
+            needsComma: bool = False
             for i, k in enumerate(changedKeys):
-                if i > 0:
-                    string += ", "
-                string += f"{k}:{self.styledict[k]}"
+                if k in self.styledict:
+                    if needsComma:
+                        string += ", "
+                    string += f"{k}:{self.styledict[k]}"
+                    needsComma = True
             string += "}"
             return string
 

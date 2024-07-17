@@ -1930,6 +1930,7 @@ class Visualization:
                     oneOutput += "\n"
                 newLine = f"+({extra2.classes[0]}:{changedStr}) {style2}"
                 oneOutput += newLine
+                outputList.append(oneOutput)
                 continue
 
             # staff groups
