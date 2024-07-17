@@ -2603,7 +2603,7 @@ class Visualization:
                     assert note1 is not None
                 newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-(Lyric) {op[1].readable_str('')}\n"
+                newLine = f"-(Lyric) {op[1].readable_str('')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
                 continue

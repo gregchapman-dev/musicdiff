@@ -1139,7 +1139,9 @@ class AnnMeasure:
         if DetailLevel.includesLyrics(detail):
             for lyric_holder in M21Utils.get_lyrics_holders(measure):
                 for lyric in lyric_holder.lyrics:
-                    self.lyrics_list.append(AnnLyric(lyric_holder, lyric, measure, detail))
+                    if lyric.rawText:
+                        # we ignore lyrics with no visible text
+                        self.lyrics_list.append(AnnLyric(lyric_holder, lyric, measure, detail))
             self.n_of_elements += len(self.lyrics_list)
 
             # For correct comparison, sort the lyrics_list, so that any lyrics
