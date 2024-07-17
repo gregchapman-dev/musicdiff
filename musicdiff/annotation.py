@@ -362,12 +362,7 @@ class AnnNote:
                         string += ", "
                     if ti != "":
                         ti = "(" + ti + ")"
-                    if tup == "start":
-                        string += "start" + ti
-                    elif tup == "continue":
-                        string += "continue" + ti
-                    elif tup == "stop":
-                        string += "stop" + ti
+                    string += tup + ti
 
                 string += "]"
                 if name:
@@ -563,6 +558,8 @@ class AnnNote:
                     string += "co" + ti
                 elif tup == "stop":
                     string += "sp" + ti
+                elif tup == "startStop":
+                    string += "ss"
                 else:
                     raise ValueError(f"Incorrect tuplet type: {tup}")
 
