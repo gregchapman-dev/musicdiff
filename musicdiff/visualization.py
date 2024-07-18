@@ -1916,7 +1916,7 @@ class Visualization:
                 if op[1].offset != op[2].offset:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                    oneOutput += newLine
+                    oneOutput = newLine
                 else:
                     oneOutput += "\n"
                 newLine = f"+({extra2.classes[0]}:dur) {op[2].readable_str('duration')}"
