@@ -1886,7 +1886,7 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-({extra1.classes[0]}:offset) {op[1].readable_str('offset')}"
+                newLine = f"-({extra1.classes[0]}:offset) {op[1].readable_str('offset')}\n"
                 oneOutput += newLine
                 outputList.append(oneOutput)
 
@@ -1907,14 +1907,12 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-({extra1.classes[0]}:dur) {op[1].readable_str('duration')}"
+                newLine = f"-({extra1.classes[0]}:dur) {op[1].readable_str('duration')}\n"
                 oneOutput += newLine
                 if op[1].offset != op[2].offset:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                     oneOutput += newLine
-                else:
-                    oneOutput += "\n"
                 newLine = f"+({extra2.classes[0]}:dur) {op[2].readable_str('duration')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
@@ -1948,14 +1946,12 @@ class Visualization:
                 oneOutput = newLine
                 style1: str = op[1].readable_str('style', changedStr=changedStr)
                 style2: str = op[2].readable_str('style', changedStr=changedStr)
-                newLine = f"-({extra1.classes[0]}:{changedStr}) {style1}"
+                newLine = f"-({extra1.classes[0]}:{changedStr}) {style1}\n"
                 oneOutput += newLine
                 if op[1].offset != op[2].offset:
                     outputList.append(oneOutput)
                     newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
                     oneOutput = newLine
-                else:
-                    oneOutput += "\n"
                 newLine = f"+({extra2.classes[0]}:{changedStr}) {style2}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
