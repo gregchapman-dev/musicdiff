@@ -504,10 +504,10 @@ class AnnNote:
         return string
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # does consider the MEI id! (self.general_note)
         return (
-            f"{self.pitches},{self.note_head},{self.dots},B:{self.beamings},"
-            + f"T:{self.tuplets},TI:{self.tuplet_info},{self.general_note},"
+            f"{self.general_note}{self.pitches},{self.note_head},{self.dots},"
+            + f"B:{self.beamings},T:{self.tuplets},TI:{self.tuplet_info},"
             + f"{self.articulations},{self.expressions},{self.lyrics},{self.styledict}"
         )
 
@@ -761,7 +761,10 @@ class AnnExtra:
         return ""  # should never get here
 
     def __repr__(self) -> str:
-        return str(self)
+        # does consider the MEI id!
+        output: str = f"Extra({self.extra}):"
+        output += str(self)
+        return output
 
     def __str__(self) -> str:
         """
@@ -879,7 +882,10 @@ class AnnLyric:
         return ""  # should never get here
 
     def __repr__(self) -> str:
-        return str(self)
+        # does consider the MEI id! (of the note, plus the index within note.lyrics)
+        output: str = f"Lyric({self.lyric_holder}[{self.number}]):"
+        output += str(self)
+        return output
 
     def __str__(self) -> str:
         """
@@ -999,7 +1005,10 @@ class AnnVoice:
         return string
 
     def __repr__(self) -> str:
-        return self.annot_notes.__repr__()
+        # does consider the MEI id!
+        output: str = f"Voice({self.voice}):"
+        output += str(self)
+        return output
 
     def __str__(self) -> str:
         string = "["
@@ -1164,13 +1173,9 @@ class AnnMeasure:
         return output
 
     def __repr__(self) -> str:
-        output: str = ''
-        if self.includes_voicing:
-            output += self.voices_list.__repr__()
-        else:
-            output += self.annot_notes.__repr__()
-        output += ' Extras:' + self.extras_list.__repr__()
-        output += ' Lyrics:' + self.lyrics_list.__repr__()
+        # does consider the MEI id!
+        output: str = f"Measure({self.measure}):"
+        output += str(self)
         return output
 
     def __eq__(self, other) -> bool:
@@ -1299,7 +1304,10 @@ class AnnPart:
         return sum([b.notation_size() for b in self.bar_list])
 
     def __repr__(self) -> str:
-        return self.bar_list.__repr__()
+        # does consider the MEI id!
+        output: str = f"Part({self.part}):"
+        output += str([str(b) for b in self.bar_list])
+        return output
 
     def get_note_ids(self) -> list[str | int]:
         """
@@ -1437,6 +1445,10 @@ class AnnMetadataItem:
         key: str,
         value: t.Any
     ) -> None:
+        # Normally this would be the id of the Music21Object, but we just have a key/value
+        # pair, so we just make up an id, by using our own address.  In this case, we will
+        # not be looking this id up in the score, but only using it as a memo-ization key.
+        self.metadata_item = id(self)
         self.key = key
         if isinstance(value, m21.metadata.Text):
             # Create a string representing both the text and the language, but not isTranslated,
@@ -1491,10 +1503,14 @@ class AnnMetadataItem:
         return str(self)
 
     def __str__(self) -> str:
-        return self.__repr__()
+        return self.key + ':' + str(self.value)
+
 
     def __repr__(self) -> str:
-        return self.key + ':' + str(self.value)
+        # does consider the MEI id!
+        output: str = f"MetadataItem({self.metadata_item}):"
+        output += self.key + ':' + str(self.value)
+        return output
 
     def notation_size(self) -> int:
         """
@@ -1622,7 +1638,10 @@ class AnnScore:
         return sum([p.notation_size() for p in self.part_list])
 
     def __repr__(self) -> str:
-        return self.part_list.__repr__()
+        # does consider the MEI id!
+        output: str = f"Score({self.score}):"
+        output += self.part_list.__repr__()
+        return output
 
     def get_note_ids(self) -> list[str | int]:
         """
