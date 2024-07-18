@@ -26,85 +26,69 @@ from musicdiff import M21Utils
 
 # memoizers to speed up the recursive computation
 def _memoize_notes_set_distance(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_inside_bars_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_extras_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_lyrics_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_staff_groups_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_metadata_items_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_block_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_pitches_lev_diff(func):
-    mem = {}
-
     def memoizer(original, compare_to, noteNode1, noteNode2, ids):
         key = (
             repr(original)
@@ -113,39 +97,41 @@ def _memoize_pitches_lev_diff(func):
             + repr(noteNode2)
             + repr(ids)
         )
-        if key not in mem:
-            mem[key] = func(original, compare_to, noteNode1, noteNode2, ids)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, ids)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_beamtuplet_lev_diff(func):
-    mem = {}
-
     def memoizer(original, compare_to, noteNode1, noteNode2, which):
         key = (
             repr(original) + repr(compare_to) + repr(noteNode1) + repr(noteNode2) + which
         )
-        if key not in mem:
-            mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_generic_lev_diff(func):
-    mem = {}
-
     def memoizer(original, compare_to, noteNode1, noteNode2, which):
         key = (
             repr(original) + repr(compare_to) + repr(noteNode1) + repr(noteNode2) + which
         )
-        if key not in mem:
-            mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 class Comparison:
+    _memoizer_mem: dict = {}
+
+    @staticmethod
+    def clear_memoizer_caches():
+        Comparison._memoizer_mem = {}
+
     @staticmethod
     def _myers_diff(a_lines, b_lines):
         # Myers algorithm for LCS of bars (instead of the recursive algorithm in section 3.2)
@@ -1402,6 +1388,10 @@ class Comparison:
         Returns:
             list[tuple], int: The operations list and the cost
         '''
+        # Clear all memoizer caches, in case we are called again with different scores.
+        # The cached results are no longer valid.
+        Comparison.clear_memoizer_caches()
+
         # for now just working with equal number of parts that are already pairs
         # TODO : extend to different number of parts
         assert score1.n_of_parts == score2.n_of_parts
