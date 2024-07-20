@@ -20,8 +20,8 @@ from pathlib import Path
 import music21 as m21
 import converter21
 
+from musicdiff.detaillevel import DetailLevel
 from musicdiff.m21utils import M21Utils
-from musicdiff.m21utils import DetailLevel
 from musicdiff.annotation import AnnScore
 from musicdiff.comparison import Comparison
 from musicdiff.visualization import Visualization

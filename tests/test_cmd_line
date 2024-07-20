@@ -1,31 +1,31 @@
 #!/bin/zsh
 
-# GeneralNotes only
-python -m musicdiff -o text -d GeneralNotes -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# DecoratedNotesAndRests only
+python -m musicdiff --output text --include decoratednotesandrests -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# GeneralNotes with Voicing
-python -m musicdiff -o text -d GeneralNotes Voicing -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# DecoratedNotesAndRests with Voicing
+python -m musicdiff -o text -i decoratednotesandrests voicing -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# GeneralNotes with Lyrics
-python -m musicdiff -o text -d GeneralNotes Lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# DecoratedNotesAndRests with Lyrics
+python -m musicdiff --output t -i decoratednotesandrests lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # Extras only
-python -m musicdiff -o text -d Extras -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+python -m musicdiff -o t -i extras -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # Extras with Style
-python -m musicdiff -o text -d Extras Style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+python -m musicdiff -o t -i extras style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# GeneralNotes, Extras, Lyrics (same as AllObjects)
-python -m musicdiff -o text -d GeneralNotes Extras Lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# DecoratedNotesAndRests, Extras (same as AllObjects)
+python -m musicdiff -o t -i decoratednotesandrests extras -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# AllObjects (same as Notes, Extras, Lyrics)
-python -m musicdiff -o text -d AllObjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# AllObjects (same as Notes, Extras)
+python -m musicdiff -o t -i allobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# GeneralNotes, Extras, Lyrics, Style (same as AllObjectsWithStyle)
-python -m musicdiff -o text -d GeneralNotes Extras Lyrics Style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# DecoratedNotesAndRests, Extras, Style (same as AllObjectsWithStyle)
+python -m musicdiff -o t -i decoratednotesandrests extras style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# AllObjectsWithStyle (same as GeneralNotes, Extras, Lyrics, Style)
-python -m musicdiff -o text -d AllObjectsWithStyle -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# AllObjects | Style (same as DecoratedNotesAndRests, Extras, Lyrics, Style)
+python -m musicdiff -o t -i allobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # Metadata only
-python -m musicdiff -o text -d Metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+python -m musicdiff -o t -i metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei

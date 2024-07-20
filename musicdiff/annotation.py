@@ -47,12 +47,7 @@ class AnnNote:
             tuplet_list (list): A list of basic tuplet info about this GeneralNote.
             tuplet_info (list): A list of detailed tuplet info about this GeneralNote.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                Default (currently AllObjects), or any combination (|) of GeneralNotes,
-                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-                you also request GeneralNotes (because in music21, lyrics are attached to
-                notes).
+                Can be any |'ed and &~'ed combination of DetailLevel values.
         """
         self.general_note: int | str = general_note.id
         self.is_in_chord: bool = False
@@ -203,12 +198,11 @@ class AnnNote:
                 self.graceType = 'unacc'
             self.graceSlash = dur.slash
 
-        # The following (articulations, expressions, lyrics) only occur once per chord
+        # The following (articulations, expressions) only occur once per chord
         # or standalone note, so we only want to annotate them once.  We annotate them
         # on standalone notes (of course), and on the first note of a parent_chord.
         self.articulations: list[str] = []
         self.expressions: list[str] = []
-        self.lyrics: list[str] = []
 
         if self.note_idx_in_chord is None or self.note_idx_in_chord == 0:
             # articulations
@@ -223,28 +217,6 @@ class AnnNote:
             ]
             if self.expressions:
                 self.expressions.sort()
-            # lyrics
-            if DetailLevel.includesLyrics(detail):
-                for lyric in carrier.lyrics:
-                    if not lyric.rawText:
-                        continue
-                    lyricStr: str = ""
-                    if lyric.number is not None:
-                        lyricStr += f"number={lyric.number}"
-                    if (lyric._identifier is not None
-                            and lyric._identifier != lyric.number
-                            and lyric._identifier != str(lyric.number)):
-                        lyricStr += f" identifier={lyric._identifier}"
-                    # ignore .syllabic and .text, what is visible is .rawText (and there
-                    # are several .syllabic/.text combos that create the same .rawText).
-                    lyricStr += f" rawText={lyric.rawText}"
-                    if M21Utils.has_style(lyric):
-                        styleDict: dict[str, str] = M21Utils.obj_to_styledict(lyric, detail)
-                        if styleDict:
-                            # sort styleDict before converting to string so we can compare strings
-                            styleDict = dict(sorted(styleDict.items()))
-                            lyricStr += f" style={styleDict}"
-                    self.lyrics.append(lyricStr)
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
@@ -270,8 +242,6 @@ class AnnNote:
         size += len(self.articulations)
         # add for the expressions
         size += len(self.expressions)
-        # add for the lyrics
-        size += len(self.lyrics)
         return size
 
     def get_identifying_string(self, name: str = "") -> str:
@@ -462,17 +432,6 @@ class AnnNote:
             if name:
                 return string
 
-        if not name or name == "lyric":
-            if name or self.lyrics:
-                string += ", lyrics=["
-                for i, lyric in enumerate(self.lyrics):
-                    if i > 0:
-                        string += ", "
-                    string += lyric
-                string += "]"
-            if name:
-                return string
-
         if not name or name == "style":
             if name or self.styledict:
                 allOfThem: bool = False
@@ -480,9 +439,7 @@ class AnnNote:
                 if changedStr:
                     changedKeys = changedStr.split(",")
                 else:
-                    # pylint: disable=consider-iterating-dictionary
-                    changedKeys = [str(k) for k in self.styledict.keys()]
-                    # pylint: enable=consider-iterating-dictionary
+                    changedKeys = [str(k) for k in self.styledict]
                     allOfThem = True
 
                 if allOfThem:
@@ -508,7 +465,7 @@ class AnnNote:
         return (
             f"{self.general_note}{self.pitches},{self.note_head},{self.dots},"
             + f"B:{self.beamings},T:{self.tuplets},TI:{self.tuplet_info},"
-            + f"{self.articulations},{self.expressions},{self.lyrics},{self.styledict}"
+            + f"{self.articulations},{self.expressions},{self.styledict}"
         )
 
     def __str__(self) -> str:
@@ -566,12 +523,9 @@ class AnnNote:
         if len(self.articulations) > 0:  # add for articulations
             for a in self.articulations:
                 string += " " + a
-        if len(self.expressions) > 0:  # add for articulations
+        if len(self.expressions) > 0:  # add for expressions
             for e in self.expressions:
                 string += " " + e
-        if len(self.lyrics) > 0:  # add for lyrics
-            for lyric in self.lyrics:
-                string += " " + lyric
 
         if self.noteshape != "normal":
             string += f" noteshape={self.noteshape}"
@@ -632,12 +586,7 @@ class AnnExtra:
                 If the extra was found in a Voice, this is the Measure that the Voice was
                 found in.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                Default (currently AllObjects), or any combination (|) of GeneralNotes,
-                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-                you also request GeneralNotes (because in music21, lyrics are attached to
-                notes).
+                Can be any |'ed and &~'ed combination of DetailLevel values.
         """
         self.extra = extra.id
         self.offset: float
@@ -918,17 +867,12 @@ class AnnVoice:
             voice (music21.stream.Voice or Measure): The music21 voice to extend. This
                 can be a Measure, but only if it contains no Voices.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                Default (currently AllObjects), or any combination (|) of GeneralNotes,
-                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-                you also request GeneralNotes (because in music21, lyrics are attached to
-                notes).
+                Can be any |'ed and &~'ed combination of DetailLevel values.
         """
         self.voice: int | str = voice.id
         note_list: list[m21.note.GeneralNote] = []
 
-        if DetailLevel.includesGeneralNotes(detail):
+        if DetailLevel.includesNotesAndRests(detail):
             note_list = M21Utils.get_notes_and_gracenotes(voice)
 
         if not note_list:
@@ -1052,12 +996,7 @@ class AnnMeasure:
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
                 in the score.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                Default (currently AllObjects), or any combination (|) of GeneralNotes,
-                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-                you also request GeneralNotes (because in music21, lyrics are attached to
-                notes).
+                Can be any |'ed and &~'ed combination of DetailLevel values.
         """
         self.measure: int | str = measure.id
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
@@ -1088,7 +1027,7 @@ class AnnMeasure:
             self.annot_notes: list[AnnNote] = []
 
             note_list: list[m21.note.GeneralNote] = []
-            if DetailLevel.includesGeneralNotes(detail):
+            if DetailLevel.includesNotesAndRests(detail):
                 note_list = M21Utils.get_notes_and_gracenotes(measure, recurse=True)
 
             if note_list:
@@ -1135,14 +1074,13 @@ class AnnMeasure:
             self.n_of_elements = len(self.annot_notes)
 
         self.extras_list: list[AnnExtra] = []
-        if DetailLevel.includesOtherMusicObjects(detail):
-            for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
-                self.extras_list.append(AnnExtra(extra, measure, score, detail))
-            self.n_of_elements += len(self.extras_list)
+        for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
+            self.extras_list.append(AnnExtra(extra, measure, score, detail))
+        self.n_of_elements += len(self.extras_list)
 
-            # For correct comparison, sort the extras_list, so that any extras
-            # that all have the same offset are sorted alphabetically.
-            self.extras_list.sort(key=lambda e: (e.offset, str(e)))
+        # For correct comparison, sort the extras_list, so that any extras
+        # that all have the same offset are sorted alphabetically.
+        self.extras_list.sort(key=lambda e: (e.offset, str(e)))
 
         self.lyrics_list: list[AnnLyric] = []
         if DetailLevel.includesLyrics(detail):
@@ -1260,12 +1198,7 @@ class AnnPart:
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in
                 the score.
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                Default (currently AllObjects), or any combination (|) of GeneralNotes,
-                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-                you also request GeneralNotes (because in music21, lyrics are attached to
-                notes).
+                Can be any |'ed and &~'ed combination of DetailLevel values.
         """
         self.part: int | str = part.id
         self.bar_list: list[AnnMeasure] = []
@@ -1540,12 +1473,7 @@ class AnnScore:
         Args:
             score (music21.stream.Score): The music21 score
             detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                Default (currently AllObjects), or any combination (|) of GeneralNotes,
-                Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-                you also request GeneralNotes (because in music21, lyrics are attached to
-                notes).
+                Can be any |'ed and &~'ed combination of DetailLevel values.
         """
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []
@@ -1570,7 +1498,7 @@ class AnnScore:
 
         self.n_of_parts: int = len(self.part_list)
 
-        if DetailLevel.includesOtherMusicObjects(detail):
+        if DetailLevel.includesStaffDetails(detail):
             # staffgroups are extras (a.k.a. OtherMusicObjects)
             for staffGroup in score[m21.layout.StaffGroup]:
                 # ignore any StaffGroup that contains all the parts, and has no symbol

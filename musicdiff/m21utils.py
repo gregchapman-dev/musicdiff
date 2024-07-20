@@ -17,76 +17,12 @@ import sys
 import copy
 import re
 import typing as t
-from enum import IntEnum
 
 # import sys
 import music21 as m21
 from music21.common import OffsetQL, opFrac
 
-class DetailLevel(IntEnum):
-    # Bit definitions (can be |'ed with eachother and with common combinations):
-
-    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
-    GeneralNotes = 1
-
-    # If Voicing is on, we compare which voice and which chord each note is in.  By default we
-    # ignore the containing voice and chord, and just compare the individual notes themselves.
-    Voicing = 2
-
-    # Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
-    # TimeSignatures, TempoIndications, etc
-    Extras = 4
-
-    # Lyrics
-    Lyrics = 8
-
-    # Typographical stuff: placement, stem direction, color, italic/bold, etc
-    Style = 16
-
-    # Metadata: title, composer, etc
-    Metadata = 32
-
-    # Common combinations:
-
-    # Add in the "extras" and lyrics: Clefs, TextExpressions, Key/KeySignatures,
-    # Barlines/Repeats, TimeSignatures, TempoIndications, Lyrics, etc
-    AllObjects = GeneralNotes | Extras | Lyrics
-
-    # All of the above, plus typographical stuff: placement, stem direction,
-    # color, italic/bold, Style, etc
-    AllObjectsWithStyle = AllObjects | Style
-
-    # Various options that include Metadata:
-    GeneralNotesAndMetadata = GeneralNotes | Metadata
-    AllObjectsAndMetadata = AllObjects | Metadata
-    AllObjectsWithStyleAndMetadata = AllObjectsWithStyle | Metadata
-
-    Default = AllObjects
-
-    @classmethod
-    def includesGeneralNotes(cls, val: int) -> bool:
-        return val & cls.GeneralNotes != 0
-
-    @classmethod
-    def includesOtherMusicObjects(cls, val: int) -> bool:
-        return val & cls.Extras != 0
-
-    @classmethod
-    def includesLyrics(cls, val: int) -> bool:
-        return val & cls.Lyrics != 0
-
-    @classmethod
-    def includesStyle(cls, val: int) -> bool:
-        return val & cls.Style != 0
-
-    @classmethod
-    def includesMetadata(cls, val: int) -> bool:
-        return val & cls.Metadata != 0
-
-    @classmethod
-    def includesVoicing(cls, val: int) -> bool:
-        return val & cls.Voicing != 0
-
+from musicdiff import DetailLevel
 
 class M21Utils:
     @staticmethod
@@ -788,14 +724,18 @@ class M21Utils:
         if len(initialList) > 1:
             initialList.sort(key=lambda el: el.musicdiff_offset_in_measure)  # type: ignore
 
-        # loop over the initialList, filtering out (and complaining about) things we
-        # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
-        # right/left barlines of type 'regular' with no interesting details (because
-        # no right/left barline at all in music21 means a regular, uninteresting barline).
-        # Note that we ignore all invisible barlines as well (el.type == 'none') since
-        # they are non-printed.  We also try to de-duplicate redundant clefs.
+        # loop over the initialList, filtering out things we don't recognize or are
+        # not requested in the detail argument. Also, we filter out hidden (non-printed)
+        # extras.  And right/left barlines of type 'regular' with no interesting details
+        # (because no right/left barline at all in music21 means a regular, uninteresting
+        # barline). Note that we ignore all invisible barlines as well (el.type == 'none')
+        # since they are non-printed.  We also try to de-duplicate redundant clefs.
         mostRecentClef: m21.clef.Clef | None = None
         for el in initialList:
+            if not DetailLevel.obj_is_included(el, detail):
+                # ignore objects that were not requested
+                continue
+
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
                 # we ignore hidden extras
                 continue
@@ -844,6 +784,7 @@ class M21Utils:
 
         # Add any interesting spanners that start on GeneralNotes/SpannerAnchors in this measure
         spanner_types = (
+            m21.spanner.Slur,
             m21.expressions.ArpeggioMarkSpanner,
             m21.dynamics.DynamicWedge,
             m21.spanner.Ottava,
@@ -1345,6 +1286,10 @@ class M21Utils:
         return output
 
     @staticmethod
+    def slur_to_string(slur: m21.spanner.Slur) -> str:
+        return 'SLUR'
+
+    @staticmethod
     def dynwedge_to_string(dynwedge: m21.dynamics.DynamicWedge) -> str:
         output: str = ''
         if isinstance(dynwedge, m21.dynamics.Crescendo):
@@ -1463,6 +1408,8 @@ class M21Utils:
         extra: m21.base.Music21Object,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
+        if isinstance(extra, m21.spanner.Slur):
+            return M21Utils.slur_to_string(extra)
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
             return M21Utils.keysig_to_string(extra)
         if isinstance(extra, m21.expressions.TextExpression):
@@ -1485,22 +1432,17 @@ class M21Utils:
             return M21Utils.repeatbracket_to_string(extra)
         if isinstance(extra, m21.expressions.TremoloSpanner):
             return M21Utils.tremolo_to_string(extra)
-        if isinstance(extra, m21.layout.StaffLayout):
-            return M21Utils.stafflayout_to_string(extra, detail)
         if isinstance(extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
             return M21Utils.arpeggiomark_to_string(extra)
         if isinstance(extra, m21.harmony.ChordSymbol):
             return M21Utils.chordsymbol_to_string(extra)
-
-        # Page breaks and system breaks are only paid attention to at
-        # DetailLevel.AllObjectsWithStyle, because they are entirely
-        # style, no substance.
-        if DetailLevel.includesStyle(detail):
-            if isinstance(extra, m21.layout.SystemLayout):
-                return M21Utils.systemlayout_to_string(extra)
-            if isinstance(extra, m21.layout.PageLayout):
-                return M21Utils.pagelayout_to_string(extra)
+        if isinstance(extra, m21.layout.StaffLayout):
+            return M21Utils.stafflayout_to_string(extra, detail)
+        if isinstance(extra, m21.layout.SystemLayout):
+            return M21Utils.systemlayout_to_string(extra)
+        if isinstance(extra, m21.layout.PageLayout):
+            return M21Utils.pagelayout_to_string(extra)
 
         # print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''

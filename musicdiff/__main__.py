@@ -15,8 +15,8 @@
 import sys
 import argparse
 
-from musicdiff import diff
 from musicdiff import DetailLevel
+from musicdiff import diff
 
 # ------------------------------------------------------------------------------
 
@@ -38,63 +38,184 @@ if __name__ == "__main__":
         help="second music score file to compare (any format music21 can parse)"
     )
     parser.add_argument(
-        "-d",
-        "--detail",
-        default=[],
-        nargs='*',
+        "-i",
+        "--include",
+        default=["allobjects"],
+        nargs="*",
         choices=[
-            "GeneralNotes",
-            "Extras",
-            "Lyrics",
-            "Style",
-            "Voicing",
-            "Metadata",
-            "AllObjects",
-            "AllObjectsAndMetadata",
-            "AllObjectsWithStyle",
-            "AllObjectsWithStyleAndMetadata"],
-        help="set detail level (can set multiple details)"
+            "allobjects",
+            "decoratednotesandrests",
+            "extras",
+            "style",
+            "metadata",
+            "voicing",
+            "notesandrests",
+            "beaming",
+            "tremolos",
+            "ornaments",
+            "articulations",
+            "ties",
+            "slurs",
+            "signatures",
+            "directions",
+            "barlinesandrepeats",
+            "staffdetails",
+            "chordsymbols",
+            "ottavas",
+            "arpeggios",
+            "lyrics"],
+        help="included details (can include multiple details)"
+    )
+    parser.add_argument(
+        "-x",
+        "--exclude",
+        default=[],
+        nargs="*",
+        choices=[
+            "allobjects",
+            "decoratednotesandrests",
+            "extras",
+            "style",
+            "metadata",
+            "voicing",
+            "notesandrests",
+            "beaming",
+            "tremolos",
+            "ornaments",
+            "articulations",
+            "ties",
+            "slurs",
+            "signatures",
+            "directions",
+            "barlinesandrepeats",
+            "staffdetails",
+            "chordsymbols",
+            "ottavas",
+            "arpeggios",
+            "lyrics"],
+        help="excluded details (can exclude multiple details)"
     )
     parser.add_argument(
         "-o",
         "--output",
-        default="visual",
-        choices=["visual", "text"],
-        help="'visual' is rendered to PDFs, 'text' is diff-like written to stdout"
+        default=["visual"],
+        nargs="*",
+        choices=["visual", "v", "text", "t"],
+        help="'visual'/'v' is marked up scores, rendered to PDFs;"
+        + " 'text'/'t' is diff-like, written to stdout."
+        + " Either, both, or neither can be requested."
     )
 
     args = parser.parse_args()
 
     detail: int = DetailLevel.Default
-    if args.detail:
+    if args.include:
         detail = 0
-        for det in args.detail:
-            if det == "GeneralNotes":
-                detail |= DetailLevel.GeneralNotes
-            elif det == "Extras":
+        for det in args.include:
+            # combos
+            if det == "decoratednotesandrests":
+                detail |= DetailLevel.DecoratedNotesAndRests
+            elif det == "extras":
                 detail |= DetailLevel.Extras
-            elif det == "Lyrics":
-                detail |= DetailLevel.Lyrics
-            elif det == "Style":
-                detail |= DetailLevel.Style
-            elif det == "Voicing":
-                detail |= DetailLevel.Voicing
-            elif det == "Metadata":
-                detail |= DetailLevel.Metadata
-            elif det == "AllObjects":
+            elif det == "allobjects":
                 detail |= DetailLevel.AllObjects
-            elif det == "AllObjectsAndMetadata":
-                detail |= DetailLevel.AllObjectsAndMetadata
-            elif det == "AllObjectsWithStyle":
-                detail |= DetailLevel.AllObjectsWithStyle
-            elif det == "AllObjectsWithStyleAndMetadata":
-                detail |= DetailLevel.AllObjectsWithStyleAndMetadata
 
-    # Note that diff() can take a music21 Score instead of a file, for either
-    # or both arguments.
-    # Note also that diff() can take str or pathlib.Path for files.
-    visualize_diffs: bool = args.output == "visual"
-    print_text_output: bool = args.output == "text"
+            # bits not in any combo
+            elif det == "style":
+                detail |= DetailLevel.Style
+            elif det == "voicing":
+                detail |= DetailLevel.Voicing
+            elif det == "metadata":
+                detail |= DetailLevel.Metadata
+
+            # bits in the DecoratedNotesAndRests combo
+            elif det == "notesandrests":
+                detail |= DetailLevel.NotesAndRests
+            elif det == "beaming":
+                detail |= DetailLevel.Beaming
+            elif det == "tremolos":
+                detail |= DetailLevel.Tremolos
+            elif det == "ornaments":
+                detail |= DetailLevel.Ornaments
+            elif det == "articulations":
+                detail |= DetailLevel.Articulations
+            elif det == "ties":
+                detail |= DetailLevel.Ties
+            elif det == "slurs":
+                detail |= DetailLevel.Slurs
+
+            # bits in the Extras combo
+            elif det == "signatures":
+                detail |= DetailLevel.Signatures
+            elif det == "directions":
+                detail |= DetailLevel.Directions
+            elif det == "barlinesandrepeats":
+                detail |= DetailLevel.BarlinesAndRepeats
+            elif det == "staffdetails":
+                detail |= DetailLevel.StaffDetails
+            elif det == "chordsymbols":
+                detail |= DetailLevel.ChordSymbols
+            elif det == "ottavas":
+                detail |= DetailLevel.Ottavas
+            elif det == "arpeggios":
+                detail |= DetailLevel.Arpeggios
+            elif det == "lyrics":
+                detail |= DetailLevel.Lyrics
+
+    if detail != 0 and args.exclude:
+        for det in args.exclude:
+            # combos
+            if det == "decoratednotesandrests":
+                detail &= ~DetailLevel.DecoratedNotesAndRests
+            elif det == "extras":
+                detail &= ~DetailLevel.Extras
+            elif det == "allobjects":
+                detail &= ~DetailLevel.AllObjects
+
+            # bits not in any combo
+            elif det == "style":
+                detail &= ~DetailLevel.Style
+            elif det == "voicing":
+                detail &= ~DetailLevel.Voicing
+            elif det == "metadata":
+                detail &= ~DetailLevel.Metadata
+
+            # bits in the DecoratedNotesAndRests combo
+            elif det == "notesandrests":
+                detail &= ~DetailLevel.NotesAndRests
+            elif det == "beaming":
+                detail &= ~DetailLevel.Beaming
+            elif det == "tremolos":
+                detail &= ~DetailLevel.Tremolos
+            elif det == "ornaments":
+                detail &= ~DetailLevel.Ornaments
+            elif det == "articulations":
+                detail &= ~DetailLevel.Articulations
+            elif det == "ties":
+                detail &= ~DetailLevel.Ties
+            elif det == "slurs":
+                detail &= ~DetailLevel.Slurs
+
+            # bits in the Extras combo
+            elif det == "signatures":
+                detail &= ~DetailLevel.Signatures
+            elif det == "directions":
+                detail &= ~DetailLevel.Directions
+            elif det == "barlinesandrepeats":
+                detail &= ~DetailLevel.BarlinesAndRepeats
+            elif det == "staffdetails":
+                detail &= ~DetailLevel.StaffDetails
+            elif det == "chordsymbols":
+                detail &= ~DetailLevel.ChordSymbols
+            elif det == "ottavas":
+                detail &= ~DetailLevel.Ottavas
+            elif det == "arpeggios":
+                detail &= ~DetailLevel.Arpeggios
+            elif det == "lyrics":
+                detail &= ~DetailLevel.Lyrics
+
+    visualize_diffs: bool = "visual" in args.output or "v" in args.output
+    print_text_output: bool = "text" in args.output or "t" in args.output
 
     numDiffs: int | None = diff(
         args.file1,
