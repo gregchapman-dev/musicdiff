@@ -1242,7 +1242,7 @@ class Comparison:
         for orig_n in original:
             fallback: AnnNote | None = None
             found_it: bool = False
-            for comp_n in unpaired_comp_notes:
+            for i, comp_n in enumerate(unpaired_comp_notes):
                 if orig_n.pitches[0][0] != comp_n.pitches[0][0]:
                     # this pitch comparison (1) assumes the note is not a chord
                     # (because we don't do chords when Voicing is not set, and
@@ -1268,7 +1268,7 @@ class Comparison:
                 paired_notes.append((orig_n, comp_n))
 
                 # remove comp_n from unpaired_comp_notes
-                unpaired_comp_notes.remove(comp_n)
+                unpaired_comp_notes.pop(i)  # remove(comp_n) would sometimes get the wrong one
 
                 found_it = True
                 break
