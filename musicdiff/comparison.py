@@ -1241,6 +1241,7 @@ class Comparison:
 
         for orig_n in original:
             fallback: AnnNote | None = None
+            fallback_i: int = -1
             found_it: bool = False
             for i, comp_n in enumerate(unpaired_comp_notes):
                 if orig_n.pitches[0][0] != comp_n.pitches[0][0]:
@@ -1258,6 +1259,7 @@ class Comparison:
                     continue
                 if fallback is None:
                     fallback = comp_n
+                    fallback_i = i
 
                 if orig_n.note_dur_type != comp_n.note_dur_type:
                     continue
@@ -1280,7 +1282,7 @@ class Comparison:
             # did we find a fallback (matched except for duration)?
             if fallback is not None:
                 paired_notes.append((orig_n, fallback))
-                unpaired_comp_notes.remove(fallback)
+                unpaired_comp_notes.pop(fallback_i)
                 continue
 
             # we found nothing
