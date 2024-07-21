@@ -1752,11 +1752,22 @@ class Visualization:
     def get_text_output(
         score1: m21.stream.Score,
         score2: m21.stream.Score,
-        operations: list[tuple]
+        operations: list[tuple],
+        score1Name: str | Path | None = None,
+        score2Name: str | Path | None = None
     ) -> str:
         output: str
         outputList: list[str] = []
         oneOutput: str  # one string, multiple lines (with \n at end of all but last line)
+
+        if operations:
+            # filenames only show up at the start of text output if there are any diffs
+            if score1Name:
+                outputList.append(f"--- {score1Name}")
+                outputList.append(f"+++ {score2Name}")
+            else:
+                outputList.append("--- score1")
+                outputList.append("+++ score2")
 
         for op in operations:
             # bar
@@ -2779,6 +2790,30 @@ class Visualization:
                 newLine = f"-(metadata) {op[1].readable_str()}\n"
                 oneOutput += newLine
                 newLine = f"+(metadata) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "mditemkeyedit":
+                assert isinstance(op[1], AnnMetadataItem)
+                assert isinstance(op[2], AnnMetadataItem)
+                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(metadata:key) {op[1].readable_str()}\n"
+                oneOutput += newLine
+                newLine = f"+(metadata:key) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "mditemvalueedit":
+                assert isinstance(op[1], AnnMetadataItem)
+                assert isinstance(op[2], AnnMetadataItem)
+                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(metadata:value) {op[1].readable_str()}\n"
+                oneOutput += newLine
+                newLine = f"+(metadata:value) {op[2].readable_str()}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
                 continue

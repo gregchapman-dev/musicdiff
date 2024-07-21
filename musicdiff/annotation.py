@@ -46,8 +46,12 @@ class AnnNote:
             enhanced_beam_list (list): A list of beaming information about this GeneralNote.
             tuplet_list (list): A list of basic tuplet info about this GeneralNote.
             tuplet_info (list): A list of detailed tuplet info about this GeneralNote.
-            detail (DetailLevel): What level of detail to use during the diff.
-                Can be any |'ed and &~'ed combination of DetailLevel values.
+            detail (DetailLevel | int): What level of detail to use during the diff.
+                Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+                AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+                Style, Metadata, or Voicing.
         """
         self.general_note: int | str = general_note.id
         self.is_in_chord: bool = False
@@ -78,7 +82,11 @@ class AnnNote:
         if isinstance(general_note, m21.note.Rest):
             self.fullNameSuffix += " Rest"
         elif isinstance(general_note, m21.chord.ChordBase):
-            self.fullNameSuffix += " Chord"
+            if parent_chord is None:
+                self.fullNameSuffix += " Chord"
+            else:
+                # we're actually annotating one of the notes in the chord
+                self.fullNameSuffix += " Note"
         elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched)):
             self.fullNameSuffix += " Note"
         else:
@@ -103,16 +111,17 @@ class AnnNote:
 
         self.styledict: dict = {}
 
-        # we will take style from the individual note, and then override with
-        # style from the chord (following music21's MusicXML exporter).
-        if M21Utils.has_style(general_note):
-            self.styledict = M21Utils.obj_to_styledict(general_note, detail)
+        if DetailLevel.includesStyle(detail):
+            # we will take style from the individual note, and then override with
+            # style from the chord (following music21's MusicXML exporter).
+            if M21Utils.has_style(general_note):
+                self.styledict = M21Utils.obj_to_styledict(general_note, detail)
 
-        if parent_chord is not None:
-            if M21Utils.has_style(parent_chord):
-                parentstyledict = M21Utils.obj_to_styledict(parent_chord, detail)
-                for k, v in parentstyledict.items():
-                    self.styledict[k] = v
+            if parent_chord is not None:
+                if M21Utils.has_style(parent_chord):
+                    parentstyledict = M21Utils.obj_to_styledict(parent_chord, detail)
+                    for k, v in parentstyledict.items():
+                        self.styledict[k] = v
 
         self.noteshape: str = 'normal'
         self.noteheadFill: bool | None = None
@@ -206,17 +215,27 @@ class AnnNote:
 
         if self.note_idx_in_chord is None or self.note_idx_in_chord == 0:
             # articulations
-            self.articulations = [
-                M21Utils.articulation_to_string(a, detail) for a in carrier.articulations
-            ]
-            if self.articulations:
-                self.articulations.sort()
-            # expressions
-            self.expressions = [
-                M21Utils.expression_to_string(a, detail) for a in carrier.expressions
-            ]
-            if self.expressions:
-                self.expressions.sort()
+            if DetailLevel.includesArticulations(detail):
+                self.articulations = [
+                    M21Utils.articulation_to_string(a, detail) for a in carrier.articulations
+                ]
+                if self.articulations:
+                    self.articulations.sort()
+
+            if DetailLevel.includesOrnaments(detail):
+                # expressions (tremolo and arpeggio have their own detail bit, though)
+                for a in carrier.expressions:
+                    if not DetailLevel.includesTremolos(detail):
+                        if isinstance(a, m21.expressions.Tremolo):
+                            continue
+                    if not DetailLevel.includesArpeggios(detail):
+                        if isinstance(a, m21.expressions.ArpeggioMark):
+                            continue
+                    self.expressions.append(
+                        M21Utils.expression_to_string(a, detail)
+                    )
+                if self.expressions:
+                    self.expressions.sort()
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
@@ -461,7 +480,9 @@ class AnnNote:
         return string
 
     def __repr__(self) -> str:
-        # does consider the MEI id! (self.general_note)
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the general note.
         return (
             f"{self.general_note}{self.pitches},{self.note_head},{self.dots},"
             + f"B:{self.beamings},T:{self.tuplets},TI:{self.tuplet_info},"
@@ -585,8 +606,12 @@ class AnnExtra:
             measure (music21.stream.Measure): The music21 Measure the extra was found in.
                 If the extra was found in a Voice, this is the Measure that the Voice was
                 found in.
-            detail (DetailLevel): What level of detail to use during the diff.
-                Can be any |'ed and &~'ed combination of DetailLevel values.
+            detail (DetailLevel | int): What level of detail to use during the diff.
+                Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+                AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+                Style, Metadata, or Voicing.
         """
         self.extra = extra.id
         self.offset: float
@@ -633,26 +658,27 @@ class AnnExtra:
         self.content: str = M21Utils.extra_to_string(extra, detail)
         self.styledict: dict = {}
 
-        if not isinstance(extra, m21.harmony.ChordSymbol):
-            # We don't (yet) compare style of ChordSymbols, because Humdrum has no way (yet)
-            # of storing that.
-            if M21Utils.has_style(extra):
-                # includes extra.placement if present
+        if DetailLevel.includesStyle(detail):
+            if not isinstance(extra, m21.harmony.ChordSymbol):
+                # We don't (yet) compare style of ChordSymbols, because Humdrum has no way (yet)
+                # of storing that.
+                if M21Utils.has_style(extra):
+                    # includes extra.placement if present
 
-                # special case: MM with text='SMUFLNote = nnn" is being annotated as if there is
-                # no text, so none of the text style stuff should be added.
-                smuflTextSuppressed: bool = False
-                if (isinstance(extra, m21.tempo.MetronomeMark)
-                        and not extra.textImplicit
-                        and extra.text
-                        and not self.content.startswith('MM:TX:')):
-                    smuflTextSuppressed = True
+                    # special case: MM with text='SMUFLNote = nnn" is being annotated as if there is
+                    # no text, so none of the text style stuff should be added.
+                    smuflTextSuppressed: bool = False
+                    if (isinstance(extra, m21.tempo.MetronomeMark)
+                            and not extra.textImplicit
+                            and extra.text
+                            and not self.content.startswith('MM:TX:')):
+                        smuflTextSuppressed = True
 
-                self.styledict = M21Utils.obj_to_styledict(
-                    extra,
-                    detail,
-                    smuflTextSuppressed=smuflTextSuppressed
-                )
+                    self.styledict = M21Utils.obj_to_styledict(
+                        extra,
+                        detail,
+                        smuflTextSuppressed=smuflTextSuppressed
+                    )
 
         # so far, always 1, but maybe some extra will be bigger someday
         self._notation_size: int = 1
@@ -710,7 +736,9 @@ class AnnExtra:
         return ""  # should never get here
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the extra.
         output: str = f"Extra({self.extra}):"
         output += str(self)
         return output
@@ -751,11 +779,12 @@ class AnnLyric:
             measure (music21.stream.Measure): The music21 Measure the lyric was found in.
                 If the lyric was found in a Voice, this is the Measure that the lyric was
                 found in.
-            detail (DetailLevel): What level of detail to use during the diff.
-                Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-                GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-                Default (currently AllObjects), or any combination (|) of GeneralNotes,
-                Extras, Lyrics, Style, Voicing, Metadata.
+            detail (DetailLevel | int): What level of detail to use during the diff.
+                Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+                AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+                Style, Metadata, or Voicing.
         """
         self.lyric_holder = lyric_holder.id
 
@@ -778,7 +807,7 @@ class AnnLyric:
                 and lyric._identifier != str(lyric.number)):
             self.identifier = lyric._identifier
 
-        if M21Utils.has_style(lyric):
+        if DetailLevel.includesStyle(detail) and M21Utils.has_style(lyric):
             self.styledict = M21Utils.obj_to_styledict(lyric, detail)
             if self.styledict:
                 # sort styleDict before converting to string so we can compare strings
@@ -831,7 +860,11 @@ class AnnLyric:
         return ""  # should never get here
 
     def __repr__(self) -> str:
-        # does consider the MEI id! (of the note, plus the index within note.lyrics)
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the
+        # general note that holds the lyric, plus the
+        # lyric number within that general note.
         output: str = f"Lyric({self.lyric_holder}[{self.number}]):"
         output += str(self)
         return output
@@ -866,8 +899,12 @@ class AnnVoice:
         Args:
             voice (music21.stream.Voice or Measure): The music21 voice to extend. This
                 can be a Measure, but only if it contains no Voices.
-            detail (DetailLevel): What level of detail to use during the diff.
-                Can be any |'ed and &~'ed combination of DetailLevel values.
+            detail (DetailLevel | int): What level of detail to use during the diff.
+                Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+                AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+                Style, Metadata, or Voicing.
         """
         self.voice: int | str = voice.id
         note_list: list[m21.note.GeneralNote] = []
@@ -875,15 +912,16 @@ class AnnVoice:
         if DetailLevel.includesNotesAndRests(detail):
             note_list = M21Utils.get_notes_and_gracenotes(voice)
 
-        if not note_list:
-            self.en_beam_list: list[list[str]] = []
-            self.tuplet_list: list[list[str]] = []
-            self.tuplet_info: list[list[str]] = []
-            self.annot_notes: list[AnnNote] = []
-        else:
+        self.en_beam_list: list[list[str]] = []
+        self.tuplet_list: list[list[str]] = []
+        self.tuplet_info: list[list[str]] = []
+        self.annot_notes: list[AnnNote] = []
+
+        if note_list:
             self.en_beam_list = M21Utils.get_enhance_beamings(
-                note_list
-            )  # beams and type (type for note shorter than quarter notes)
+                note_list,
+                detail
+            )  # beams ("partial" can mean partial beam or just a flag)
             self.tuplet_list = M21Utils.get_tuplets_type(
                 note_list
             )  # corrected tuplets (with "start" and "continue")
@@ -901,7 +939,9 @@ class AnnVoice:
                     )
                     expectedOffsetInMeas = opFrac(prevNoteStart + prevNoteDurQL)
 
-                gapDurQL: OffsetQL = n.getOffsetInHierarchy(enclosingMeasure) - expectedOffsetInMeas
+                gapDurQL: OffsetQL = (
+                    n.getOffsetInHierarchy(enclosingMeasure) - expectedOffsetInMeas
+                )
                 self.annot_notes.append(
                     AnnNote(
                         n,
@@ -949,7 +989,9 @@ class AnnVoice:
         return string
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the voice.
         output: str = f"Voice({self.voice}):"
         output += str(self)
         return output
@@ -995,8 +1037,12 @@ class AnnMeasure:
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
                 in the score.
-            detail (DetailLevel): What level of detail to use during the diff.
-                Can be any |'ed and &~'ed combination of DetailLevel values.
+            detail (DetailLevel | int): What level of detail to use during the diff.
+                Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+                AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+                Style, Metadata, or Voicing.
         """
         self.measure: int | str = measure.id
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
@@ -1032,8 +1078,9 @@ class AnnMeasure:
 
             if note_list:
                 en_beam_list = M21Utils.get_enhance_beamings(
-                    note_list
-                )  # beams and type (type for note shorter than quarter notes)
+                    note_list,
+                    detail
+                )  # beams ("partial" can mean partial beam or just a flag)
                 tuplet_list = M21Utils.get_tuplets_type(
                     note_list
                 )  # corrected tuplets (with "start" and "continue")
@@ -1106,12 +1153,16 @@ class AnnMeasure:
             output += str([str(v) for v in self.voices_list])
         else:
             output += str([str(n) for n in self.annot_notes])
-        output += ' Extras:' + str([str(e) for e in self.extras_list])
-        output += ' Lyrics:' + str([str(lyr) for lyr in self.lyrics_list])
+        if self.extras_list:
+            output += ' Extras:' + str([str(e) for e in self.extras_list])
+        if self.lyrics_list:
+            output += ' Lyrics:' + str([str(lyr) for lyr in self.lyrics_list])
         return output
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the measure.
         output: str = f"Measure({self.measure}):"
         output += str(self)
         return output
@@ -1197,8 +1248,12 @@ class AnnPart:
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners in
                 the score.
-            detail (DetailLevel): What level of detail to use during the diff.
-                Can be any |'ed and &~'ed combination of DetailLevel values.
+            detail (DetailLevel | int): What level of detail to use during the diff.
+                Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+                AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+                Style, Metadata, or Voicing.
         """
         self.part: int | str = part.id
         self.bar_list: list[AnnMeasure] = []
@@ -1237,7 +1292,9 @@ class AnnPart:
         return sum([b.notation_size() for b in self.bar_list])
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the part.
         output: str = f"Part({self.part}):"
         output += str([str(b) for b in self.bar_list])
         return output
@@ -1298,9 +1355,11 @@ class AnnStaffGroup:
         else:
             output += "(,)"
 
-        output += f", symbol={self.symbol}"
-        output += f", barTogether={self.barTogether}"
         output += f", partIndices={self.part_indices}"
+        if self.symbol is not None:
+            output += f", symbol={self.symbol}"
+        if self.barTogether is not None:
+            output += f", barTogether={self.barTogether}"
         return output
 
     def __eq__(self, other) -> bool:
@@ -1364,7 +1423,9 @@ class AnnStaffGroup:
         return 5
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the staff group.
         output: str = f"StaffGroup({self.staff_group}):"
         output += f" name={self.name}, abbrev={self.abbreviation},"
         output += f" symbol={self.symbol}, barTogether={self.barTogether}"
@@ -1440,7 +1501,9 @@ class AnnMetadataItem:
 
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # must include a unique id for memoization!
+        # no need for music21 id.
+        # We use id(self).
         output: str = f"MetadataItem({self.metadata_item}):"
         output += self.key + ':' + str(self.value)
         return output
@@ -1472,8 +1535,12 @@ class AnnScore:
         The hierarchy is "score -> parts -> measures -> voices -> notes"
         Args:
             score (music21.stream.Score): The music21 score
-            detail (DetailLevel): What level of detail to use during the diff.
-                Can be any |'ed and &~'ed combination of DetailLevel values.
+            detail (DetailLevel | int): What level of detail to use during the diff.
+                Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+                AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+                Style, Metadata, or Voicing.
         """
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []
@@ -1499,7 +1566,6 @@ class AnnScore:
         self.n_of_parts: int = len(self.part_list)
 
         if DetailLevel.includesStaffDetails(detail):
-            # staffgroups are extras (a.k.a. OtherMusicObjects)
             for staffGroup in score[m21.layout.StaffGroup]:
                 # ignore any StaffGroup that contains all the parts, and has no symbol
                 # and has no barthru (this is just a placeholder generated by some
@@ -1512,7 +1578,7 @@ class AnnScore:
                 if ann_staff_group.n_of_parts > 0:
                     self.staff_group_list.append(ann_staff_group)
 
-        if DetailLevel.includesMetadata(detail) and score.metadata is not None:
+        if DetailLevel.includesMetadata(detail) and score.metadata:
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
             # Note: we sort metadata_items_list after the fact, because sometimes
             # (e.g. otherContributor:poet) we substitute names (e.g. lyricist:)
@@ -1566,7 +1632,9 @@ class AnnScore:
         return sum([p.notation_size() for p in self.part_list])
 
     def __repr__(self) -> str:
-        # does consider the MEI id!
+        # must include a unique id for memoization!
+        # must include the music21 id for visualization!
+        # both are covered by the music21 id of the score.
         output: str = f"Score({self.score}):"
         output += self.part_list.__repr__()
         return output

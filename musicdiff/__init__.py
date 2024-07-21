@@ -78,12 +78,11 @@ def diff(
             the only result of the call will be the return value (the number of differences).
             (default is True)
         detail (DetailLevel | int): What level of detail to use during the diff.
-            Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-            GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-            Default (currently AllObjects), or any combination (|) of GeneralNotes,
-            Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-            you also request GeneralNotes (because in music21, lyrics are attached to
-            notes).
+            Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+            AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+            Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+            Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+            Style, Metadata, or Voicing.
 
     Returns:
         int | None: The number of differences found (0 means the scores were identical,
@@ -95,9 +94,12 @@ def diff(
 
     badArg1: bool = False
     badArg2: bool = False
+    score1Name: str | Path | None = None
+    score2Name: str | Path | None = None
 
     # Convert input strings to Paths
     if isinstance(score1, str):
+        score1Name = score1
         try:
             score1 = Path(score1)
         except Exception:  # pylint: disable=broad-exception-caught
@@ -105,6 +107,7 @@ def diff(
             badArg1 = True
 
     if isinstance(score2, str):
+        score2Name = score2
         try:
             score2 = Path(score2)
         except Exception:  # pylint: disable=broad-exception-caught
@@ -115,6 +118,8 @@ def diff(
         return None
 
     if isinstance(score1, Path):
+        if not score1Name:
+            score1Name = score1
         fileName1 = score1.name
         fileExt1 = score1.suffix
 
@@ -137,6 +142,8 @@ def diff(
             # pylint: enable=broad-except
 
     if isinstance(score2, Path):
+        if not score2Name:
+            score2Name = score2
         fileName2: str = score2.name
         fileExt2: str = score2.suffix
 
@@ -188,7 +195,9 @@ def diff(
             Visualization.show_diffs(score1, score2, out_path1, out_path2)
 
         if print_text_output:
-            text_output: str = Visualization.get_text_output(score1, score2, diff_list)
+            text_output: str = Visualization.get_text_output(
+                score1, score2, diff_list, score1Name=score1Name, score2Name=score2Name
+            )
             print(text_output)
 
     return numDiffs

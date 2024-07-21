@@ -1,31 +1,49 @@
 #!/bin/zsh
 
+# undecorated NotesAndRests only
+echo notesandrests
+python -m musicdiff --output text --include notesandrests -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
 # DecoratedNotesAndRests only
+echo decoratednotesandrests
 python -m musicdiff --output text --include decoratednotesandrests -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # DecoratedNotesAndRests with Voicing
+echo decoratednotesandrests voicing
 python -m musicdiff -o text -i decoratednotesandrests voicing -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # DecoratedNotesAndRests with Lyrics
+echo decoratednotesandrests lyrics
 python -m musicdiff --output t -i decoratednotesandrests lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# Extras only
-python -m musicdiff -o t -i extras -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# DecoratedNotesAndRests with Lyrics and Voicing
+echo decoratednotesandrests voicing lyrics
+python -m musicdiff --output t -i decoratednotesandrests voicing lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# Extras with Style
-python -m musicdiff -o t -i extras style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# OtherObjects only
+echo otherobjects
+python -m musicdiff -o t -i otherobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# DecoratedNotesAndRests, Extras (same as AllObjects)
-python -m musicdiff -o t -i decoratednotesandrests extras -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# OtherObjects with Style
+echo otherobjects style
+python -m musicdiff -o t -i otherobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# AllObjects (same as Notes, Extras)
+# DecoratedNotesAndRests, OtherObjects (same as AllObjects)
+echo decoratednotesandrests otherobjects
+python -m musicdiff -o t -i decoratednotesandrests otherobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
+# AllObjects (same as DecoratedNotesAndRests, OtherObjects)
+echo allobjects
 python -m musicdiff -o t -i allobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# DecoratedNotesAndRests, Extras, Style (same as AllObjectsWithStyle)
-python -m musicdiff -o t -i decoratednotesandrests extras style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# DecoratedNotesAndRests, OtherObjects, Style
+echo decoratednotesandrests otherobjects style
+python -m musicdiff -o t -i decoratednotesandrests otherobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
-# AllObjects | Style (same as DecoratedNotesAndRests, Extras, Lyrics, Style)
+# AllObjects | Style (same as DecoratedNotesAndRests, OtherObjects, Style)
+echo allobjects style
 python -m musicdiff -o t -i allobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # Metadata only
+echo metadata
 python -m musicdiff -o t -i metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei

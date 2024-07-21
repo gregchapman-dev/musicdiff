@@ -43,12 +43,14 @@ if __name__ == "__main__":
         default=["allobjects"],
         nargs="*",
         choices=[
-            "allobjects",
             "decoratednotesandrests",
-            "extras",
+            "otherobjects",
+            "allobjects",
+
             "style",
             "metadata",
             "voicing",
+
             "notesandrests",
             "beaming",
             "tremolos",
@@ -56,6 +58,7 @@ if __name__ == "__main__":
             "articulations",
             "ties",
             "slurs",
+
             "signatures",
             "directions",
             "barlinesandrepeats",
@@ -72,12 +75,14 @@ if __name__ == "__main__":
         default=[],
         nargs="*",
         choices=[
-            "allobjects",
             "decoratednotesandrests",
-            "extras",
+            "otherobjects",
+            "allobjects",
+
             "style",
             "metadata",
             "voicing",
+
             "notesandrests",
             "beaming",
             "tremolos",
@@ -85,6 +90,7 @@ if __name__ == "__main__":
             "articulations",
             "ties",
             "slurs",
+
             "signatures",
             "directions",
             "barlinesandrepeats",
@@ -115,8 +121,8 @@ if __name__ == "__main__":
             # combos
             if det == "decoratednotesandrests":
                 detail |= DetailLevel.DecoratedNotesAndRests
-            elif det == "extras":
-                detail |= DetailLevel.Extras
+            elif det == "otherobjects":
+                detail |= DetailLevel.OtherObjects
             elif det == "allobjects":
                 detail |= DetailLevel.AllObjects
 
@@ -144,13 +150,13 @@ if __name__ == "__main__":
             elif det == "slurs":
                 detail |= DetailLevel.Slurs
 
-            # bits in the Extras combo
+            # bits in the OtherObjects combo
             elif det == "signatures":
                 detail |= DetailLevel.Signatures
             elif det == "directions":
                 detail |= DetailLevel.Directions
-            elif det == "barlinesandrepeats":
-                detail |= DetailLevel.BarlinesAndRepeats
+            elif det == "barlines":
+                detail |= DetailLevel.Barlines
             elif det == "staffdetails":
                 detail |= DetailLevel.StaffDetails
             elif det == "chordsymbols":
@@ -167,8 +173,8 @@ if __name__ == "__main__":
             # combos
             if det == "decoratednotesandrests":
                 detail &= ~DetailLevel.DecoratedNotesAndRests
-            elif det == "extras":
-                detail &= ~DetailLevel.Extras
+            elif det == "otherobjects":
+                detail &= ~DetailLevel.OtherObjects
             elif det == "allobjects":
                 detail &= ~DetailLevel.AllObjects
 
@@ -196,13 +202,13 @@ if __name__ == "__main__":
             elif det == "slurs":
                 detail &= ~DetailLevel.Slurs
 
-            # bits in the Extras combo
+            # bits in the OtherObjects combo
             elif det == "signatures":
                 detail &= ~DetailLevel.Signatures
             elif det == "directions":
                 detail &= ~DetailLevel.Directions
-            elif det == "barlinesandrepeats":
-                detail &= ~DetailLevel.BarlinesAndRepeats
+            elif det == "barlines":
+                detail &= ~DetailLevel.Barlines
             elif det == "staffdetails":
                 detail &= ~DetailLevel.StaffDetails
             elif det == "chordsymbols":
