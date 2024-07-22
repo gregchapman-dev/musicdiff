@@ -1518,8 +1518,9 @@ class AnnMetadataItem:
         return 1
 
     def make_value_string(self, value: m21.metadata.Contributor | m21.metadata.Text) -> str:
-        # Unescapes a bunch of stuff
+        # Unescapes a bunch of stuff (and strips off leading/trailing whitespace)
         output: str = str(value)
+        output = output.strip()
         output = html.unescape(output)
         return output
 

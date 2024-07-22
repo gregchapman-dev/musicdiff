@@ -180,6 +180,9 @@ class M21Utils:
         if isinstance(expr, m21.expressions.Tremolo):
             return M21Utils.tremolo_to_string(expr, detail)
 
+        if isinstance(expr, m21.expressions.TextExpression):
+            return M21Utils.textexp_to_string(expr)
+
         # all others just get expr.name
         theName = expr.name
         return theName
@@ -1116,12 +1119,14 @@ class M21Utils:
 
     @staticmethod
     def textexp_to_string(textexp: m21.expressions.TextExpression) -> str:
-        output: str = f'TX:{textexp.content}'
+        output: str = f'TX:{textexp.content.strip()}'
         return output
 
     @staticmethod
     def dynamic_to_string(dynamic: m21.dynamics.Dynamic) -> str:
-        output: str = f'DY:{dynamic.value}'
+        value: str = str(value)
+        value = value.strip()
+        output: str = f'DY:{value}'
         return output
 
     @staticmethod
