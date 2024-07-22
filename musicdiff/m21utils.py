@@ -1119,13 +1119,18 @@ class M21Utils:
 
     @staticmethod
     def textexp_to_string(textexp: m21.expressions.TextExpression) -> str:
-        output: str = f'TX:{textexp.content.strip()}'
+        content: str = textexp.content.strip()
+        if not content:
+            return ''
+        output: str = f'TX:{content}'
         return output
 
     @staticmethod
     def dynamic_to_string(dynamic: m21.dynamics.Dynamic) -> str:
-        value: str = str(value)
+        value: str = str(dynamic.value)
         value = value.strip()
+        if not value:
+            return ''
         output: str = f'DY:{value}'
         return output
 
