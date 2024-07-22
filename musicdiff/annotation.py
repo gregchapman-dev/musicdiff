@@ -484,12 +484,13 @@ class AnnNote:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the general note.
+        # we use the music21 id of the general note.
         return (
-            f"{self.general_note}{self.pitches},{self.note_head},{self.dots},"
+            f"GeneralNote({self.general_note}),G:{self.gap_dur},"
+            + f"P:{self.pitches},H:{self.note_head},D:{self.dots},"
             + f"B:{self.beamings},T:{self.tuplets},TI:{self.tuplet_info},"
-            + f"{self.articulations},{self.expressions},{self.styledict}"
+            + f"A:{self.articulations},E:{self.expressions},"
+            + f"S:{self.styledict}"
         )
 
     def __str__(self) -> str:
@@ -740,8 +741,7 @@ class AnnExtra:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the extra.
+        # we use the music21 id of the extra.
         output: str = f"Extra({self.extra}):"
         output += str(self)
         return output
@@ -864,10 +864,9 @@ class AnnLyric:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the
-        # general note that holds the lyric, plus the
-        # lyric number within that general note.
+        # we use the music21 id of the general note
+        # that holds the lyric, plus the lyric
+        # number within that general note.
         output: str = f"Lyric({self.lyric_holder}[{self.number}]):"
         output += str(self)
         return output
@@ -993,11 +992,19 @@ class AnnVoice:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the voice.
-        output: str = f"Voice({self.voice}):"
-        output += str(self)
-        return output
+        # we use the music21 id of the voice.
+        string: str = f"Voice({self.voice}):"
+        string += "["
+        for an in self.annot_notes:
+            string += repr(an)
+            string += ","
+
+        if string[-1] == ",":
+            # delete the last comma
+            string = string[:-1]
+
+        string += "]"
+        return string
 
     def __str__(self) -> str:
         string = "["
@@ -1164,10 +1171,16 @@ class AnnMeasure:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the measure.
+        # we use the music21 id of the measure.
         output: str = f"Measure({self.measure}):"
-        output += str(self)
+        if self.includes_voicing:
+            output += str([repr(v) for v in self.voices_list])
+        else:
+            output += str([repr(n) for n in self.annot_notes])
+        if self.extras_list:
+            output += ' Extras:' + str([repr(e) for e in self.extras_list])
+        if self.lyrics_list:
+            output += ' Lyrics:' + str([repr(lyr) for lyr in self.lyrics_list])
         return output
 
     def __eq__(self, other) -> bool:
@@ -1296,10 +1309,9 @@ class AnnPart:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the part.
+        # we use the music21 id of the part.
         output: str = f"Part({self.part}):"
-        output += str([str(b) for b in self.bar_list])
+        output += str([repr(b) for b in self.bar_list])
         return output
 
     def get_note_ids(self) -> list[str | int]:
@@ -1427,8 +1439,7 @@ class AnnStaffGroup:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the staff group.
+        # we use the music21 id of the staff group.
         output: str = f"StaffGroup({self.staff_group}):"
         output += f" name={self.name}, abbrev={self.abbreviation},"
         output += f" symbol={self.symbol}, barTogether={self.barTogether}"
@@ -1505,8 +1516,7 @@ class AnnMetadataItem:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # no need for music21 id.
-        # We use id(self).
+        # We use id(self), because there is no music21 object here.
         output: str = f"MetadataItem({self.metadata_item}):"
         output += self.key + ':' + str(self.value)
         return output
@@ -1637,10 +1647,9 @@ class AnnScore:
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
-        # must include the music21 id for visualization!
-        # both are covered by the music21 id of the score.
+        # we use the music21 id of the score.
         output: str = f"Score({self.score}):"
-        output += self.part_list.__repr__()
+        output += str(repr(p) for p in self.part_list)
         return output
 
     def get_note_ids(self) -> list[str | int]:
