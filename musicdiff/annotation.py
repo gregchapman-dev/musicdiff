@@ -223,13 +223,16 @@ class AnnNote:
                     self.articulations.sort()
 
             if DetailLevel.includesOrnaments(detail):
-                # expressions (tremolo and arpeggio have their own detail bit, though)
+                # expressions (tremolo, arpeggio, textexp have their own detail bits, though)
                 for a in carrier.expressions:
                     if not DetailLevel.includesTremolos(detail):
                         if isinstance(a, m21.expressions.Tremolo):
                             continue
                     if not DetailLevel.includesArpeggios(detail):
                         if isinstance(a, m21.expressions.ArpeggioMark):
+                            continue
+                    if not DetailLevel.includesDirections(detail):
+                        if isinstance(a, m21.expressions.TextExpression):
                             continue
                     self.expressions.append(
                         M21Utils.expression_to_string(a, detail)
