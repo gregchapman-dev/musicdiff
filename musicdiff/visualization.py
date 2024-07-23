@@ -1762,15 +1762,6 @@ class Visualization:
         outputList: list[str] = []
         oneOutput: str  # one string, multiple lines (with \n at end of all but last line)
 
-        if operations:
-            # filenames only show up at the start of text output if there are any diffs
-            if score1Name:
-                outputList.append(f"--- {score1Name}")
-                outputList.append(f"+++ {score2Name}")
-            else:
-                outputList.append("--- score1")
-                outputList.append("+++ score2")
-
         for op in operations:
             # bar
             if op[0] == "insbar":
@@ -2891,5 +2882,15 @@ class Visualization:
             return beats
 
         outputList.sort(key=lambda s: (measNum(s), measSuf(s), staffNum(s), beat(s)))
+
+        if operations:
+            # filenames only show up at the start of text output if there are any diffs
+            if score1Name:
+                outputList.insert(0, f"--- {score1Name}")
+                outputList.insert(1, f"+++ {score2Name}")
+            else:
+                outputList.insert(0, "--- score1")
+                outputList.insert(1, "+++ score2")
+
         output = '\n'.join(outputList)
         return output
