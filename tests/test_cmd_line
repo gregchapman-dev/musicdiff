@@ -14,7 +14,11 @@ python -m musicdiff --output text --include decoratednotesandrests --exclude tie
 
 # DecoratedNotesAndRests excluding beams and ties
 echo "musicdiff --include decoratednotesandrests --exclude beams ties"
-python -m musicdiff --output text --include decoratednotesandrests --exclude ties -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+python -m musicdiff --output text --include decoratednotesandrests --exclude beams ties -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
+# DecoratedNotesAndRests excluding beams and ties and slurs
+echo "musicdiff --include decoratednotesandrests --exclude beams ties slurs"
+python -m musicdiff --output text --include decoratednotesandrests --exclude beams ties slurs -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # DecoratedNotesAndRests with Voicing
 echo "musicdiff -i decoratednotesandrests voicing"
@@ -40,6 +44,10 @@ python -m musicdiff -o t -i otherobjects style -- tests/test_scores/test_all_det
 echo "musicdiff -i decoratednotesandrests otherobjects"
 python -m musicdiff -o t -i decoratednotesandrests otherobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
+# DecoratedNotesAndRests, OtherObjects, no Lyrics
+echo "musicdiff -i decoratednotesandrests otherobjects -x lyrics"
+python -m musicdiff -o t -i decoratednotesandrests otherobjects -x lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
 # AllObjects (same as DecoratedNotesAndRests, OtherObjects)
 echo "musicdiff -i allobjects"
 python -m musicdiff -o t -i allobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
@@ -48,6 +56,10 @@ python -m musicdiff -o t -i allobjects -- tests/test_scores/test_all_details_1a.
 echo "musicdiff -i decoratednotesandrests otherobjects style"
 python -m musicdiff -o t -i decoratednotesandrests otherobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
+# DecoratedNotesAndRests, OtherObjects, Style, no Lyrics
+echo "musicdiff -i decoratednotesandrests otherobjects style -x lyrics"
+python -m musicdiff -o t -i decoratednotesandrests otherobjects style -x lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
 # AllObjects | Style (same as DecoratedNotesAndRests, OtherObjects, Style)
 echo "musicdiff -i allobjects style"
 python -m musicdiff -o t -i allobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
@@ -55,3 +67,7 @@ python -m musicdiff -o t -i allobjects style -- tests/test_scores/test_all_detai
 # Metadata only
 echo "musicdiff -i metadata"
 python -m musicdiff -o t -i metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
+# Everything except Voicing
+echo "musicdiff -i allobjects style metadata"
+python -m musicdiff -o t -i allobjects style metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei

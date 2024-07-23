@@ -33,7 +33,14 @@
                   <measure n="1">
                      <staff n="1">
                         <layer n="1">
-                           <note pname="b" oct="4" dur="4"/>
+                           <note pname="b" oct="4" dur="4">
+                              <verse n="1">
+                                 <syl>lyric1</syl>
+                              </verse>
+                              <verse n="2">
+                                 <syl>lyric2</syl>
+                              </verse>
+                           </note>
                            <note pname="g" oct="4" dur="4"/>
                            <note pname="d" oct="5" dur="4"/>
                            <note pname="b" oct="4" dur="4"/>

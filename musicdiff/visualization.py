@@ -1646,7 +1646,7 @@ class Visualization:
         output: str
         meas: m21.stream.Stream | None
         part: m21.stream.Stream | None
-        partIdx: int
+        staffNum: int
         fractionalBeats: OffsetQL
 
         def printedQL(ql: OffsetQL) -> str:
@@ -1675,9 +1675,10 @@ class Visualization:
             part = score.containerInHierarchy(meas)
             if not isinstance(part, m21.stream.Part):
                 return ""
-            partIdx = M21Utils.get_part_index(part, score)
+            staffNum = M21Utils.get_part_index(part, score)
+            staffNum += 1  # staff number is 1-based
             output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
-            output += f"staff {partIdx}, "
+            output += f"staff {staffNum}, "
             fractionalBeats = 1.
             output += f"beat {printedQL(fractionalBeats)}"
             return output
@@ -1687,9 +1688,10 @@ class Visualization:
             part = score.containerInHierarchy(m21obj)
             if not isinstance(part, m21.stream.Part):
                 return ""
-            partIdx = M21Utils.get_part_index(part, score)
+            staffNum = M21Utils.get_part_index(part, score)
+            staffNum += 1  # staffNum is 1-based
             output = f"measure {M21Utils.get_measure_number_with_suffix(m21obj, part)}, "
-            output += f"staff {partIdx}, "
+            output += f"staff {staffNum}, "
             fractionalBeats = 1.
             output += f"beat {printedQL(fractionalBeats)}"
             return output
@@ -1702,11 +1704,11 @@ class Visualization:
             part = score.containerInHierarchy(meas)
             if not isinstance(part, m21.stream.Part):
                 return ""
-            partIdx = M21Utils.get_part_index(part, score)
+            staffNum = M21Utils.get_part_index(part, score)
+            staffNum += 1  # staffNum is 1-based
             voiceStartOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
             output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
-            if partIdx != -1:
-                output += f"staff {partIdx}, "
+            output += f"staff {staffNum}, "
             ts: m21.meter.TimeSignature | None = m21obj.getContextByClass(m21.meter.TimeSignature)
             if ts is None:
                 ts = m21.meter.TimeSignature()  # 4/4
@@ -1736,11 +1738,11 @@ class Visualization:
         part = score.containerInHierarchy(meas)
         if not isinstance(part, m21.stream.Part):
             return ""
-        partIdx = M21Utils.get_part_index(part, score)
+        staffNum = M21Utils.get_part_index(part, score)
+        staffNum += 1  # staffNum is 1-based
         startOffset: OffsetQL = m21obj.getOffsetInHierarchy(meas)
         output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
-        if partIdx != -1:
-            output += f"staff {partIdx}, "
+        output += f"staff {staffNum}, "
         ts = m21obj.getContextByClass(m21.meter.TimeSignature)
         if ts is None:
             ts = m21.meter.TimeSignature()  # 4/4
@@ -2849,17 +2851,17 @@ class Visualization:
             measSuf: str = m.group(2)
             return measSuf
 
-        def partIdx(s: str) -> int:
+        def staffNum(s: str) -> int:
             m = re.match(LOC_PATTERN, s)
             if not m:
                 return -1
-            partIdxStr: str = m.group(3)
-            partIdx: int = -1
+            staffNumStr: str = m.group(3)
+            staffNum: int = -1
             try:
-                partIdx = int(partIdxStr)
+                staffNum = int(staffNumStr)
             except Exception:
                 pass
-            return partIdx
+            return staffNum
 
         def beat(s: str) -> OffsetQL:
             # can be of the form "j n/m" (mixed), "n/m" (Fraction), or "n.m" (float)
@@ -2888,6 +2890,6 @@ class Visualization:
                 pass
             return beats
 
-        outputList.sort(key=lambda s: (measNum(s), measSuf(s), partIdx(s), beat(s)))
+        outputList.sort(key=lambda s: (measNum(s), measSuf(s), staffNum(s), beat(s)))
         output = '\n'.join(outputList)
         return output

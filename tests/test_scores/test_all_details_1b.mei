@@ -36,7 +36,7 @@
                            <!-- one layer containing all the same notes
                                 as two layers in score 1a (in chords)
                            -->
-                           <chord dur="4">
+                           <chord xml:id="firstChord" dur="4">
                               <note pname="b" oct="4"/>
                               <note pname="g" oct="4"/>
                            </chord>
@@ -55,6 +55,7 @@
                         </layer>
                      </staff>
                      <dynam tstamp="1" place="above">p</dynam>
+                     <slur startid="firstChord" endid="lastNote"/>
                   </measure>
                   <measure n="2" right="end">
                      <staff n="1">
@@ -82,7 +83,7 @@
                            </beam>
                            <note pname="c" oct="4" dur="8" stem.dir="up"/>
                            <note pname="a" oct="3" dur="8" stem.dir="up"/>
-                           <note pname="g" oct="3" dur="8" stem.dir="up"/>
+                           <note xml:id="lastNote" pname="g" oct="3" dur="8" stem.dir="up"/>
                            <rest dur="8" ploc="g" oloc="3"/>
                         </layer>
                      </staff>
