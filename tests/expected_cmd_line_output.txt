@@ -1,0 +1,325 @@
+musicdiff --include notesandrests
+musicdiff --include decoratednotesandrests
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff --include decoratednotesandrests --exclude ties
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff --include decoratednotesandrests --exclude beams ties
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+musicdiff --include decoratednotesandrests --exclude beams ties slurs
+musicdiff -i decoratednotesandrests voicing
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
+-(voice) [G5 (half note),F5 (half note)]
+@@ measure 1, staff 0, beat 1.0 @@
++(Note:pitch) [G4,B4] (quarter chord), pitch[1]=B4
+@@ measure 1, staff 0, beat 1.0 @@
+-(voice) [B4 (quarter note),G4 (quarter note),D5 (quarter note),B4 (quarter note)]
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 2.0 @@
++(Note:pitch) [E4,G4] (quarter chord), pitch[1]=G4
+@@ measure 1, staff 0, beat 3.0 @@
++(Note:pitch) [G4,D5] (quarter chord), pitch[1]=D5
+@@ measure 1, staff 0, beat 4.0 @@
++(Note:pitch) [E4,B4] (quarter chord), pitch[1]=B4
+@@ measure 2, staff 0, beat 1.0 @@
++(Note:pitch) [C5,G5] (half chord), pitch[1]=G5
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.0 @@
++(Note:pitch) [D5,F5] (half chord), pitch[1]=F5
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff -i decoratednotesandrests lyrics
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff -i decoratednotesandrests voicing lyrics
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
+-(voice) [G5 (half note),F5 (half note)]
+@@ measure 1, staff 0, beat 1.0 @@
++(Note:pitch) [G4,B4] (quarter chord), pitch[1]=B4
+@@ measure 1, staff 0, beat 1.0 @@
+-(voice) [B4 (quarter note),G4 (quarter note),D5 (quarter note),B4 (quarter note)]
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 1, staff 0, beat 2.0 @@
++(Note:pitch) [E4,G4] (quarter chord), pitch[1]=G4
+@@ measure 1, staff 0, beat 3.0 @@
++(Note:pitch) [G4,D5] (quarter chord), pitch[1]=D5
+@@ measure 1, staff 0, beat 4.0 @@
++(Note:pitch) [E4,B4] (quarter chord), pitch[1]=B4
+@@ measure 2, staff 0, beat 1.0 @@
++(Note:pitch) [C5,G5] (half chord), pitch[1]=G5
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.0 @@
++(Note:pitch) [D5,F5] (half chord), pitch[1]=F5
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff -i otherobjects
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+musicdiff -i otherobjects style
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
+-(Dynamic:placement) DY:p changedStyle={placement:below}
++(Dynamic:placement) DY:p changedStyle={placement:above}
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+musicdiff -i decoratednotesandrests otherobjects
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff -i decoratednotesandrests otherobjects -x lyrics
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff -i allobjects
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+musicdiff -i decoratednotesandrests otherobjects style
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Dynamic:placement) DY:p changedStyle={placement:below}
++(Dynamic:placement) DY:p changedStyle={placement:above}
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 0, beat 1.0 @@
+-(Note:stemdir) G3 (eighth note), stemDirection=down
++(Note:stemdir) G3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 1.5 @@
+-(Note:stemdir) A3 (eighth note), stemDirection=down
++(Note:stemdir) A3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.0 @@
+-(Note:stemdir) B3 (eighth note), stemDirection=down
++(Note:stemdir) B3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:stemdir) C4 (eighth note), stemDirection=down
++(Note:stemdir) C4 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:stemdir) C4 (eighth note), stemDirection=down
++(Note:stemdir) C4 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:stemdir) A3 (eighth note), stemDirection=down
++(Note:stemdir) A3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 4.0 @@
+-(Note:stemdir) G3 (eighth note), stemDirection=down
++(Note:stemdir) G3 (eighth note), stemDirection=up
+musicdiff -i decoratednotesandrests otherobjects style -x lyrics
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Dynamic:placement) DY:p changedStyle={placement:below}
++(Dynamic:placement) DY:p changedStyle={placement:above}
+@@ measure 2, staff 0, beat 1.0 @@
+-(Note:stemdir) G3 (eighth note), stemDirection=down
++(Note:stemdir) G3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 1.5 @@
+-(Note:stemdir) A3 (eighth note), stemDirection=down
++(Note:stemdir) A3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.0 @@
+-(Note:stemdir) B3 (eighth note), stemDirection=down
++(Note:stemdir) B3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:stemdir) C4 (eighth note), stemDirection=down
++(Note:stemdir) C4 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:stemdir) C4 (eighth note), stemDirection=down
++(Note:stemdir) C4 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:stemdir) A3 (eighth note), stemDirection=down
++(Note:stemdir) A3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 4.0 @@
+-(Note:stemdir) G3 (eighth note), stemDirection=down
++(Note:stemdir) G3 (eighth note), stemDirection=up
+musicdiff -i allobjects style
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 0, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Dynamic:placement) DY:p changedStyle={placement:below}
++(Dynamic:placement) DY:p changedStyle={placement:above}
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 0, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 0, beat 1.0 @@
+-(Note:stemdir) G3 (eighth note), stemDirection=down
++(Note:stemdir) G3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 1.5 @@
+-(Note:stemdir) A3 (eighth note), stemDirection=down
++(Note:stemdir) A3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.0 @@
+-(Note:stemdir) B3 (eighth note), stemDirection=down
++(Note:stemdir) B3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 0, beat 2.5 @@
+-(Note:stemdir) C4 (eighth note), stemDirection=down
++(Note:stemdir) C4 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.0 @@
+-(Note:stemdir) C4 (eighth note), stemDirection=down
++(Note:stemdir) C4 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
+@@ measure 2, staff 0, beat 3.5 @@
+-(Note:stemdir) A3 (eighth note), stemDirection=down
++(Note:stemdir) A3 (eighth note), stemDirection=up
+@@ measure 2, staff 0, beat 4.0 @@
+-(Note:stemdir) G3 (eighth note), stemDirection=down
++(Note:stemdir) G3 (eighth note), stemDirection=up
+musicdiff -i metadata
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 0, staff 0, beat 0.0 @@
+-(metadata:value) title:Test file 1a for command line detail options(language=None)
++(metadata:value) title:Test file 1b for command line detail options(language=None)
