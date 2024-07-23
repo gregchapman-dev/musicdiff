@@ -49,7 +49,7 @@ class AnnNote:
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, or Voicing.
         """
@@ -613,7 +613,7 @@ class AnnExtra:
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, or Voicing.
         """
@@ -785,7 +785,7 @@ class AnnLyric:
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, or Voicing.
         """
@@ -904,7 +904,7 @@ class AnnVoice:
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, or Voicing.
         """
@@ -1050,7 +1050,7 @@ class AnnMeasure:
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, or Voicing.
         """
@@ -1267,7 +1267,7 @@ class AnnPart:
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, or Voicing.
         """
@@ -1552,7 +1552,7 @@ class AnnScore:
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-                Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+                Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, or Voicing.
         """

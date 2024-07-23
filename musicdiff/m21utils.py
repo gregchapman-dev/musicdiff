@@ -37,7 +37,7 @@ class M21Utils:
             else:
                 if t.TYPE_CHECKING:
                     assert isinstance(n, m21.note.NotRest)
-                if DetailLevel.includesBeaming(detail):
+                if DetailLevel.includesBeams(detail):
                     _beam_list.append(n.beams.getTypes())
                 else:
                     type_num: float = M21Utils.get_type_num(n.duration)
@@ -423,7 +423,7 @@ class M21Utils:
         """
         _beam_list: list[list[str]] = M21Utils.get_beamings(note_list, detail)
         _type_list: list[float] = M21Utils.get_type_nums(note_list)
-        if not DetailLevel.includesBeaming(detail):
+        if not DetailLevel.includesBeams(detail):
             # _beam_list has "partial" for every flag, no fixups required
             return _beam_list
 

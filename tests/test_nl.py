@@ -12,7 +12,7 @@ class TestNl:
         n1.id = 344
         # create annotated note
         anote = AnnNote(n1, 0., [], [], [])
-        assert anote.__repr__() == (
+        assert repr(anote) == (
             "GeneralNote(344),G:0.0,P:[('D5', 'sharp', False)],"
             "H:4,D:0,B:[],T:[],TI:[],A:[],E:[],S:{}"
         )
@@ -24,7 +24,7 @@ class TestNl:
         n1.id = 344
         # create annotated note
         anote = AnnNote(n1, 0., ["start"], ["start"], ['3'])
-        assert anote.__repr__() == (
+        assert repr(anote) == (
             "GeneralNote(344),G:0.0,P:[('E5', 'sharp', False)],"
             "H:4,D:0,B:['start'],T:['start'],TI:['3'],A:[],E:[],S:{}"
         )
@@ -37,8 +37,7 @@ class TestNl:
         n1.tie = m21.tie.Tie("start")
         # create annotated note
         anote = AnnNote(n1, 0., [], [], [])
-        # assert anote.__repr__() == "344[('D5', 'None', True)],2,0,B:[],T:[],TI:[],[],[],{}"
-        assert anote.__repr__() == (
+        assert repr(anote) == (
             "GeneralNote(344),G:0.0,P:[('D5', 'None', True)],"
             "H:2,D:0,B:[],T:[],TI:[],A:[],E:[],S:{}"
         )
@@ -155,7 +154,10 @@ class TestNl:
         # number of voices for each measure in part 0
         for m in score_lin1.part_list[0].bar_list:
             assert len(m.voices_list) == 1
-        expected_tree_repr = "[[E4T]4Bsr,[E4]4Bcosr,[D4]4Bspsp,[C4T,E4]4Bsr,[C4]4Bcosr,[D4]4Bspsp,[E4,G4,C5]4,[E4]4Bsr,[F4T]4Bsp]"
+        expected_tree_repr = (
+            "[[E4T]4Bsr,[E4]4Bcosr,[D4]4Bspsp,[C4T,E4]4Bsr,"
+            "[C4]4Bcosr,[D4]4Bspsp,[E4,G4,C5]4,[E4]4Bsr,[F4T]4Bsp]"
+        )
         assert str(score_lin1.part_list[0].bar_list[0].voices_list[0]) == expected_tree_repr
         assert score_lin1.part_list[0].bar_list[0].voices_list[0].notation_size() == 27
 

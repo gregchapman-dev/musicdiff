@@ -80,7 +80,7 @@ def diff(
         detail (DetailLevel | int): What level of detail to use during the diff.
             Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
             AllObjects), or any combination (with | or &~) of those or NotesAndRests,
-            Beaming, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+            Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
             Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
             Style, Metadata, or Voicing.
 

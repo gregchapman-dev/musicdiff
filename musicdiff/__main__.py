@@ -52,7 +52,7 @@ if __name__ == "__main__":
             "voicing",
 
             "notesandrests",
-            "beaming",
+            "beams",
             "tremolos",
             "ornaments",
             "articulations",
@@ -84,7 +84,7 @@ if __name__ == "__main__":
             "voicing",
 
             "notesandrests",
-            "beaming",
+            "beams",
             "tremolos",
             "ornaments",
             "articulations",
@@ -137,8 +137,8 @@ if __name__ == "__main__":
             # bits in the DecoratedNotesAndRests combo
             elif det == "notesandrests":
                 detail |= DetailLevel.NotesAndRests
-            elif det == "beaming":
-                detail |= DetailLevel.Beaming
+            elif det == "beams":
+                detail |= DetailLevel.Beams
             elif det == "tremolos":
                 detail |= DetailLevel.Tremolos
             elif det == "ornaments":
@@ -189,8 +189,8 @@ if __name__ == "__main__":
             # bits in the DecoratedNotesAndRests combo
             elif det == "notesandrests":
                 detail &= ~DetailLevel.NotesAndRests
-            elif det == "beaming":
-                detail &= ~DetailLevel.Beaming
+            elif det == "beams":
+                detail &= ~DetailLevel.Beams
             elif det == "tremolos":
                 detail &= ~DetailLevel.Tremolos
             elif det == "ornaments":

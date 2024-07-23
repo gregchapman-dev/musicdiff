@@ -59,16 +59,16 @@
                         </layer>
                         <layer n="3">
                            <beam>
-                              <note pname="g" oct="3" dur="8"/>
-                              <note pname="a" oct="3" dur="8"/>
-                              <note pname="b" oct="3" dur="8"/>
-                              <note pname="c" oct="4" dur="8" tie="i"/>
+                              <note pname="g" oct="3" dur="8" stem.dir="down"/>
+                              <note pname="a" oct="3" dur="8" stem.dir="down"/>
+                              <note pname="b" oct="3" dur="8" stem.dir="down"/>
+                              <note pname="c" oct="4" dur="8" tie="i" stem.dir="down"/>
                            </beam>
                            <beam>
-                              <note pname="c" oct="4" dur="8" tie="t"/>
-                              <note pname="a" oct="3" dur="8"/>
+                              <note pname="c" oct="4" dur="8" tie="t" stem.dir="down"/>
+                              <note pname="a" oct="3" dur="8" stem.dir="down"/>
                            </beam>
-                           <note pname="g" oct="3" dur="8"/>
+                           <note pname="g" oct="3" dur="8" stem.dir="down"/>
                            <rest dur="8" ploc="g" oloc="3"/>
                         </layer>
                      </staff>

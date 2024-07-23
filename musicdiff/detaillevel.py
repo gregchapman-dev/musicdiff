@@ -23,12 +23,12 @@ _typesCache: dict[int, tuple[t.Type, ...]] = {}
 class DetailLevel(IntEnum):
     # Bit definitions (can be |'ed together, as well as &~'ed to turn off options):
 
-    # notes, rests (without any decorations: beaming/ornaments/articulations/etc)
+    # notes, rests (without any decorations: beams/ties/ornaments/articulations/etc)
     NotesAndRests = 1
 
-    # beaming (if not requested, beams are treated exactly like flags)
-    # Note that if NotesAndRests are not also requested, no beaming differences will be found.
-    Beaming = 1 << 1
+    # beams (if not requested, beams are treated exactly like flags)
+    # Note that if NotesAndRests are not also requested, no beams differences will be found.
+    Beams = 1 << 1
 
     # tremolos (fingered and bowed)
     # Note that if NotesAndRests are not also requested, no tremolo differences will be found.
@@ -51,7 +51,7 @@ class DetailLevel(IntEnum):
 
     # decorated notes and rests (a combination of all of the above)
     DecoratedNotesAndRests = (
-        NotesAndRests | Beaming | Tremolos | Ornaments | Articulations | Ties | Slurs
+        NotesAndRests | Beams | Tremolos | Ornaments | Articulations | Ties | Slurs
     )
 
     # clefs, key signatures, time signatures
@@ -112,8 +112,8 @@ class DetailLevel(IntEnum):
         return val & cls.NotesAndRests != 0
 
     @classmethod
-    def includesBeaming(cls, val: int) -> bool:
-        return val & cls.Beaming != 0
+    def includesBeams(cls, val: int) -> bool:
+        return val & cls.Beams != 0
 
     @classmethod
     def includesTremolos(cls, val: int) -> bool:
