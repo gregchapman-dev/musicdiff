@@ -1532,3 +1532,10 @@ class M21Utils:
         beats: OffsetQL = opFrac(wholeNotes * float(ts.denominator))
         beats = opFrac(beats + 1.0)
         return beats
+
+    QL_TO_FLOAT_NUM_DECIMAL_PLACES: int = 5
+    @staticmethod
+    def rounded_float(ql: OffsetQL) -> float:
+        flQL: float = float(ql)
+        rounded: float = round(flQL, M21Utils.QL_TO_FLOAT_NUM_DECIMAL_PLACES)
+        return rounded

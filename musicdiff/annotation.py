@@ -630,7 +630,7 @@ class AnnExtra:
             lastNote: m21.note.GeneralNote | m21.spanner.SpannerAnchor = (
                 extra.getLast()
             )
-            self.offset = float(firstNote.getOffsetInHierarchy(measure))
+            self.offset = M21Utils.rounded_float(firstNote.getOffsetInHierarchy(measure))
             # to compute duration we need to use offset-in-score, since the end note might
             # be in another Measure.  Except for ArpeggioMarkSpanners, where the duration
             # doesn't matter, so we just set it to 0, rather than figuring out the longest
@@ -638,26 +638,26 @@ class AnnExtra:
             if isinstance(extra, m21.expressions.ArpeggioMarkSpanner):
                 self.duration = 0.
             else:
-                startOffsetInScore: float = float(firstNote.getOffsetInHierarchy(score))
+                startOffsetInScore: OffsetQL = firstNote.getOffsetInHierarchy(score)
                 try:
-                    endOffsetInScore: float = float(
+                    endOffsetInScore: OffsetQL = opFrac(
                         lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength
                     )
                 except m21.sites.SitesException:
                     endOffsetInScore = startOffsetInScore
-                self.duration = endOffsetInScore - startOffsetInScore
+                self.duration = M21Utils.rounded_float(endOffsetInScore - startOffsetInScore)
         elif isinstance(extra, m21.bar.Barline):
             # we ignore offset for barlines; barline offset is derived from the objects in the
             # measure, which are already being compared.
             self.offset = 0.0
-            self.duration = float(extra.duration.quarterLength)
+            self.duration = M21Utils.rounded_float(extra.duration.quarterLength)
         elif isinstance(extra, m21.harmony.ChordSymbol):
             # we ignore duration for ChordSymbols, it is often 0.0 or 1.0, and meaningless.
-            self.offset = float(extra.getOffsetInHierarchy(measure))
+            self.offset = M21Utils.rounded_float(extra.getOffsetInHierarchy(measure))
             self.duration = 0.0
         else:
-            self.offset = float(extra.getOffsetInHierarchy(measure))
-            self.duration = float(extra.duration.quarterLength)
+            self.offset = M21Utils.rounded_float(extra.getOffsetInHierarchy(measure))
+            self.duration = M21Utils.rounded_float(extra.duration.quarterLength)
 
         self.content: str = M21Utils.extra_to_string(extra, detail)
         self.styledict: dict = {}
@@ -795,7 +795,7 @@ class AnnLyric:
         self.lyric: str = ""
         self.number: int = 0
         self.identifier: str = ""
-        self.offset = float(lyric_holder.getOffsetInHierarchy(measure))
+        self.offset = M21Utils.rounded_float(lyric_holder.getOffsetInHierarchy(measure))
         self.styledict: dict[str, str] = {}
 
         # ignore .syllabic and .text, what is visible is .rawText (and there
