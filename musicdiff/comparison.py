@@ -20,6 +20,7 @@ from difflib import ndiff
 # import typing as t
 import numpy as np
 
+from music21.common import OffsetQL
 from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnLyric
 from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
@@ -718,8 +719,11 @@ class Comparison:
         return distance
 
     @staticmethod
-    def _areDifferentEnough(flt1: float, flt2: float) -> bool:
-        diff: float = flt1 - flt2
+    def _areDifferentEnough(off1: OffsetQL, off2: OffsetQL) -> bool:
+        if off1 == off2:
+            return False
+
+        diff: OffsetQL = off1 - off2
         if diff < 0:
             diff = -diff
 
@@ -750,7 +754,7 @@ class Comparison:
         if Comparison._areDifferentEnough(annExtra1.offset, annExtra2.offset):
             # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
             # min cost is 1, though, don't round down to zero.
-            offset_cost: int = int(min(1, abs(annExtra1.offset - annExtra2.offset)))
+            offset_cost: int = int(min(1, abs(float(annExtra1.offset) - float(annExtra2.offset))))
             cost += offset_cost
             op_list.append(("extraoffsetedit", annExtra1, annExtra2, offset_cost))
 
@@ -759,7 +763,7 @@ class Comparison:
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.duration, annExtra2.duration):
             # duration is in quarter-notes, so let's make the cost in quarter-notes as well.
-            duration_cost = int(min(1, abs(annExtra1.duration - annExtra2.duration)))
+            duration_cost = int(min(1, abs(float(annExtra1.duration) - float(annExtra2.duration))))
             cost += duration_cost
             op_list.append(("extradurationedit", annExtra1, annExtra2, duration_cost))
 
@@ -804,7 +808,7 @@ class Comparison:
         if Comparison._areDifferentEnough(annLyric1.offset, annLyric2.offset):
             # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
             # min cost is 1, though, don't round down to zero.
-            offset_cost: int = int(min(1, abs(annLyric1.offset - annLyric2.offset)))
+            offset_cost: int = int(min(1, abs(float(annLyric1.offset) - float(annLyric2.offset))))
             cost += offset_cost
             op_list.append(("lyricoffsetedit", annLyric1, annLyric2, offset_cost))
 

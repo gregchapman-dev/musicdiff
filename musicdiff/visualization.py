@@ -1649,18 +1649,6 @@ class Visualization:
         staffNum: int
         fractionalBeats: OffsetQL
 
-        def printedQL(ql: OffsetQL) -> str:
-            if isinstance(ql, float):
-                return str(ql)
-            # It's a Fraction, print as a mixed fraction if necessary
-            num: int = ql.numerator
-            den: int = ql.denominator
-            wholeNum: int = num // den
-            if wholeNum:
-                num -= wholeNum * den
-                return f"{wholeNum} {num}/{den}"
-            return f"{num}/{den}"
-
         if isinstance(m21obj, (m21.metadata.Metadata, m21.layout.StaffGroup)):
             # These are not in the timeline.  Put them first (there may be a
             # a measure 0/staff 0, but the first beat of that measure is beat 1).
@@ -1680,7 +1668,7 @@ class Visualization:
             output = f"measure {M21Utils.get_measure_number_with_suffix(meas, part)}, "
             output += f"staff {staffNum}, "
             fractionalBeats = 1.
-            output += f"beat {printedQL(fractionalBeats)}"
+            output += f"beat {M21Utils.ql_to_string(fractionalBeats)}"
             return output
 
         # measure
@@ -1693,7 +1681,7 @@ class Visualization:
             output = f"measure {M21Utils.get_measure_number_with_suffix(m21obj, part)}, "
             output += f"staff {staffNum}, "
             fractionalBeats = 1.
-            output += f"beat {printedQL(fractionalBeats)}"
+            output += f"beat {M21Utils.ql_to_string(fractionalBeats)}"
             return output
 
         # voice
@@ -1713,7 +1701,7 @@ class Visualization:
             if ts is None:
                 ts = m21.meter.TimeSignature()  # 4/4
             fractionalBeats = M21Utils.get_beats(voiceStartOffset, ts)
-            output += f"beat {printedQL(fractionalBeats)}"
+            output += f"beat {M21Utils.ql_to_string(fractionalBeats)}"
             return output
 
         # spanner
@@ -1747,7 +1735,7 @@ class Visualization:
         if ts is None:
             ts = m21.meter.TimeSignature()  # 4/4
         fractionalBeats = M21Utils.get_beats(startOffset, ts)
-        output += f"beat {printedQL(fractionalBeats)}"
+        output += f"beat {M21Utils.ql_to_string(fractionalBeats)}"
         return output
 
     @staticmethod

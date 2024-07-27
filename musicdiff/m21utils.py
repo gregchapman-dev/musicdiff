@@ -1533,9 +1533,21 @@ class M21Utils:
         beats = opFrac(beats + 1.0)
         return beats
 
-    QL_TO_FLOAT_NUM_DECIMAL_PLACES: int = 5
     @staticmethod
-    def rounded_float(ql: OffsetQL) -> float:
-        flQL: float = float(ql)
-        rounded: float = round(flQL, M21Utils.QL_TO_FLOAT_NUM_DECIMAL_PLACES)
-        return rounded
+    def ql_to_string(ql: OffsetQL) -> str:
+        if isinstance(ql, float):
+            return str(ql)
+
+        # It's a Fraction, print as a mixed fraction if necessary
+        num: int = ql.numerator
+        den: int = ql.denominator
+        wholeNum: int = int(num / den)
+        if wholeNum < 0:
+            # wholeNum has the negative sign, remove it from num
+            num = abs(num)
+        if wholeNum:
+            num -= abs(wholeNum) * den
+            return f"{wholeNum} {num}/{den}"
+        return f"{num}/{den}"
+
+
