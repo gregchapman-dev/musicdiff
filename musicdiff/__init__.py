@@ -6,7 +6,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -20,8 +20,8 @@ from pathlib import Path
 import music21 as m21
 import converter21
 
+from musicdiff.detaillevel import DetailLevel
 from musicdiff.m21utils import M21Utils
-from musicdiff.m21utils import DetailLevel
 from musicdiff.annotation import AnnScore
 from musicdiff.comparison import Comparison
 from musicdiff.visualization import Visualization
@@ -51,7 +51,8 @@ def diff(
     out_path2: str | Path | None = None,
     force_parse: bool = True,
     visualize_diffs: bool = True,
-    detail: DetailLevel = DetailLevel.Default
+    print_text_output: bool = False,
+    detail: DetailLevel | int = DetailLevel.Default
 ) -> int | None:
     '''
     Compare two musical scores and optionally save/display the differences as two marked-up
@@ -76,27 +77,29 @@ def diff(
         visualize_diffs (bool): Whether or not to render diffs as marked up PDFs. If False,
             the only result of the call will be the return value (the number of differences).
             (default is True)
-        detail (DetailLevel): What level of detail to use during the diff.
-            Can be GeneralNotes, AllObjects, AllObjectsWithStyle,
-            GeneralNotesAndMetadata, AllObjectsAndMetadata, AllObjectsWithStyleAndMetadata,
-            Default (currently AllObjects), or any combination (|) of GeneralNotes,
-            Extras, Lyrics, Style, Voicing, Metadata.  Lyrics will not be compared unless
-            you also request GeneralNotes (because in music21, lyrics are attached to
-            notes).
+        detail (DetailLevel | int): What level of detail to use during the diff.
+            Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+            AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+            Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+            Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+            Style, Metadata, or Voicing.
 
     Returns:
         int | None: The number of differences found (0 means the scores were identical,
             None means the diff failed)
     '''
-    # Use the new Humdrum/MEI importers from converter21 in place of the ones in music21...
+    # Use the Humdrum/MEI importers from converter21 in place of the ones in music21...
     # Comment out this line to go back to music21's built-in Humdrum/MEI importers.
     converter21.register()
 
     badArg1: bool = False
     badArg2: bool = False
+    score1Name: str | Path | None = None
+    score2Name: str | Path | None = None
 
     # Convert input strings to Paths
     if isinstance(score1, str):
+        score1Name = score1
         try:
             score1 = Path(score1)
         except Exception:  # pylint: disable=broad-exception-caught
@@ -104,6 +107,7 @@ def diff(
             badArg1 = True
 
     if isinstance(score2, str):
+        score2Name = score2
         try:
             score2 = Path(score2)
         except Exception:  # pylint: disable=broad-exception-caught
@@ -114,6 +118,8 @@ def diff(
         return None
 
     if isinstance(score1, Path):
+        if not score1Name:
+            score1Name = score1
         fileName1 = score1.name
         fileExt1 = score1.suffix
 
@@ -136,6 +142,8 @@ def diff(
             # pylint: enable=broad-except
 
     if isinstance(score2, Path):
+        if not score2Name:
+            score2Name = score2
         fileName2: str = score2.name
         fileExt2: str = score2.suffix
 
@@ -172,17 +180,24 @@ def diff(
     diff_list, _cost = Comparison.annotated_scores_diff(annotated_score1, annotated_score2)
 
     numDiffs: int = len(diff_list)
-    if visualize_diffs and numDiffs != 0:
-        # you can change these three colors as you like...
-        # Visualization.INSERTED_COLOR = 'red'
-        # Visualization.DELETED_COLOR = 'red'
-        # Visualization.CHANGED_COLOR = 'red'
+    if numDiffs != 0:
+        if visualize_diffs:
+            # you can change these three colors as you like...
+            # Visualization.INSERTED_COLOR = 'red'
+            # Visualization.DELETED_COLOR = 'red'
+            # Visualization.CHANGED_COLOR = 'red'
 
-        # color changed/deleted/inserted notes, add descriptive text for each change, etc
-        Visualization.mark_diffs(score1, score2, diff_list)
+            # color changed/deleted/inserted notes, add descriptive text for each change, etc
+            Visualization.mark_diffs(score1, score2, diff_list)
 
-        # ask music21 to display the scores as PDFs.  Composer's name will be prepended with
-        # 'score1 ' and 'score2 ', respectively, so you can see which is which.
-        Visualization.show_diffs(score1, score2, out_path1, out_path2)
+            # ask music21 to display the scores as PDFs.  Composer's name will be prepended with
+            # 'score1 ' and 'score2 ', respectively, so you can see which is which.
+            Visualization.show_diffs(score1, score2, out_path1, out_path2)
+
+        if print_text_output:
+            text_output: str = Visualization.get_text_output(
+                score1, score2, diff_list, score1Name=score1Name, score2Name=score2Name
+            )
+            print(text_output)
 
     return numDiffs

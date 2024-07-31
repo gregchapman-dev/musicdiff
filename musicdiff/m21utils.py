@@ -7,7 +7,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -17,80 +17,19 @@ import sys
 import copy
 import re
 import typing as t
-from enum import IntEnum
 
 # import sys
 import music21 as m21
-from music21.common.types import OffsetQL
+from music21.common import OffsetQL, opFrac
 
-class DetailLevel(IntEnum):
-    # Bit definitions (can be |'ed with eachother and with common combinations):
-
-    # Chords, Notes, Rests, Unpitched, etc (and their beams/expressions/articulations)
-    GeneralNotes = 1
-
-    # If Voicing is on, we compare which voice and which chord each note is in.  By default we
-    # ignore the containing voice and chord, and just compare the individual notes themselves.
-    Voicing = 2
-
-    # Clefs, TextExpressions, Key/KeySignatures, Barlines/Repeats,
-    # TimeSignatures, TempoIndications, etc
-    Extras = 4
-
-    # Lyrics
-    Lyrics = 8
-
-    # Typographical stuff: placement, stem direction, color, italic/bold, etc
-    Style = 16
-
-    # Metadata: title, composer, etc
-    Metadata = 32
-
-    # Common combinations:
-
-    # Add in the "extras" and lyrics: Clefs, TextExpressions, Key/KeySignatures,
-    # Barlines/Repeats, TimeSignatures, TempoIndications, Lyrics, etc
-    AllObjects = GeneralNotes | Extras | Lyrics
-
-    # All of the above, plus typographical stuff: placement, stem direction,
-    # color, italic/bold, Style, etc
-    AllObjectsWithStyle = AllObjects | Style
-
-    # Various options that include Metadata:
-    GeneralNotesAndMetadata = GeneralNotes | Metadata
-    AllObjectsAndMetadata = AllObjects | Metadata
-    AllObjectsWithStyleAndMetadata = AllObjectsWithStyle | Metadata
-
-    Default = AllObjects
-
-    @classmethod
-    def includesGeneralNotes(cls, val: int) -> bool:
-        return val & cls.GeneralNotes != 0
-
-    @classmethod
-    def includesOtherMusicObjects(cls, val: int) -> bool:
-        return val & cls.Extras != 0
-
-    @classmethod
-    def includesLyrics(cls, val: int) -> bool:
-        return val & cls.Lyrics != 0
-
-    @classmethod
-    def includesStyle(cls, val: int) -> bool:
-        return val & cls.Style != 0
-
-    @classmethod
-    def includesMetadata(cls, val: int) -> bool:
-        return val & cls.Metadata != 0
-
-    @classmethod
-    def includesVoicing(cls, val: int) -> bool:
-        return val & cls.Voicing != 0
-
+from musicdiff import DetailLevel
 
 class M21Utils:
     @staticmethod
-    def get_beamings(note_list: list[m21.note.GeneralNote]) -> list[list[str]]:
+    def get_beamings(
+        note_list: list[m21.note.GeneralNote],
+        detail: DetailLevel | int
+    ) -> list[list[str]]:
         _beam_list: list[list[str]] = []
         for n in note_list:
             if n.isRest:
@@ -98,7 +37,13 @@ class M21Utils:
             else:
                 if t.TYPE_CHECKING:
                     assert isinstance(n, m21.note.NotRest)
-                _beam_list.append(n.beams.getTypes())
+                if DetailLevel.includesBeams(detail):
+                    _beam_list.append(n.beams.getTypes())
+                else:
+                    type_num: float = M21Utils.get_type_num(n.duration)
+                    nFlags: int = int(math.log(type_num / 4, 2))
+                    flags: list[str] = ["partial"] * nFlags
+                    _beam_list.append(flags)
         return _beam_list
 
 
@@ -134,7 +79,7 @@ class M21Utils:
     @staticmethod
     def expression_to_string(
         expr: m21.expressions.Expression,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         theName: str = ''
         placement: str | None = None
@@ -235,6 +180,9 @@ class M21Utils:
         if isinstance(expr, m21.expressions.Tremolo):
             return M21Utils.tremolo_to_string(expr, detail)
 
+        if isinstance(expr, m21.expressions.TextExpression):
+            return M21Utils.textexp_to_string(expr)
+
         # all others just get expr.name
         theName = expr.name
         return theName
@@ -242,7 +190,7 @@ class M21Utils:
     @staticmethod
     def tremolo_to_string(
         expr: m21.expressions.Tremolo | m21.expressions.TremoloSpanner,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         if isinstance(expr, m21.expressions.Tremolo):
             return 'bTrem'
@@ -253,7 +201,7 @@ class M21Utils:
     @staticmethod
     def articulation_to_string(
         artic: m21.articulations.Articulation,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         theName: str = artic.name
 
@@ -272,7 +220,7 @@ class M21Utils:
     @staticmethod
     def note2tuple(
         note: m21.note.Note | m21.note.Unpitched | m21.note.Rest,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> tuple[str, str, bool]:
         note_pitch: str
         note_accidental: str
@@ -281,16 +229,13 @@ class M21Utils:
             note_pitch = "R"
             note_accidental = "None"
             if DetailLevel.includesStyle(detail):
-                # Rest position is style, not substance, but check
-                # that rest-position comparison hasn't been turned off
-                TURN_OFF_REST_POSITION_COMPARISON: int = 0x10000000
-                if detail & TURN_OFF_REST_POSITION_COMPARISON == 0:
-                    # rest.stepShift is the number of lines/spaces above/below middle of staff.
-                    # We can use it directly in our annotation.
-                    if note.stepShift > 0:
-                        note_pitch = f"R+{note.stepShift}"
-                    elif note.stepShift < 0:
-                        note_pitch = f"R{note.stepShift}"
+                # Rest position is style, not substance
+                # rest.stepShift is the number of lines/spaces above/below middle of staff.
+                # We can use it directly in our annotation.
+                if note.stepShift > 0:
+                    note_pitch = f"R+{note.stepShift}"
+                elif note.stepShift < 0:
+                    note_pitch = f"R{note.stepShift}"
 
         elif isinstance(note, m21.note.Unpitched):
             # use the displayName (e.g. 'G4') with no accidental
@@ -332,12 +277,14 @@ class M21Utils:
 
             # TODO: we should append editorial style info to note_accidental here ('paren', etc)
 
-        # add tie information (Unpitched has this, too, but not Rest, and not meaningfully in
-        # Chord either)
-        if isinstance(note, (m21.note.Rest, m21.chord.ChordBase)):
-            note_tie = False
-        else:
-            note_tie = note.tie is not None and note.tie.type in ("start", "continue")
+        if DetailLevel.includesTies(detail):
+            # add tie information (Unpitched has this, too, but not Rest, and not meaningfully in
+            # Chord either)
+            if isinstance(note, (m21.note.Rest, m21.chord.ChordBase)):
+                note_tie = False
+            else:
+                note_tie = note.tie is not None and note.tie.type in ("start", "continue")
+
         return (note_pitch, note_accidental, note_tie)
 
 
@@ -467,13 +414,22 @@ class M21Utils:
 
 
     @staticmethod
-    def get_enhance_beamings(note_list: list[m21.note.GeneralNote]) -> list[list[str]]:
+    def get_enhance_beamings(
+        note_list: list[m21.note.GeneralNote],
+        detail: DetailLevel | int
+    ) -> list[list[str]]:
         """
         Create a mod_beam_list that take into account also the single notes with a type > 4
         """
-        _beam_list: list[list[str]] = M21Utils.get_beamings(note_list)
+        _beam_list: list[list[str]] = M21Utils.get_beamings(note_list, detail)
         _type_list: list[float] = M21Utils.get_type_nums(note_list)
-        _mod_beam_list: list[list[str]] = M21Utils.get_beamings(note_list)
+        if not DetailLevel.includesBeams(detail):
+            # _beam_list has "partial" for every flag, no fixups required
+            return _beam_list
+
+        # return an actual (fixed up) beam list
+        _mod_beam_list: list[list[str]] = copy.copy(_beam_list)
+
         # add informations for rests and notes not grouped
         for i, n in enumerate(_beam_list):
             if len(n) == 0:
@@ -496,9 +452,10 @@ class M21Utils:
                         _mod_beam_list[i].append("continue")
                     else:
                         _mod_beam_list[i].append("partial")
+
         # change the single "start" and "stop" with partial (since MEI parser is
         # not working properly)
-        new_mod_beam_list: list[list[str]] = _mod_beam_list.copy()
+        new_mod_beam_list: list[list[str]] = copy.copy(_mod_beam_list)
         max_beam_len: int = max([len(t) for t in _mod_beam_list])
         for beam_depth in range(max_beam_len):
             for note_index in range(len(_mod_beam_list)):
@@ -577,7 +534,7 @@ class M21Utils:
     @staticmethod
     def get_tuplets_info(
         note_list: list[m21.note.GeneralNote],
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> list[list[str]]:
         """
         for each note return a list of tuple(str, str) with the tuplet type string and a string
@@ -589,7 +546,8 @@ class M21Utils:
             for tup in n.duration.tuplets:
                 if tup.type == "start":
                     # music21 only pays attention to number and bracket visibility/placement
-                    # on the start note of a tuplet.
+                    # on the start note of a tuplet.  TODO: Should I pass in/use result of
+                    # get_tuplets_type?  It has more (implied) starts than the actual tuplets do.
                     if tup.tupletActualShow in ("number", "both"):
                         if tup.tupletNormalShow in ("number", "both"):
                             new_info = str(tup.numberNotesActual) + ":" + str(tup.numberNotesNormal)
@@ -608,6 +566,9 @@ class M21Utils:
                         if tup.placement is not None:
                             new_info = new_info + tup.placement
                     tuplet_info_list_for_note.append(new_info)
+                else:
+                    # notes that don't start a tuplet have no info that anyone looks at
+                    tuplet_info_list_for_note.append("")
             str_list.append(tuplet_info_list_for_note)
         return str_list
 
@@ -670,10 +631,19 @@ class M21Utils:
         for n in gnIterator:
             if n.style.hideObjectOnPrint:
                 continue
-            if isinstance(n, m21.harmony.ChordSymbol) and not n.writeAsChord:
-                # skip non-realized ChordSymbols (they are extras)
+            if isinstance(n, m21.harmony.ChordSymbol):
+                # skip ChordSymbols (they are extras, not notes)
                 continue
             out.append(n)
+
+        return out
+
+    @staticmethod
+    def get_lyrics_holders(measure: m21.stream.Measure) -> list[m21.note.GeneralNote]:
+        out: list[m21.note.GeneralNote] = []
+        for n in M21Utils.get_notes_and_gracenotes(measure, recurse=True):
+            if n.lyrics:
+                out.append(n)
 
         return out
 
@@ -745,7 +715,7 @@ class M21Utils:
         part: m21.stream.Part,
         score: m21.stream.Score,
         spannerBundle: m21.spanner.SpannerBundle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> list[m21.base.Music21Object]:
         # returns a list of every object contained in the measure (and in the measure's
         # substreams/Voices), skipping any Streams, and GeneralNotes (which are returned
@@ -775,14 +745,18 @@ class M21Utils:
         if len(initialList) > 1:
             initialList.sort(key=lambda el: el.musicdiff_offset_in_measure)  # type: ignore
 
-        # loop over the initialList, filtering out (and complaining about) things we
-        # don't recognize.  Also, we filter out hidden (non-printed) extras.  And
-        # right/left barlines of type 'regular' with no interesting details (because
-        # no right/left barline at all in music21 means a regular, uninteresting barline).
-        # Note that we ignore all invisible barlines as well (el.type == 'none') since
-        # they are non-printed.  We also try to de-duplicate redundant clefs.
+        # loop over the initialList, filtering out things we don't recognize or are
+        # not requested in the detail argument. Also, we filter out hidden (non-printed)
+        # extras.  And right/left barlines of type 'regular' with no interesting details
+        # (because no right/left barline at all in music21 means a regular, uninteresting
+        # barline). Note that we ignore all invisible barlines as well (el.type == 'none')
+        # since they are non-printed.  We also try to de-duplicate redundant clefs.
         mostRecentClef: m21.clef.Clef | None = None
         for el in initialList:
+            if not DetailLevel.objIsIncluded(el, detail):
+                # ignore objects that were not requested
+                continue
+
             if el.hasStyleInformation and el.style.hideObjectOnPrint:
                 # we ignore hidden extras
                 continue
@@ -829,13 +803,18 @@ class M21Utils:
 
             output.append(el)
 
-        # Add any interesting spanners that start on GeneralNotes/SpannerAnchors in this measure
-        spanner_types = (
-            m21.expressions.ArpeggioMarkSpanner,
-            m21.dynamics.DynamicWedge,
-            m21.spanner.Ottava,
-            m21.expressions.TremoloSpanner
-        )
+        # Add any requested spanners that start on GeneralNotes/SpannerAnchors in this measure
+        spanner_types: list[t.Type] = []
+        if DetailLevel.includesSlurs(detail):
+            spanner_types.append(m21.spanner.Slur)
+        if DetailLevel.includesArpeggios(detail):
+            spanner_types.append(m21.expressions.ArpeggioMarkSpanner)
+        if DetailLevel.includesDirections(detail):
+            spanner_types.append(m21.dynamics.DynamicWedge)
+        if DetailLevel.includesOttavas(detail):
+            spanner_types.append(m21.spanner.Ottava)
+        if DetailLevel.includesTremolos(detail):
+            spanner_types.append(m21.expressions.TremoloSpanner)
 
         spannerElementClasses = (m21.note.GeneralNote, m21.spanner.SpannerAnchor)
 
@@ -846,16 +825,15 @@ class M21Utils:
                     continue
                 if M21Utils.getPrimarySpannerElement(sp) is gn:
                     output.append(sp)
-                    if not isinstance(sp, m21.spanner.Ottava):
-                        continue
 
-        # Add any RepeatBracket spanners that start on this measure
-        rbList: list[m21.spanner.Spanner] = measure.getSpannerSites([m21.spanner.RepeatBracket])
-        for rb in rbList:
-            if rb not in spannerBundle:
-                continue
-            if rb.isFirst(measure):
-                output.append(rb)
+        if DetailLevel.includesDirections(detail):
+            # Add any RepeatBracket spanners that start on this measure
+            rbList: list[m21.spanner.Spanner] = measure.getSpannerSites([m21.spanner.RepeatBracket])
+            for rb in rbList:
+                if rb not in spannerBundle:
+                    continue
+                if rb.isFirst(measure):
+                    output.append(rb)
 
         return output
 
@@ -1141,18 +1119,25 @@ class M21Utils:
 
     @staticmethod
     def textexp_to_string(textexp: m21.expressions.TextExpression) -> str:
-        output: str = f'TX:{textexp.content}'
+        content: str = textexp.content.strip()
+        if not content:
+            return ''
+        output: str = f'TX:{content}'
         return output
 
     @staticmethod
     def dynamic_to_string(dynamic: m21.dynamics.Dynamic) -> str:
-        output: str = f'DY:{dynamic.value}'
+        value: str = str(dynamic.value)
+        value = value.strip()
+        if not value:
+            return ''
+        output: str = f'DY:{value}'
         return output
 
     @staticmethod
     def notestyle_to_dict(
         style: m21.style.NoteStyle,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1173,7 +1158,7 @@ class M21Utils:
     @staticmethod
     def textstyle_to_dict(
         style: m21.style.TextStyle,
-        detail: DetailLevel = DetailLevel.Default,
+        detail: DetailLevel | int = DetailLevel.Default,
         smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
@@ -1229,7 +1214,7 @@ class M21Utils:
     @staticmethod
     def genericstyle_to_dict(
         style: m21.style.Style,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1260,7 +1245,7 @@ class M21Utils:
     @staticmethod
     def specificstyle_to_dict(
         style: m21.style.Style,
-        detail: DetailLevel = DetailLevel.Default,
+        detail: DetailLevel | int = DetailLevel.Default,
         smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
@@ -1286,7 +1271,7 @@ class M21Utils:
     @staticmethod
     def obj_to_styledict(
         obj: m21.base.Music21Object | m21.style.StyleMixin,
-        detail: DetailLevel = DetailLevel.Default,
+        detail: DetailLevel | int = DetailLevel.Default,
         smuflTextSuppressed: bool = False
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
@@ -1330,6 +1315,10 @@ class M21Utils:
                 del output['justify']
 
         return output
+
+    @staticmethod
+    def slur_to_string(slur: m21.spanner.Slur) -> str:
+        return 'SLUR'
 
     @staticmethod
     def dynwedge_to_string(dynwedge: m21.dynamics.DynamicWedge) -> str:
@@ -1415,7 +1404,7 @@ class M21Utils:
     @staticmethod
     def stafflayout_to_string(
         sl: m21.layout.StaffLayout,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         output: str = ''
         if sl.staffLines is not None:
@@ -1448,8 +1437,10 @@ class M21Utils:
     @staticmethod
     def extra_to_string(
         extra: m21.base.Music21Object,
-        detail: DetailLevel = DetailLevel.Default
+        detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
+        if isinstance(extra, m21.spanner.Slur):
+            return M21Utils.slur_to_string(extra)
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
             return M21Utils.keysig_to_string(extra)
         if isinstance(extra, m21.expressions.TextExpression):
@@ -1472,22 +1463,17 @@ class M21Utils:
             return M21Utils.repeatbracket_to_string(extra)
         if isinstance(extra, m21.expressions.TremoloSpanner):
             return M21Utils.tremolo_to_string(extra)
-        if isinstance(extra, m21.layout.StaffLayout):
-            return M21Utils.stafflayout_to_string(extra, detail)
         if isinstance(extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
             return M21Utils.arpeggiomark_to_string(extra)
         if isinstance(extra, m21.harmony.ChordSymbol):
             return M21Utils.chordsymbol_to_string(extra)
-
-        # Page breaks and system breaks are only paid attention to at
-        # DetailLevel.AllObjectsWithStyle, because they are entirely
-        # style, no substance.
-        if DetailLevel.includesStyle(detail):
-            if isinstance(extra, m21.layout.SystemLayout):
-                return M21Utils.systemlayout_to_string(extra)
-            if isinstance(extra, m21.layout.PageLayout):
-                return M21Utils.pagelayout_to_string(extra)
+        if isinstance(extra, m21.layout.StaffLayout):
+            return M21Utils.stafflayout_to_string(extra, detail)
+        if isinstance(extra, m21.layout.SystemLayout):
+            return M21Utils.systemlayout_to_string(extra)
+        if isinstance(extra, m21.layout.PageLayout):
+            return M21Utils.pagelayout_to_string(extra)
 
         # print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''
@@ -1497,3 +1483,71 @@ class M21Utils:
         output: bool = hasattr(obj, 'placement') and obj.placement is not None
         output = output or obj.hasStyleInformation
         return output
+
+    @staticmethod
+    def get_part_index(part: m21.stream.Part, score: m21.stream.Score) -> int:
+        # return -1 if part not in score
+        partIdx: int = -1
+        if part is None:
+            return partIdx
+
+        for i, p in enumerate(score.parts):
+            if p is part:
+                partIdx = i
+                break
+
+        return partIdx
+
+#     @staticmethod
+#     def get_measure_number(meas: m21.stream.Measure, part: m21.stream.Part) -> int:
+#         output: int = meas.number
+#         if output:
+#             return output
+#
+#         # fall back to measure index within part
+#         for i, m in enumerate(part[m21.stream.Measure]):
+#             if m is meas:
+#                 output = i
+#                 break
+#
+#         return output
+
+    @staticmethod
+    def get_measure_number_with_suffix(meas: m21.stream.Measure, part: m21.stream.Part) -> str:
+        output: str = meas.measureNumberWithSuffix()
+        if output:
+            return output
+
+        # fall back to measure index within part
+        for i, m in enumerate(part[m21.stream.Measure]):
+            if m is meas:
+                output = str(i)
+                break
+
+        return output
+
+    @staticmethod
+    def get_beats(offset: OffsetQL, ts: m21.meter.TimeSignature) -> OffsetQL:
+        wholeNotes: OffsetQL = opFrac(offset / 4.0)
+        beats: OffsetQL = opFrac(wholeNotes * float(ts.denominator))
+        beats = opFrac(beats + 1.0)
+        return beats
+
+    @staticmethod
+    def ql_to_string(ql: OffsetQL) -> str:
+        if isinstance(ql, float):
+            return str(ql)
+
+        # It's a Fraction, print as a mixed fraction if necessary
+        num: int = ql.numerator
+        den: int = ql.denominator
+        wholeNum: int = int(num / den)
+        if wholeNum < 0:
+            # wholeNum has the negative sign, remove it from num
+            num = abs(num)
+        if wholeNum:
+            num -= abs(wholeNum) * den
+            return f"{wholeNum} {num}/{den}"
+        return f"{num}/{den}"
+
+

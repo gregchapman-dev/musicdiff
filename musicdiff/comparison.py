@@ -20,80 +20,76 @@ from difflib import ndiff
 # import typing as t
 import numpy as np
 
-from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnStaffGroup
-from musicdiff.annotation import AnnMetadataItem
+from music21.common import OffsetQL
+from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnLyric
+from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
 
 # memoizers to speed up the recursive computation
 def _memoize_notes_set_distance(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_inside_bars_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_extras_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
+
+    return memoizer
+
+def _memoize_lyrics_diff_lin(func):
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_staff_groups_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_metadata_items_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_block_diff_lin(func):
-    mem = {}
-
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
-        if key not in mem:
-            mem[key] = func(original, compare_to)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_pitches_lev_diff(func):
-    mem = {}
-
     def memoizer(original, compare_to, noteNode1, noteNode2, ids):
         key = (
             repr(original)
@@ -102,39 +98,41 @@ def _memoize_pitches_lev_diff(func):
             + repr(noteNode2)
             + repr(ids)
         )
-        if key not in mem:
-            mem[key] = func(original, compare_to, noteNode1, noteNode2, ids)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, ids)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_beamtuplet_lev_diff(func):
-    mem = {}
-
     def memoizer(original, compare_to, noteNode1, noteNode2, which):
         key = (
             repr(original) + repr(compare_to) + repr(noteNode1) + repr(noteNode2) + which
         )
-        if key not in mem:
-            mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 def _memoize_generic_lev_diff(func):
-    mem = {}
-
     def memoizer(original, compare_to, noteNode1, noteNode2, which):
         key = (
             repr(original) + repr(compare_to) + repr(noteNode1) + repr(noteNode2) + which
         )
-        if key not in mem:
-            mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
-        return copy.deepcopy(mem[key])
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
 
     return memoizer
 
 class Comparison:
+    _memoizer_mem: dict = {}
+
+    @staticmethod
+    def _clear_memoizer_caches():
+        Comparison._memoizer_mem = {}
+
     @staticmethod
     def _myers_diff(a_lines, b_lines):
         # Myers algorithm for LCS of bars (instead of the recursive algorithm in section 3.2)
@@ -439,6 +437,11 @@ class Comparison:
                 original[0].extras_list, compare_to[0].extras_list
             )
 
+            # diff the bar lyrics (with lists of AnnLyrics instead of lists of AnnExtras)
+            lyrics_op_list, lyrics_cost = Comparison._lyrics_diff_lin(
+                original[0].lyrics_list, compare_to[0].lyrics_list
+            )
+
             if original[0].includes_voicing:
                 # run the voice coupling algorithm, and add to inside_bar_op_list
                 # and inside_bar_cost
@@ -456,6 +459,9 @@ class Comparison:
 
             inside_bar_op_list.extend(extras_op_list)
             inside_bar_cost += extras_cost
+            inside_bar_op_list.extend(lyrics_op_list)
+            inside_bar_cost += lyrics_cost
+
         cost_dict["editbar"] += inside_bar_cost
         op_list_dict["editbar"].extend(inside_bar_op_list)
         # compute the minimum of the possibilities
@@ -517,6 +523,65 @@ class Comparison:
             )
         cost["extrasub"] += extrasub_cost
         op_list["extrasub"].extend(extrasub_op)
+        # compute the minimum of the possibilities
+        min_key = min(cost, key=cost.get)
+        out = op_list[min_key], cost[min_key]
+        return out
+
+    @staticmethod
+    @_memoize_lyrics_diff_lin
+    def _lyrics_diff_lin(original, compare_to):
+        # original and compare to are two lists of AnnLyric
+        if len(original) == 0 and len(compare_to) == 0:
+            return [], 0
+
+        if len(original) == 0:
+            cost = 0
+            op_list, cost = Comparison._lyrics_diff_lin(original, compare_to[1:])
+            op_list.append(("lyricins", None, compare_to[0], compare_to[0].notation_size()))
+            cost += compare_to[0].notation_size()
+            return op_list, cost
+
+        if len(compare_to) == 0:
+            cost = 0
+            op_list, cost = Comparison._lyrics_diff_lin(original[1:], compare_to)
+            op_list.append(("lyricdel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
+            return op_list, cost
+
+        # compute the cost and the op_list for the many possibilities of recursion
+        cost = {}
+        op_list = {}
+        # lyricdel
+        op_list["lyricdel"], cost["lyricdel"] = Comparison._lyrics_diff_lin(
+            original[1:], compare_to
+        )
+        cost["lyricdel"] += original[0].notation_size()
+        op_list["lyricdel"].append(
+            ("lyricdel", original[0], None, original[0].notation_size())
+        )
+        # lyricins
+        op_list["lyricins"], cost["lyricins"] = Comparison._lyrics_diff_lin(
+            original, compare_to[1:]
+        )
+        cost["lyricins"] += compare_to[0].notation_size()
+        op_list["lyricins"].append(
+            ("lyricins", None, compare_to[0], compare_to[0].notation_size())
+        )
+        # lyricsub
+        op_list["lyricsub"], cost["lyricsub"] = Comparison._lyrics_diff_lin(
+            original[1:], compare_to[1:]
+        )
+        if (
+            original[0] == compare_to[0]
+        ):  # avoid call another function if they are equal
+            lyricsub_op, lyricsub_cost = [], 0
+        else:
+            lyricsub_op, lyricsub_cost = (
+                Comparison._annotated_lyric_diff(original[0], compare_to[0])
+            )
+        cost["lyricsub"] += lyricsub_cost
+        op_list["lyricsub"].extend(lyricsub_op)
         # compute the minimum of the possibilities
         min_key = min(cost, key=cost.get)
         out = op_list[min_key], cost[min_key]
@@ -654,8 +719,11 @@ class Comparison:
         return distance
 
     @staticmethod
-    def _areDifferentEnough(flt1: float, flt2: float) -> bool:
-        diff: float = flt1 - flt2
+    def _areDifferentEnough(off1: OffsetQL, off2: OffsetQL) -> bool:
+        if off1 == off2:
+            return False
+
+        diff: OffsetQL = off1 - off2
         if diff < 0:
             diff = -diff
 
@@ -686,7 +754,7 @@ class Comparison:
         if Comparison._areDifferentEnough(annExtra1.offset, annExtra2.offset):
             # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
             # min cost is 1, though, don't round down to zero.
-            offset_cost: int = int(min(1, abs(annExtra1.offset - annExtra2.offset)))
+            offset_cost: int = int(min(1, abs(float(annExtra1.offset) - float(annExtra2.offset))))
             cost += offset_cost
             op_list.append(("extraoffsetedit", annExtra1, annExtra2, offset_cost))
 
@@ -695,7 +763,7 @@ class Comparison:
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.duration, annExtra2.duration):
             # duration is in quarter-notes, so let's make the cost in quarter-notes as well.
-            duration_cost = int(min(1, abs(annExtra1.duration - annExtra2.duration)))
+            duration_cost = int(min(1, abs(float(annExtra1.duration) - float(annExtra2.duration))))
             cost += duration_cost
             op_list.append(("extradurationedit", annExtra1, annExtra2, duration_cost))
 
@@ -703,6 +771,51 @@ class Comparison:
         if annExtra1.styledict != annExtra2.styledict:
             cost += 1
             op_list.append(("extrastyleedit", annExtra1, annExtra2, 1))
+
+        return op_list, cost
+
+    @staticmethod
+    def _annotated_lyric_diff(annLyric1: AnnLyric, annLyric2: AnnLyric):
+        """
+        Compute the differences between two annotated lyrics.
+        Each annotated lyric consists of five values: lyric, verse_id, offset, duration,
+        and styledict.
+        """
+        cost = 0
+        op_list = []
+
+        # add for the content
+        if annLyric1.lyric != annLyric2.lyric:
+            content_cost: int = (
+                Comparison._strings_leveinshtein_distance(annLyric1.lyric, annLyric2.lyric)
+            )
+            cost += content_cost
+            op_list.append(("lyricedit", annLyric1, annLyric2, content_cost))
+
+        # add for the number
+        if annLyric1.number != annLyric2.number:
+            cost += 1
+            op_list.append(("lyricnumedit", annLyric1, annLyric2, 1))
+
+        # add for the identifier
+        if annLyric1.identifier != annLyric2.identifier:
+            cost += 1
+            op_list.append(("lyricidedit", annLyric1, annLyric2, 1))
+
+        # add for the offset
+        # Note: offset here is a float, and some file formats have only four
+        # decimal places of precision.  So we should not compare exactly here.
+        if Comparison._areDifferentEnough(annLyric1.offset, annLyric2.offset):
+            # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
+            # min cost is 1, though, don't round down to zero.
+            offset_cost: int = int(min(1, abs(float(annLyric1.offset) - float(annLyric2.offset))))
+            cost += offset_cost
+            op_list.append(("lyricoffsetedit", annLyric1, annLyric2, offset_cost))
+
+        # add for the style
+        if annLyric1.styledict != annLyric2.styledict:
+            cost += 1
+            op_list.append(("lyricstyleedit", annLyric1, annLyric2, 1))
 
         return op_list, cost
 
@@ -949,17 +1062,6 @@ class Comparison:
             )
             op_list.extend(expr_op_list)
             cost += expr_cost
-        # add for the lyrics
-        if annNote1.lyrics != annNote2.lyrics:
-            lyr_op_list, lyr_cost = Comparison._generic_leveinsthein_diff(
-                annNote1.lyrics,
-                annNote2.lyrics,
-                annNote1,
-                annNote2,
-                "lyric",
-            )
-            op_list.extend(lyr_op_list)
-            cost += lyr_cost
 
         # add for gap from previous note or start of measure if first note in measure
         # (i.e. horizontal position shift)
@@ -1143,8 +1245,9 @@ class Comparison:
 
         for orig_n in original:
             fallback: AnnNote | None = None
+            fallback_i: int = -1
             found_it: bool = False
-            for comp_n in unpaired_comp_notes:
+            for i, comp_n in enumerate(unpaired_comp_notes):
                 if orig_n.pitches[0][0] != comp_n.pitches[0][0]:
                     # this pitch comparison (1) assumes the note is not a chord
                     # (because we don't do chords when Voicing is not set, and
@@ -1160,6 +1263,7 @@ class Comparison:
                     continue
                 if fallback is None:
                     fallback = comp_n
+                    fallback_i = i
 
                 if orig_n.note_dur_type != comp_n.note_dur_type:
                     continue
@@ -1170,7 +1274,7 @@ class Comparison:
                 paired_notes.append((orig_n, comp_n))
 
                 # remove comp_n from unpaired_comp_notes
-                unpaired_comp_notes.remove(comp_n)
+                unpaired_comp_notes.pop(i)  # remove(comp_n) would sometimes get the wrong one
 
                 found_it = True
                 break
@@ -1182,7 +1286,7 @@ class Comparison:
             # did we find a fallback (matched except for duration)?
             if fallback is not None:
                 paired_notes.append((orig_n, fallback))
-                unpaired_comp_notes.remove(fallback)
+                unpaired_comp_notes.pop(fallback_i)
                 continue
 
             # we found nothing
@@ -1290,6 +1394,10 @@ class Comparison:
         Returns:
             list[tuple], int: The operations list and the cost
         '''
+        # Clear all memoizer caches, in case we are called again with different scores.
+        # The cached results are no longer valid.
+        Comparison._clear_memoizer_caches()
+
         # for now just working with equal number of parts that are already pairs
         # TODO : extend to different number of parts
         assert score1.n_of_parts == score2.n_of_parts

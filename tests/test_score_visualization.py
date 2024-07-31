@@ -1,10 +1,11 @@
-import music21 as m21
 from pathlib import Path
-from musicdiff import M21Utils
+
+import music21 as m21
+import converter21
+
 from musicdiff.annotation import AnnScore
 from musicdiff import Comparison
 from musicdiff import Visualization
-import converter21
 
 class TestScoreVisualization:
     converter21.register()
@@ -18,7 +19,7 @@ class TestScoreVisualization:
         score_lin1 = AnnScore(score1)
         score_lin2 = AnnScore(score2)
         # compute the complete score diff
-        op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+        op_list, _ = Comparison.annotated_scores_diff(score_lin1, score_lin2)
         Visualization.mark_diffs(score1, score2, op_list)
         # Visualization.show_diffs(score1, score2)
 
@@ -32,7 +33,7 @@ class TestScoreVisualization:
         score_lin1 = AnnScore(score1)
         score_lin2 = AnnScore(score2)
         # compute the complete score diff
-        op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+        op_list, _ = Comparison.annotated_scores_diff(score_lin1, score_lin2)
         Visualization.mark_diffs(score1, score2, op_list)
         # Visualization.show_diffs(score1, score2)
 
@@ -46,7 +47,7 @@ class TestScoreVisualization:
         score_lin1 = AnnScore(score1)
         score_lin2 = AnnScore(score2)
         # compute the complete score diff
-        op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+        op_list, _ = Comparison.annotated_scores_diff(score_lin1, score_lin2)
         Visualization.mark_diffs(score1, score2, op_list)
         # Visualization.show_diffs(score1, score2)
 

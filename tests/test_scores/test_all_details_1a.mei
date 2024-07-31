@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://music-encoding.org/schema/5.0/mei-all.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="https://music-encoding.org/schema/5.0/mei-all.rng" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     meiversion="5.0">
+   <meiHead>
+      <fileDesc>
+         <titleStmt>
+            <title>Test file 1a for command line detail options</title>
+         </titleStmt>
+         <pubStmt/>
+         <sourceDesc>
+            <source>
+               <titleStmt>
+                  <title/>
+               </titleStmt>
+               <pubStmt/>
+            </source>
+         </sourceDesc>
+      </fileDesc>
+   </meiHead>
+   <music>
+      <body>
+         <mdiv>
+            <score>
+               <scoreDef meter.count="4" meter.unit="4" key.sig="0" key.mode="major">
+                  <staffGrp>
+                     <staffDef n="1" xml:id="P1" lines="5" clef.line="2" clef.shape="G"/>
+                  </staffGrp>
+               </scoreDef>
+               <section>
+                  <measure n="1">
+                     <staff n="1">
+                        <layer n="1">
+                           <note pname="b" oct="4" dur="4">
+                              <verse n="1">
+                                 <syl>lyric1</syl>
+                              </verse>
+                              <verse n="2">
+                                 <syl>lyric2</syl>
+                              </verse>
+                           </note>
+                           <note pname="g" oct="4" dur="4"/>
+                           <note pname="d" oct="5" dur="4"/>
+                           <note pname="b" oct="4" dur="4"/>
+                        </layer>
+                        <layer n="2">
+                           <note pname="g" oct="4" dur="4"/>
+                           <note pname="e" oct="4" dur="4"/>
+                           <note pname="g" oct="4" dur="4"/>
+                           <note pname="e" oct="4" dur="4"/>
+                        </layer>
+                     </staff>
+                     <dynam tstamp="1" place="below">p</dynam>
+                  </measure>
+                  <measure n="2" right="end">
+                     <staff n="1">
+                        <layer n="1">
+                           <note pname="g" oct="5" dur="2"/>
+                           <note pname="f" oct="5" dur="2"/>
+                        </layer>
+                        <layer n="2">
+                           <note pname="c" oct="5" dur="2"/>
+                           <note pname="d" oct="5" dur="2"/>
+                        </layer>
+                        <layer n="3">
+                           <beam>
+                              <note pname="g" oct="3" dur="8" stem.dir="down"/>
+                              <note pname="a" oct="3" dur="8" stem.dir="down"/>
+                              <note pname="b" oct="3" dur="8" stem.dir="down"/>
+                              <note pname="c" oct="4" dur="8" tie="i" stem.dir="down"/>
+                           </beam>
+                           <beam>
+                              <note pname="c" oct="4" dur="8" tie="t" stem.dir="down"/>
+                              <note pname="a" oct="3" dur="8" stem.dir="down"/>
+                           </beam>
+                           <note pname="g" oct="3" dur="8" stem.dir="down"/>
+                           <rest dur="8" ploc="g" oloc="3"/>
+                        </layer>
+                     </staff>
+                     <dynam tstamp="2.5">mp</dynam>
+                  </measure>
+               </section>
+            </score>
+         </mdiv>
+      </body>
+   </music>
+</mei>
