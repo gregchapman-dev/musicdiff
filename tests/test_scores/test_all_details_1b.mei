@@ -57,7 +57,7 @@
                      <dynam tstamp="1" place="above">p</dynam>
                      <slur startid="firstChord" endid="lastNote"/>
                   </measure>
-                  <measure n="2" right="end">
+                  <measure n="2" right="dbl">
                      <staff n="1">
                         <layer n="1">
                            <!-- one layer containing all the same notes

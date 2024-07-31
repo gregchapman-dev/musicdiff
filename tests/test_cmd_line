@@ -4,6 +4,18 @@
 echo "musicdiff --include notesandrests"
 python -m musicdiff --output text --include notesandrests -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
+# undecorated NotesAndRests plus Barlines
+echo "musicdiff --include notesandrests barlines"
+python -m musicdiff --output text --include notesandrests barlines -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
+# undecorated NotesAndRests plus Barlines and Directions
+echo "musicdiff --include notesandrests barlines directions"
+python -m musicdiff --output text --include notesandrests barlines directions -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
+# undecorated NotesAndRests plus Barlines and Directions, minus Barlines
+echo "musicdiff --include notesandrests barlines directions --exclude barlines"
+python -m musicdiff --output text --include notesandrests barlines directions --exclude barlines -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
 # DecoratedNotesAndRests only
 echo "musicdiff --include decoratednotesandrests"
 python -m musicdiff --output text --include decoratednotesandrests -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
@@ -47,6 +59,10 @@ python -m musicdiff -o t -i decoratednotesandrests otherobjects -- tests/test_sc
 # DecoratedNotesAndRests, OtherObjects, no Lyrics
 echo "musicdiff -i decoratednotesandrests otherobjects -x lyrics"
 python -m musicdiff -o t -i decoratednotesandrests otherobjects -x lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
+# DecoratedNotesAndRests, OtherObjects, no Lyrics, no Barlines
+echo "musicdiff -i decoratednotesandrests otherobjects -x lyrics barlines"
+python -m musicdiff -o t -i decoratednotesandrests otherobjects -x lyrics barlines -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 # AllObjects (same as DecoratedNotesAndRests, OtherObjects)
 echo "musicdiff -i allobjects"
