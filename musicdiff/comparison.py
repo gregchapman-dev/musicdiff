@@ -130,7 +130,7 @@ class Comparison:
     _memoizer_mem: dict = {}
 
     @staticmethod
-    def clear_memoizer_caches():
+    def _clear_memoizer_caches():
         Comparison._memoizer_mem = {}
 
     @staticmethod
@@ -1396,7 +1396,7 @@ class Comparison:
         '''
         # Clear all memoizer caches, in case we are called again with different scores.
         # The cached results are no longer valid.
-        Comparison.clear_memoizer_caches()
+        Comparison._clear_memoizer_caches()
 
         # for now just working with equal number of parts that are already pairs
         # TODO : extend to different number of parts

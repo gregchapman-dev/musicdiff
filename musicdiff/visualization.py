@@ -1746,6 +1746,18 @@ class Visualization:
         score1Name: str | Path | None = None,
         score2Name: str | Path | None = None
     ) -> str:
+        """
+        Generate text output from the differences described by an operations list
+        (e.g. a list returned from `musicdiff.Comparison.annotated_scores_diff`).
+
+        Args:
+            score1 (music21.stream.Score): The first score that was compared
+            score2 (music21.stream.Score): The second score that was compared
+            operations (list[tuple]): The operations list that describes the difference
+                between the two scores
+            score1Name (str | Path | None): The name to use for the first score in the text output
+            score2Name (str | Path | None): The name to use for the second score in the text output
+        """
         output: str
         outputList: list[str] = []
         oneOutput: str  # one string, multiple lines (with \n at end of all but last line)

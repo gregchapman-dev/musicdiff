@@ -254,7 +254,7 @@ class DetailLevel(IntEnum):
         return _typesCache[val]
 
     @classmethod
-    def obj_is_included(cls, obj: m21.base.Music21Object, val: int) -> bool:
+    def objIsIncluded(cls, obj: m21.base.Music21Object, val: int) -> bool:
         types: tuple[t.Type, ...] = cls._included_m21_types(val)
 
         # We have to check ChordSymbol by hand, since ChordSymbol is derived
