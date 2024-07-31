@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
             "signatures",
             "directions",
-            "barlinesandrepeats",
+            "barlines",
             "staffdetails",
             "chordsymbols",
             "ottavas",
@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
             "signatures",
             "directions",
-            "barlinesandrepeats",
+            "barlines",
             "staffdetails",
             "chordsymbols",
             "ottavas",

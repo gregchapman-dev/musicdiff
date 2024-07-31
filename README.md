@@ -12,16 +12,22 @@ Depends on [music21](https://pypi.org/project/music21) (version 9.1+),  [numpy](
 ## Usage
 On the command line:
 
-    python3 -m musicdiff -d GeneralNotes Lyrics Style -- file1.musicxml file2.krn
+    python3 -m musicdiff -i decoratednotesandrests lyrics style -x beams -- file1.musicxml file2.krn
 
     arguments:
-      -d          one or more named details to compare (default is AllObjects,
-                    a.k.a. GeneralNotes Extras Lyrics). Can be AllObjects,
-                    AllObjectsWithStyle, GeneralNotesAndMetadata, AllObjectsAndMetadata,
-                    AllObjectsWithStyleAndMetadata, or any combination of GeneralNotes,
-                    Extras, Lyrics, Style, Voicing, Metadata. Lyrics will not be
-                    compared unless you also request GeneralNotes (because in music21,
-                    Lyrics are attached to GeneralNotes).
+      -i          one or more named details to include in comparison (default is allobjects,
+                    a.k.a. decoratednotesandrests otherobjects). Can be decoratednotesandrests,
+                    otherobjects, allobjects, or any combination of those and/or the following:
+                    notesandrests, beams, tremolos, ornaments, articulations, ties, slurs,
+                    signatures, directions, barlines, staffdetails, chordsymbols, ottavas,
+                    arpeggios, lyrics.
+      -x          one of more named details to exclude from comparison.  Can be any combination
+                    of notesandrests, beams, tremolos, ornaments, articulations, ties, slurs,
+                    signatures, directions, barlines, staffdetails, chordsymbols, ottavas,
+                    arpeggios, lyrics.
+      -o          one or both (or neither) of two output formats (text or visual).  visual
+                    means marked-up score PDFs; text means diff-like text output.
+
       file1       first music score file to compare (any format music21 can parse)
       file2       second music score file to compare (any format music21 can parse)
 
@@ -53,4 +59,4 @@ The paper is freely available [here](https://hal.inria.fr/hal-02267454v2/documen
 Licensed under the [MIT License](LICENSE).
 
 ## Acknowledgment
-Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowing me to use his [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git) code, and for continuing to work with and advise me on this project.
+Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowing me to use his [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git) code, and for continuing to advise me on this project.
