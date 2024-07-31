@@ -1,0 +1,4 @@
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 2, staff 1, beat 2.5 @@
+-(Dynamic) DY:mp

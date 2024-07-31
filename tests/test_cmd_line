@@ -1,25 +1,44 @@
 #!/bin/zsh
 
-# undecorated NotesAndRests only
-echo "musicdiff --include notesandrests"
-python -m musicdiff --output text --include notesandrests -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+mode=runtests
+fails=0
 
-# undecorated NotesAndRests plus Barlines
-echo "musicdiff --include notesandrests barlines"
-python -m musicdiff --output text --include notesandrests barlines -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+run_musicdiff() {
+    name=$1
+    shift 1
+    if [[ "${mode}" == "makeresults" ]]; then
+        python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > tests/test_results/cmd_line_results_$name.txt >& /dev/null
+    else
+        python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > /tmp/results.txt >& /dev/null
+        diff -q /tmp/results.txt tests/test_results/cmd_line_results_$name.txt >/dev/null 2>&1
+        if [[ $? -ne 0 ]]; then
+            print "Test failure: musicdiff $@"
+            ((fails+=1))
+        else
+            print "Test success: musicdiff $@"
+        fi
+    fi
+}
 
-# undecorated NotesAndRests plus Barlines and Directions
-echo "musicdiff --include notesandrests barlines directions"
-python -m musicdiff --output text --include notesandrests barlines directions -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# simple includes (and some simple excludes that just remove something we included)
+run_musicdiff notesandrests --include notesandrests
+run_musicdiff notesandrests_barlines -i notesandrests barlines
+run_musicdiff notesandrests_barlines -i notesandrests barlines directions -x directions
+run_musicdiff notesandrests_barlines -i notesandrests barlines voicing -x voicing
+run_musicdiff notesandrests_barlines -i notesandrests barlines metadata -x metadata
+run_musicdiff notesandrests_barlines_directions -i notesandrests barlines directions
+run_musicdiff notesandrests_directions -i notesandrests barlines directions -x barlines
 
-# undecorated NotesAndRests plus Barlines and Directions, minus Barlines
-echo "musicdiff --include notesandrests barlines directions --exclude barlines"
-python -m musicdiff --output text --include notesandrests barlines directions --exclude barlines -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# simple includes (notesandrests barlines) + combo include (otherobjects), then exclude
+# otherobjects (which removes barlines, too), leaving notesandrests
+run_musicdiff notesandrests -i notesandrests barlines otherobjects style -x style otherobjects
 
-# DecoratedNotesAndRests only
-echo "musicdiff --include decoratednotesandrests"
-python -m musicdiff --output text --include decoratednotesandrests -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+# combo include: decoratednotesandrests
+run_musicdiff decoratednotesandrests --include decoratednotesandrests
+print Total failures: ${fails}
+exit ${fails}
 
+#
 # DecoratedNotesAndRests excluding ties
 echo "musicdiff --include decoratednotesandrests --exclude ties"
 python -m musicdiff --output text --include decoratednotesandrests --exclude ties -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
@@ -87,3 +106,6 @@ python -m musicdiff -o t -i metadata -- tests/test_scores/test_all_details_1a.me
 # Everything except Voicing
 echo "musicdiff -i allobjects style metadata"
 python -m musicdiff -o t -i allobjects style metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+
+print Total failures: ${fails}
+exit ${fails}
