@@ -1,55 +1,36 @@
 #!/bin/zsh
 
-fails=0
-
-run_test() {
+mkresults() {
     name=$1
     shift 1
-    python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > /tmp/results.txt >& /dev/null
-    diff -q /tmp/results.txt tests/test_results/cmd_line_results_$name.txt >/dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
-        print "Test failure: musicdiff $@"
-        ((fails+=1))
-    else
-        print "Test success: musicdiff $@"
-    fi
+    python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > tests/test_results/cmd_line_results_$name.txt >& /dev/null
 }
 
-# simple includes with simple excludes that just remove something we included
-run_test notesandrests_barlines -i notesandrests barlines directions -x directions
-run_test notesandrests_barlines -i notesandrests barlines voicing -x voicing
-run_test notesandrests_barlines -i notesandrests barlines metadata -x metadata
-run_test notesandrests_barlines -i notesandrests barlines
-run_test notesandrests_directions -i notesandrests barlines directions -x barlines
-run_test notesandrests_barlines_directions -i notesandrests barlines directions
-run_test notesandrests_barlines_directions -i notesandrests barlines directions
-
-# test all the simple decorated notes includes (without excludes)
-run_test notesandrests --include notesandrests
-run_test notesandrests --include notesandrests
-
-
-# simple includes (notesandrests barlines) + combo include (otherobjects), then exclude
-# otherobjects (which removes barlines, too), leaving notesandrests
-run_test notesandrests -i notesandrests barlines otherobjects style -x style otherobjects
+# simple includes (and some simple excludes that just remove something we included)
+mkresults notesandrests --include notesandrests
+mkresults notesandrests_barlines -i notesandrests barlines
+mkresults notesandrests_barlines_directions -i notesandrests barlines directions
+mkresults notesandrests_directions -i notesandrests barlines directions -x barlines
+mkresults notesandrests_barlines_directions -i notesandrests barlines directions
 
 # combo include: decoratednotesandrests (with various excludes)
-run_test decoratednotesandrests --include decoratednotesandrests
-run_test decoratednotesandrests_no_ties --include decoratednotesandrests --exclude ties
-run_test decoratednotesandrests_no_ties_beams --include decoratednotesandrests --exclude beams ties
-run_test decoratednotesandrests_no_ties_beams_slurs --include decoratednotesandrests --exclude beams ties slurs
-run_test decoratednotesandrests_articulations_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos
-run_test decoratednotesandrests_articulations --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
-# excluding all the decorations leaves only notesandrests
-run_test notesandrests --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments articulations
+mkresults decoratednotesandrests --include decoratednotesandrests
+mkresults decoratednotesandrests_no_ties --include decoratednotesandrests --exclude ties
+mkresults decoratednotesandrests_no_ties_beams --include decoratednotesandrests --exclude beams ties
+mkresults decoratednotesandrests_no_ties_beams_slurs --include decoratednotesandrests --exclude beams ties slurs
+mkresults decoratednotesandrests_no_ties_beams_slurs_tremolos --include decoratednotesandrests --exclude beams ties slurs tremolos
+mkresults decoratednotesandrests_no_ties_beams_slurs_tremolos_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
 
 # voicing adds a bunch of chord and voice diffs
-run_test decoratednotesandrests_voicing --include decoratednotesandrests voicing
+mkresults decoratednotesandrests_voicing --include decoratednotesandrests voicing
 
 # Check interactions of voicing and lyrics. voicing (or not) should not affect lyrics diffs.
 # Lack of notes should not affect lyrics diffs, either.
-run_test lyrics --include lyrics
-run_test lyrics --include voicing lyrics
+mkresults lyrics --include lyrics
+mkresults lyrics --include voicing lyrics
+
+exit
+
 
 # OtherObjects only
 echo "musicdiff -i otherobjects"
