@@ -6,6 +6,8 @@ mkresults() {
     python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > tests/test_results/cmd_line_results_$name.txt >& /dev/null
 }
 
+rm tests/test_results/*.txt
+
 # simple includes (and some simple excludes that just remove something we included)
 mkresults notesandrests --include notesandrests
 mkresults notesandrests_barlines -i notesandrests barlines
@@ -18,8 +20,8 @@ mkresults decoratednotesandrests --include decoratednotesandrests
 mkresults decoratednotesandrests_no_ties --include decoratednotesandrests --exclude ties
 mkresults decoratednotesandrests_no_ties_beams --include decoratednotesandrests --exclude beams ties
 mkresults decoratednotesandrests_no_ties_beams_slurs --include decoratednotesandrests --exclude beams ties slurs
-mkresults decoratednotesandrests_no_ties_beams_slurs_tremolos --include decoratednotesandrests --exclude beams ties slurs tremolos
-mkresults decoratednotesandrests_no_ties_beams_slurs_tremolos_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
+mkresults notesandrests_articulations_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos
+mkresults notesandrests_articulations --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
 
 # voicing adds a bunch of chord and voice diffs
 mkresults decoratednotesandrests_voicing --include decoratednotesandrests voicing
@@ -29,52 +31,17 @@ mkresults decoratednotesandrests_voicing --include decoratednotesandrests voicin
 mkresults lyrics --include lyrics
 mkresults lyrics --include voicing lyrics
 
-exit
+# otherobjects, with and without style
+mkresults otherobjects -i otherobjects
+mkresults otherobjects_style -i otherobjects style
 
+# allobjects (a.k.a. otherobjects and decoratednotesandrests), with and without style
+mkresults allobjects -i allobjects
+mkresults allobjects_style -i allobjects style
 
-# OtherObjects only
-echo "musicdiff -i otherobjects"
-python -m musicdiff -o t -i otherobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+mkresults allobjects_no_lyrics -i allobjects -x lyrics
+mkresults allobjects_no_lyrics_barlines -i allobjects -x lyrics barlines
+mkresults allobjects_style_no_lyrics -i allobjects style -x lyrics
 
-# OtherObjects with Style
-echo "musicdiff -i otherobjects style"
-python -m musicdiff -o t -i otherobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# DecoratedNotesAndRests, OtherObjects (same as AllObjects)
-echo "musicdiff -i decoratednotesandrests otherobjects"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# DecoratedNotesAndRests, OtherObjects, no Lyrics
-echo "musicdiff -i decoratednotesandrests otherobjects -x lyrics"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects -x lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# DecoratedNotesAndRests, OtherObjects, no Lyrics, no Barlines
-echo "musicdiff -i decoratednotesandrests otherobjects -x lyrics barlines"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects -x lyrics barlines -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# AllObjects (same as DecoratedNotesAndRests, OtherObjects)
-echo "musicdiff -i allobjects"
-python -m musicdiff -o t -i allobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# DecoratedNotesAndRests, OtherObjects, Style
-echo "musicdiff -i decoratednotesandrests otherobjects style"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# DecoratedNotesAndRests, OtherObjects, Style, no Lyrics
-echo "musicdiff -i decoratednotesandrests otherobjects style -x lyrics"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects style -x lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# AllObjects | Style (same as DecoratedNotesAndRests, OtherObjects, Style)
-echo "musicdiff -i allobjects style"
-python -m musicdiff -o t -i allobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# Metadata only
-echo "musicdiff -i metadata"
-python -m musicdiff -o t -i metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# Everything except Voicing
-echo "musicdiff -i allobjects style metadata"
-python -m musicdiff -o t -i allobjects style metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-print Total failures: ${fails}
-exit ${fails}
+mkresults metadata -i metadata
+mkresults allobjects_style_metadata -i metadata style allobjects

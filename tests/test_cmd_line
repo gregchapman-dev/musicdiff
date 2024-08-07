@@ -22,7 +22,10 @@ run_test notesandrests_barlines -i notesandrests barlines metadata -x metadata
 run_test notesandrests_barlines -i notesandrests barlines
 run_test notesandrests_directions -i notesandrests barlines directions -x barlines
 run_test notesandrests_barlines_directions -i notesandrests barlines directions
-run_test notesandrests_barlines_directions -i notesandrests barlines directions
+run_test notesandrests_articulations -i notesandrests articulations
+run_test notesandrests_articulations_ornaments -i notesandrests articulations ornaments
+run_test decoratednotesandrests_no_ties_beams_slurs --include notesandrests articulations ornaments tremolos
+
 
 # test all the simple decorated notes includes (without excludes)
 run_test notesandrests --include notesandrests
@@ -38,8 +41,8 @@ run_test decoratednotesandrests --include decoratednotesandrests
 run_test decoratednotesandrests_no_ties --include decoratednotesandrests --exclude ties
 run_test decoratednotesandrests_no_ties_beams --include decoratednotesandrests --exclude beams ties
 run_test decoratednotesandrests_no_ties_beams_slurs --include decoratednotesandrests --exclude beams ties slurs
-run_test decoratednotesandrests_articulations_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos
-run_test decoratednotesandrests_articulations --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
+run_test notesandrests_articulations_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos
+run_test notesandrests_articulations --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
 # excluding all the decorations leaves only notesandrests
 run_test notesandrests --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments articulations
 
@@ -52,48 +55,22 @@ run_test lyrics --include lyrics
 run_test lyrics --include voicing lyrics
 
 # OtherObjects only
-echo "musicdiff -i otherobjects"
-python -m musicdiff -o t -i otherobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+run_test otherobjects -i otherobjects
+run_test otherobjects_style -i otherobjects style
 
-# OtherObjects with Style
-echo "musicdiff -i otherobjects style"
-python -m musicdiff -o t -i otherobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+run_test allobjects -i otherobjects decoratednotesandrests
+run_test allobjects_style -i otherobjects decoratednotesandrests style
+run_test allobjects_style_no_lyrics -i otherobjects decoratednotesandrests style --exclude lyrics
+run_test allobjects -i allobjects
+run_test allobjects_style -i style allobjects
 
-# DecoratedNotesAndRests, OtherObjects (same as AllObjects)
-echo "musicdiff -i decoratednotesandrests otherobjects"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+run_test allobjects_no_lyrics -i otherobjects decoratednotesandrests -x lyrics
+run_test allobjects_no_lyrics_barlines -i otherobjects decoratednotesandrests -x lyrics barlines
 
-# DecoratedNotesAndRests, OtherObjects, no Lyrics
-echo "musicdiff -i decoratednotesandrests otherobjects -x lyrics"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects -x lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+run_test metadata --include metadata
 
-# DecoratedNotesAndRests, OtherObjects, no Lyrics, no Barlines
-echo "musicdiff -i decoratednotesandrests otherobjects -x lyrics barlines"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects -x lyrics barlines -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
+run_test allobjects_style_metadata -i metadata style allobjects
 
-# AllObjects (same as DecoratedNotesAndRests, OtherObjects)
-echo "musicdiff -i allobjects"
-python -m musicdiff -o t -i allobjects -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# DecoratedNotesAndRests, OtherObjects, Style
-echo "musicdiff -i decoratednotesandrests otherobjects style"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# DecoratedNotesAndRests, OtherObjects, Style, no Lyrics
-echo "musicdiff -i decoratednotesandrests otherobjects style -x lyrics"
-python -m musicdiff -o t -i decoratednotesandrests otherobjects style -x lyrics -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# AllObjects | Style (same as DecoratedNotesAndRests, OtherObjects, Style)
-echo "musicdiff -i allobjects style"
-python -m musicdiff -o t -i allobjects style -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# Metadata only
-echo "musicdiff -i metadata"
-python -m musicdiff -o t -i metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
-
-# Everything except Voicing
-echo "musicdiff -i allobjects style metadata"
-python -m musicdiff -o t -i allobjects style metadata -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei
 
 print Total failures: ${fails}
 exit ${fails}

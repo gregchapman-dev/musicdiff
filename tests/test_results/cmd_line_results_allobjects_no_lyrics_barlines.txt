@@ -1,0 +1,15 @@
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 1, beat 1.0 @@
++(Slur) SLUR dur=7.5 numNotes=2
+@@ measure 2, staff 1, beat 2.5 @@
+-(Note:tie) C4 (eighth note), tied
++(Note:tie) C4 (eighth note), not tied
+@@ measure 2, staff 1, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 1, beat 3.0 @@
+-(Note:flagsbeams) C4 (eighth note), 1 beam=start
++(Note:flagsbeams) C4 (eighth note), 1 flag
+@@ measure 2, staff 1, beat 3.5 @@
+-(Note:flagsbeams) A3 (eighth note), 1 beam=stop
++(Note:flagsbeams) A3 (eighth note), 1 flag
