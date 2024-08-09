@@ -1,0 +1,13 @@
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 1, beat 1.0 @@
+-(Dynamic:placement) DY:p changedStyle={placement:below}
++(Dynamic:placement) DY:p changedStyle={placement:above}
+@@ measure 1, staff 1, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 1, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 1, beat 1.0 @@
++(measure) measure 2
+@@ measure 2, staff 1, beat 1.0 @@
+-(measure) measure 2

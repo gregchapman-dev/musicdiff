@@ -1,0 +1,11 @@
+Changes since 3.1.1:
+    New command line and API that allows fine-grained setting of requested details.
+    New output option that prints a diff-like text description of the differences to stdout.
+    New comparison algorithm that ignores voicing and chording, just comparing all the notes,
+        wherever they are in the measure.
+    Support comparison of slurs.
+    Support comparison of chord symbols.
+    Better comparison of tuplets.
+    Better comparison of lyrics.
+    Ignore leading and trailing whitespace in directions, lyrics, and metadata.
+    Fix random crashes and long-term memory growth when doing multiple comparisons in one run.

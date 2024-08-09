@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://music-encoding.org/schema/5.0/mei-all.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="https://music-encoding.org/schema/5.0/mei-all.rng" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<mei xmlns="http://www.music-encoding.org/ns/mei"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     meiversion="5.0">
+   <meiHead>
+      <fileDesc>
+         <titleStmt>
+            <title>Test file 1b for command line detail options</title>
+         </titleStmt>
+         <pubStmt/>
+         <sourceDesc>
+            <source>
+               <titleStmt>
+                  <title/>
+               </titleStmt>
+               <pubStmt/>
+            </source>
+         </sourceDesc>
+      </fileDesc>
+   </meiHead>
+   <music>
+      <body>
+         <mdiv>
+            <score>
+               <scoreDef meter.count="4" meter.unit="4" key.sig="0" key.mode="major">
+                  <staffGrp>
+                     <staffDef n="1" xml:id="P1" lines="5" clef.line="2" clef.shape="G"/>
+                  </staffGrp>
+               </scoreDef>
+               <section>
+                  <measure n="1">
+                     <staff n="1">
+                        <layer n="1">
+                           <!-- one layer containing all the same notes
+                                as two layers in score 1a (in chords)
+                           -->
+                           <chord xml:id="firstChord" dur="4">
+                              <note pname="b" oct="4"/>
+                              <note pname="g" oct="4"/>
+                           </chord>
+                           <chord dur="4">
+                              <note pname="g" oct="4"/>
+                              <note pname="e" oct="4"/>
+                           </chord>
+                           <chord dur="4">
+                              <note pname="d" oct="5"/>
+                              <note pname="g" oct="4"/>
+                           </chord>
+                           <chord dur="4">
+                              <note pname="b" oct="4"/>
+                              <note pname="e" oct="4"/>
+                           </chord>
+                        </layer>
+                     </staff>
+                     <dynam tstamp="1" place="above">p</dynam>
+                     <slur startid="firstChord" endid="lastNote"/>
+                  </measure>
+                  <measure n="2" right="dbl">
+                     <staff n="1">
+                        <layer n="1">
+                           <!-- one layer containing all the same notes
+                                as layers 1 & 2 in score 1a (in chords)
+                           -->
+                           <chord dur="2">
+                              <note pname="g" oct="5"/>
+                              <note pname="c" oct="5"/>
+                           </chord>
+                           <chord dur="2">
+                              <note pname="f" oct="5"/>
+                              <note pname="d" oct="5"/>
+                           </chord>
+                        </layer>
+                        <layer n="2">
+                           <!-- this layer is in score 1a as layer 3
+                           -->
+                           <beam>
+                              <note pname="g" oct="3" dur="8" stem.dir="up"/>
+                              <note pname="a" oct="3" dur="8" stem.dir="up"/>
+                              <note pname="b" oct="3" dur="8" stem.dir="up"/>
+                              <note pname="c" oct="4" dur="8" stem.dir="up"/>
+                           </beam>
+                           <note pname="c" oct="4" dur="8" stem.dir="up"/>
+                           <note pname="a" oct="3" dur="8" stem.dir="up"/>
+                           <note xml:id="lastNote" pname="g" oct="3" dur="8" stem.dir="up"/>
+                           <rest dur="8" ploc="g" oloc="3"/>
+                        </layer>
+                     </staff>
+                  </measure>
+               </section>
+            </score>
+         </mdiv>
+      </body>
+   </music>
+</mei>

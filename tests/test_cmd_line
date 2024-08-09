@@ -1,0 +1,76 @@
+#!/bin/zsh
+
+fails=0
+
+run_test() {
+    name=$1
+    shift 1
+    python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > /tmp/results.txt >& /dev/null
+    diff -q /tmp/results.txt tests/test_results/cmd_line_results_$name.txt >/dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        print "Test failure: musicdiff $@"
+        ((fails+=1))
+    else
+        print "Test success: musicdiff $@"
+    fi
+}
+
+# simple includes with simple excludes that just remove something we included
+run_test notesandrests_barlines -i notesandrests barlines directions -x directions
+run_test notesandrests_barlines -i notesandrests barlines voicing -x voicing
+run_test notesandrests_barlines -i notesandrests barlines metadata -x metadata
+run_test notesandrests_barlines -i notesandrests barlines
+run_test notesandrests_directions -i notesandrests barlines directions -x barlines
+run_test notesandrests_barlines_directions -i notesandrests barlines directions
+run_test notesandrests_articulations -i notesandrests articulations
+run_test notesandrests_articulations_ornaments -i notesandrests articulations ornaments
+run_test decoratednotesandrests_no_ties_beams_slurs --include notesandrests articulations ornaments tremolos
+
+
+# test all the simple decorated notes includes (without excludes)
+run_test notesandrests --include notesandrests
+run_test notesandrests --include notesandrests
+
+
+# simple includes (notesandrests barlines) + combo include (otherobjects), then exclude
+# otherobjects (which removes barlines, too), leaving notesandrests
+run_test notesandrests -i notesandrests barlines otherobjects style -x style otherobjects
+
+# combo include: decoratednotesandrests (with various excludes)
+run_test decoratednotesandrests --include decoratednotesandrests
+run_test decoratednotesandrests_no_ties --include decoratednotesandrests --exclude ties
+run_test decoratednotesandrests_no_ties_beams --include decoratednotesandrests --exclude beams ties
+run_test decoratednotesandrests_no_ties_beams_slurs --include decoratednotesandrests --exclude beams ties slurs
+run_test notesandrests_articulations_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos
+run_test notesandrests_articulations --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
+# excluding all the decorations leaves only notesandrests
+run_test notesandrests --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments articulations
+
+# voicing adds a bunch of chord and voice diffs
+run_test decoratednotesandrests_voicing --include decoratednotesandrests voicing
+
+# Check interactions of voicing and lyrics. voicing (or not) should not affect lyrics diffs.
+# Lack of notes should not affect lyrics diffs, either.
+run_test lyrics --include lyrics
+run_test lyrics --include voicing lyrics
+
+# OtherObjects only
+run_test otherobjects -i otherobjects
+run_test otherobjects_style -i otherobjects style
+
+run_test allobjects -i otherobjects decoratednotesandrests
+run_test allobjects_style -i otherobjects decoratednotesandrests style
+run_test allobjects_style_no_lyrics -i otherobjects decoratednotesandrests style --exclude lyrics
+run_test allobjects -i allobjects
+run_test allobjects_style -i style allobjects
+
+run_test allobjects_no_lyrics -i otherobjects decoratednotesandrests -x lyrics
+run_test allobjects_no_lyrics_barlines -i otherobjects decoratednotesandrests -x lyrics barlines
+
+run_test metadata --include metadata
+
+run_test allobjects_style_metadata -i metadata style allobjects
+
+
+print Total failures: ${fails}
+exit ${fails}

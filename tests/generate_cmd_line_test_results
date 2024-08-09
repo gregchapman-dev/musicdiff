@@ -1,0 +1,47 @@
+#!/bin/zsh
+
+mkresults() {
+    name=$1
+    shift 1
+    python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > tests/test_results/cmd_line_results_$name.txt >& /dev/null
+}
+
+rm tests/test_results/*.txt
+
+# simple includes (and some simple excludes that just remove something we included)
+mkresults notesandrests --include notesandrests
+mkresults notesandrests_barlines -i notesandrests barlines
+mkresults notesandrests_barlines_directions -i notesandrests barlines directions
+mkresults notesandrests_directions -i notesandrests barlines directions -x barlines
+mkresults notesandrests_barlines_directions -i notesandrests barlines directions
+
+# combo include: decoratednotesandrests (with various excludes)
+mkresults decoratednotesandrests --include decoratednotesandrests
+mkresults decoratednotesandrests_no_ties --include decoratednotesandrests --exclude ties
+mkresults decoratednotesandrests_no_ties_beams --include decoratednotesandrests --exclude beams ties
+mkresults decoratednotesandrests_no_ties_beams_slurs --include decoratednotesandrests --exclude beams ties slurs
+mkresults notesandrests_articulations_ornaments --include decoratednotesandrests --exclude beams ties slurs tremolos
+mkresults notesandrests_articulations --include decoratednotesandrests --exclude beams ties slurs tremolos ornaments
+
+# voicing adds a bunch of chord and voice diffs
+mkresults decoratednotesandrests_voicing --include decoratednotesandrests voicing
+
+# Check interactions of voicing and lyrics. voicing (or not) should not affect lyrics diffs.
+# Lack of notes should not affect lyrics diffs, either.
+mkresults lyrics --include lyrics
+mkresults lyrics --include voicing lyrics
+
+# otherobjects, with and without style
+mkresults otherobjects -i otherobjects
+mkresults otherobjects_style -i otherobjects style
+
+# allobjects (a.k.a. otherobjects and decoratednotesandrests), with and without style
+mkresults allobjects -i allobjects
+mkresults allobjects_style -i allobjects style
+
+mkresults allobjects_no_lyrics -i allobjects -x lyrics
+mkresults allobjects_no_lyrics_barlines -i allobjects -x lyrics barlines
+mkresults allobjects_style_no_lyrics -i allobjects style -x lyrics
+
+mkresults metadata -i metadata
+mkresults allobjects_style_metadata -i metadata style allobjects

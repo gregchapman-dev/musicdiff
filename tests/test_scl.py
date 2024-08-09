@@ -1,4 +1,3 @@
-from collections import Counter
 from pathlib import Path
 
 import music21 as m21
@@ -6,6 +5,7 @@ import converter21
 
 from musicdiff import Comparison
 from musicdiff.annotation import AnnScore, AnnNote
+from musicdiff import DetailLevel
 
 class TestScl:
     converter21.register()
@@ -13,7 +13,8 @@ class TestScl:
     def test_non_common_subsequences_myers1(self):
         original = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         compare_to = [0, 0, 2, 3, 4, 5, 6, 4, 5, 9, 10]
-        # since repr and str of integers are the same thing, we just duplicate the values in a new column
+        # since repr and str of integers are the same thing,
+        # we just duplicate the values in a new column
         original = [[e, e] for e in original]
         compare_to = [[e, e] for e in compare_to]
         non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
@@ -27,7 +28,8 @@ class TestScl:
     def test_non_common_subsequences_myers2(self):
         original = [0, 1, 2, 3]
         compare_to = [5, 7, 8, 6, 3]
-        # since repr and str of integers are the same thing, we just duplicate the values in a new column
+        # since repr and str of integers are the same thing,
+        # we just duplicate the values in a new column
         original = [[e, e] for e in original]
         compare_to = [[e, e] for e in compare_to]
         non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
@@ -38,7 +40,8 @@ class TestScl:
     def test_non_common_subsequences_myers3(self):
         original = [0, 1, 2, 3, 4]
         compare_to = [0, 1, 2]
-        # since repr and str of integers are the same thing, we just duplicate the values in a new column
+        # since repr and str of integers are the same thing,
+        # we just duplicate the values in a new column
         original = [[e, e] for e in original]
         compare_to = [[e, e] for e in compare_to]
         non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
@@ -49,7 +52,8 @@ class TestScl:
     def test_non_common_subsequences_myers4(self):
         original = [0, 1, 2]
         compare_to = [0, 1, 2]
-        # since repr and str of integers are the same thing, we just duplicate the values in a new column
+        # since repr and str of integers are the same thing,
+        # we just duplicate the values in a new column
         original = [[e, e] for e in original]
         compare_to = [[e, e] for e in compare_to]
         non_common_subsequences = Comparison._non_common_subsequences_myers(original, compare_to)
@@ -154,8 +158,8 @@ class TestScl:
         n1 = m21.note.Note(nameWithOctave="D#5", quarterLength=1)
         n2 = m21.note.Note(nameWithOctave="D--5", quarterLength=1)
         # create AnnotatedNotes
-        note1 = AnnNote(n1, [], [], [])
-        note2 = AnnNote(n2, [], [], [])
+        note1 = AnnNote(n1, 0., [], [], [])
+        note2 = AnnNote(n2, 0., [], [], [])
         # pitches to compare
         pitch1 = note1.pitches[0]
         pitch2 = note2.pitches[0]
@@ -168,8 +172,8 @@ class TestScl:
     def test_pitches_diff2(self):
         n1 = m21.note.Note(nameWithOctave="E5", quarterLength=2)
         n2 = m21.note.Note(nameWithOctave="D--5", quarterLength=1)
-        note1 = AnnNote(n1, [], [], [])
-        note2 = AnnNote(n2, [], [], [])
+        note1 = AnnNote(n1, 0., [], [], [])
+        note2 = AnnNote(n2, 0., [], [], [])
         # pitches to compare
         pitch1 = note1.pitches[0]
         pitch2 = note2.pitches[0]
@@ -185,8 +189,8 @@ class TestScl:
         n1 = m21.note.Note(nameWithOctave="D--5", quarterLength=2)
         n1.tie = m21.tie.Tie("start")
         n2 = m21.note.Rest(quarterLength=0.5)
-        note1 = AnnNote(n1, [], [], [])
-        note2 = AnnNote(n2, [], [], [])
+        note1 = AnnNote(n1, 0., [], [], [])
+        note2 = AnnNote(n2, 0., [], [], [])
         # pitches to compare
         pitch1 = note1.pitches[0]
         pitch2 = note2.pitches[0]
@@ -204,8 +208,8 @@ class TestScl:
         n1.tie = m21.tie.Tie("start")
         n2 = m21.note.Note(nameWithOctave="D#5", quarterLength=3)
         n2.tie = m21.tie.Tie("start")
-        note1 = AnnNote(n1, [], [], [])
-        note2 = AnnNote(n2, [], [], [])
+        note1 = AnnNote(n1, 0., [], [], [])
+        note2 = AnnNote(n2, 0., [], [], [])
         # pitches to compare
         pitch1 = note1.pitches[0]
         pitch2 = note2.pitches[0]
@@ -222,13 +226,32 @@ class TestScl:
         score2_path = Path("tests/test_scores/monophonic_score_1b.mei")
         score2 = m21.converter.parse(str(score2_path))
         # build ScoreTrees
-        score_lin1 = AnnScore(score1)
-        score_lin2 = AnnScore(score2)
-        #   compute the blockdiff between all the bars (just for test, in practise we will run on non common subseq)
+        score_lin1 = AnnScore(score1, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        score_lin2 = AnnScore(score2, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        # compute the blockdiff between all the bars (just for test,
+        # in practise we will run on non common subseq)
         op_list, cost = Comparison._block_diff_lin(
             score_lin1._measures_from_part(0), score_lin2._measures_from_part(0)
         )
-        assert cost == 9
+        assert cost == 8
+        assert len(op_list) == 6
+
+
+    def test_block_diff2(self):
+        score1_path = Path("tests/test_scores/monophonic_score_1a.mei")
+        score1 = m21.converter.parse(str(score1_path))
+        score2_path = Path("tests/test_scores/monophonic_score_1b.mei")
+        score2 = m21.converter.parse(str(score2_path))
+        # build ScoreTrees
+        score_lin1 = AnnScore(score1)
+        score_lin2 = AnnScore(score2)
+        # compute the blockdiff between all the bars (just for test,
+        # in practise we will run on non common subseq)
+        op_list, cost = Comparison._block_diff_lin(
+            score_lin1._measures_from_part(0), score_lin2._measures_from_part(0)
+        )
+        assert cost == 8
+        assert len(op_list) == 6
 
 
     def test_multivoice_annotated_scores_diff1(self):
@@ -237,11 +260,26 @@ class TestScl:
         score2_path = Path("tests/test_scores/multivoice_score_1b.mei")
         score2 = m21.converter.parse(str(score2_path))
         # build ScoreTrees
-        score_lin1 = AnnScore(score1)
-        score_lin2 = AnnScore(score2)
-        # compute the complete score diff
+        score_lin1 = AnnScore(score1, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        score_lin2 = AnnScore(score2, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        # compute the complete score diff, including the voice- and chord-membership of notes
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
         assert cost == 8
+        assert len(op_list) == 5
+
+
+    def test_multivoice_annotated_scores_diff2(self):
+        score1_path = Path("tests/test_scores/multivoice_score_1a.mei")
+        score1 = m21.converter.parse(str(score1_path))
+        score2_path = Path("tests/test_scores/multivoice_score_1b.mei")
+        score2 = m21.converter.parse(str(score2_path))
+        # build ScoreTrees
+        score_lin1 = AnnScore(score1)
+        score_lin2 = AnnScore(score2)
+        # compute the complete score diff, ignoring voice/chord membership of notes
+        op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+        assert cost == 8
+        assert len(op_list) == 7
 
 
     def test_annotated_scores_diff1(self):
@@ -250,11 +288,26 @@ class TestScl:
         score2_path = Path("tests/test_scores/monophonic_score_1b.mei")
         score2 = m21.converter.parse(str(score2_path))
         # build ScoreTrees
+        score_lin1 = AnnScore(score1, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        score_lin2 = AnnScore(score2, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        # compute the complete score diff, including the voice- and chord-membership of notes
+        op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+        assert cost == 8
+        assert len(op_list) == 6
+
+
+    def test_annotated_scores_diff2(self):
+        score1_path = Path("tests/test_scores/monophonic_score_1a.mei")
+        score1 = m21.converter.parse(str(score1_path))
+        score2_path = Path("tests/test_scores/monophonic_score_1b.mei")
+        score2 = m21.converter.parse(str(score2_path))
+        # build ScoreTrees
         score_lin1 = AnnScore(score1)
         score_lin2 = AnnScore(score2)
-        # compute the complete score diff
+        # compute the complete score diff, ignoring voice/chord membership of notes
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
-        assert cost == 9
+        assert cost == 14
+        assert len(op_list) == 9
 
 
     def test_musicxml_articulation_diff1(self):
@@ -263,8 +316,23 @@ class TestScl:
         score2_path = Path("tests/test_scores/musicxml/articulation_score_1b.xml")
         score2 = m21.converter.parse(str(score2_path))
         # build ScoreTrees
-        score_lin1 = AnnScore(score1)
-        score_lin2 = AnnScore(score2)
-        # compute the complete score diff
+        score_lin1 = AnnScore(score1, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        score_lin2 = AnnScore(score2, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
+        # compute the complete score diff, including the voice- and chord-membership of notes
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
         assert cost == 10
+        assert len(op_list) == 10
+
+
+    def test_musicxml_articulation_diff2(self):
+        score1_path = Path("tests/test_scores/musicxml/articulation_score_1a.xml")
+        score1 = m21.converter.parse(str(score1_path))
+        score2_path = Path("tests/test_scores/musicxml/articulation_score_1b.xml")
+        score2 = m21.converter.parse(str(score2_path))
+        # build ScoreTrees
+        score_lin1 = AnnScore(score1)
+        score_lin2 = AnnScore(score2)
+        # compute the complete score diff, ignoring voice/chord membership of notes
+        op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+        assert cost == 10
+        assert len(op_list) == 10
