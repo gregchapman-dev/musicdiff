@@ -29,6 +29,7 @@ python3 -m twine upload dist/*
 
 # Go to github and make a release there as well (tag=vN.n.n)
 
+# Make develop "catch up with" main, so we can easily merge again later
 # git checkout develop
 # git merge --squash main
 # git commit
