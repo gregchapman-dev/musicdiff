@@ -242,6 +242,7 @@ class AnnNote:
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self.precomputed_notation_size: int = self.notation_size()
 
     def notation_size(self) -> int:
         """
@@ -689,6 +690,7 @@ class AnnExtra:
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self.precomputed_notation_size: int = self.notation_size()
 
     def notation_size(self) -> int:
         """
@@ -820,6 +822,7 @@ class AnnLyric:
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self.precomputed_notation_size: int = self.notation_size()
 
     def notation_size(self) -> int:
         """
@@ -957,6 +960,7 @@ class AnnVoice:
 
         self.n_of_notes: int = len(self.annot_notes)
         self.precomputed_str: str = self.__str__()
+        self.precomputed_notation_size: int = self.notation_size()
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
@@ -1156,6 +1160,7 @@ class AnnMeasure:
         # precomputed values to speed up the computation. As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())
         self.precomputed_repr: int = hash(self.__repr__())
+        self.precomputed_notation_size: int = self.notation_size()
 
     def __str__(self) -> str:
         output: str = ''
@@ -1252,6 +1257,7 @@ class AnnPart:
         self,
         part: m21.stream.Part,
         score: m21.stream.Score,
+        part_idx: int,
         spannerBundle: m21.spanner.SpannerBundle,
         detail: DetailLevel | int = DetailLevel.Default
     ):
@@ -1272,6 +1278,7 @@ class AnnPart:
                 Style, Metadata, or Voicing.
         """
         self.part: int | str = part.id
+        self.part_idx: int = part_idx
         self.bar_list: list[AnnMeasure] = []
         for measure in part.getElementsByClass("Measure"):
             # create the bar objects
@@ -1282,6 +1289,7 @@ class AnnPart:
         # Precomputed str to speed up the computation.
         # String itself is pretty long, so it is hashed
         self.precomputed_str: int = hash(self.__str__())
+        self.precomputed_notation_size: int = self.notation_size()
 
     def __str__(self) -> str:
         output: str = 'Part: '
@@ -1297,6 +1305,10 @@ class AnnPart:
             return False
 
         return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
+
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str = f"part {self.part_idx}"
+        return string
 
     def notation_size(self) -> int:
         """
@@ -1358,6 +1370,7 @@ class AnnStaffGroup:
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self.precomputed_notation_size: int = self.notation_size()
 
     def __str__(self) -> str:
         output: str = "StaffGroup"
@@ -1574,7 +1587,7 @@ class AnnScore:
             # create and add the AnnPart object to part_list
             # and to part_to_index dict
             part_to_index[part] = idx
-            ann_part = AnnPart(part, score, spannerBundle, detail)
+            ann_part = AnnPart(part, score, idx, spannerBundle, detail)
             self.part_list.append(ann_part)
 
         self.n_of_parts: int = len(self.part_list)
