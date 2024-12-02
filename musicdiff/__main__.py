@@ -112,6 +112,24 @@ if __name__ == "__main__":
         + " Either, both, or neither can be requested."
     )
 
+    parser.add_argument(
+        "--cost",
+        action='store_true',
+        help="If set, the cost in symbol errors is returned.  "
+        + "Default is to return length of edit list."
+    )
+
+    parser.add_argument(
+        "--fix_first_file_syntax",
+        action='store_true',
+        help="If set, syntax errors in the first input file will be fixed "
+        + "(if possible) so the diff can continue. Any fixes will be "
+        + "added to the returned number of edits (or cost in symbol "
+        + "errors). Note that errors in the second file (assumed to be "
+        + "the ground truth) are never corrected.  Note also that this "
+        + "only works for Humdrum **kern files currently."
+    )
+
     args = parser.parse_args()
 
     detail: int = DetailLevel.Default
@@ -222,13 +240,17 @@ if __name__ == "__main__":
 
     visualize_diffs: bool = "visual" in args.output or "v" in args.output
     print_text_output: bool = "text" in args.output or "t" in args.output
+    fix_first_file_syntax: bool = args.fix_first_file_syntax is True
+    return_cost: bool = args.cost is True
 
     numDiffs: int | None = diff(
         args.file1,
         args.file2,
         detail=detail,
         visualize_diffs=visualize_diffs,
-        print_text_output=print_text_output
+        print_text_output=print_text_output,
+        fix_first_file_syntax=fix_first_file_syntax,
+        return_cost=return_cost,
     )
 
     if numDiffs is None:
