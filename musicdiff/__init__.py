@@ -53,7 +53,6 @@ def diff(
     visualize_diffs: bool = True,
     print_text_output: bool = False,
     fix_first_file_syntax: bool = False,
-    return_cost: bool = False,
     detail: DetailLevel | int = DetailLevel.Default
 ) -> int | None:
     '''
@@ -85,8 +84,6 @@ def diff(
             file (and add the number of such fixes to the returned number of edits/cost in
             symbol errors).
             (default is False)
-        return_cost (bool): Whether to return the cost (in symbol errors) of the differences.
-            (default is False)
         detail (DetailLevel | int): What level of detail to use during the diff.
             Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
             AllObjects), or any combination (with | or &~) of those or NotesAndRests,
@@ -95,11 +92,9 @@ def diff(
             Style, Metadata, or Voicing.
 
     Returns:
-        int | None: The number of differences found.  If return_cost is False, this is the
-            number of edits in the edit list.  If return_cost is True, this is the total
-            cost of the edits, i.e. the number of individual symbols that must be added or
-            deleted. (In either case, 0 means the scores were identical, and None means
-            one or more of the input files failed to parse.)
+        int | None: The total cost of the edits, i.e. the number of individual symbols
+            that must be added or deleted. (0 means that the scores were identical, and
+            None means that one or more of the input files failed to parse.)
     '''
     # Use the Humdrum/MEI importers from converter21 in place of the ones in music21...
     # Comment out this line to go back to music21's built-in Humdrum/MEI importers.
@@ -146,7 +141,7 @@ def diff(
                 sc = m21.converter.parse(
                     score1,
                     forceSource=force_parse,
-                    accept_syntax_errors=fix_first_file_syntax
+                    acceptSyntaxErrors=fix_first_file_syntax
                 )
                 if t.TYPE_CHECKING:
                     assert isinstance(sc, m21.stream.Score)
@@ -196,8 +191,7 @@ def diff(
     cost: int
     diff_list, cost = Comparison.annotated_scores_diff(annotated_score1, annotated_score2)
 
-    numDiffs: int = len(diff_list)
-    if numDiffs != 0:
+    if cost != 0:
         if visualize_diffs:
             # you can change these three colors as you like...
             # Visualization.INSERTED_COLOR = 'red'
@@ -217,6 +211,4 @@ def diff(
             )
             print(text_output)
 
-    if return_cost:
-        return cost
-    return numDiffs
+    return cost
