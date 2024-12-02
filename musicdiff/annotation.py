@@ -1240,11 +1240,13 @@ class AnnMeasure:
                 self._cached_notation_size = (
                     sum([v.notation_size() for v in self.voices_list])
                     + sum([e.notation_size() for e in self.extras_list])
+                    + sum([lyr.notation_size() for lyr in self.lyrics_list])
                 )
             else:
                 self._cached_notation_size = (
                     sum([n.notation_size() for n in self.annot_notes])
                     + sum([e.notation_size() for e in self.extras_list])
+                    + sum([lyr.notation_size() for lyr in self.lyrics_list])
                 )
         return self._cached_notation_size
 
@@ -1422,6 +1424,10 @@ class AnnStaffGroup:
         if self.barTogether != other.barTogether:
             return False
 
+        if self.n_of_parts != other.n_of_parts:
+            # trying to avoid the more expensive part_indices array comparison
+            return False
+
         if self.part_indices != other.part_indices:
             return False
 
@@ -1461,10 +1467,10 @@ class AnnStaffGroup:
         Returns:
             int: The notation size of the annotated staff group
         """
-        # notation_size = 5 because there are 5 main visible things about a StaffGroup:
-        #   name, abbreviation, symbol shape, barline type, and which parts it encloses
+        # notation_size = 4 + n_of_parts because there are 5 main visible things about a StaffGroup:
+        #   name, abbreviation, symbol shape, barline type, and the parts it encloses
         if self._cached_notation_size is None:
-            self._cached_notation_size = 5
+            self._cached_notation_size = 4 + self.n_of_parts
         return self._cached_notation_size
 
     def __repr__(self) -> str:
