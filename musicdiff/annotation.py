@@ -1467,10 +1467,10 @@ class AnnStaffGroup:
         Returns:
             int: The notation size of the annotated staff group
         """
-        # notation_size = 4 + n_of_parts because there are 5 main visible things about a StaffGroup:
-        #   name, abbreviation, symbol shape, barline type, and the parts it encloses
+        # notation_size = 5 because there are 5 main visible things about a StaffGroup:
+        #   name, abbreviation, symbol shape, barline type, and which parts it encloses
         if self._cached_notation_size is None:
-            self._cached_notation_size = 4 + self.n_of_parts
+            self._cached_notation_size = 5
         return self._cached_notation_size
 
     def __repr__(self) -> str:
