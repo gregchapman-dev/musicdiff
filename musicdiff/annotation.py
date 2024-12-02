@@ -240,9 +240,9 @@ class AnnNote:
                 if self.expressions:
                     self.expressions.sort()
 
-        # precomputed representations for faster comparison
+        # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
-        self.precomputed_notation_size: int = self.notation_size()
+        self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
         """
@@ -251,21 +251,27 @@ class AnnNote:
         Returns:
             int: The notation size of the annotated note
         """
-        size: int = 0
-        # add for the pitches
-        for pitch in self.pitches:
-            size += M21Utils.pitch_size(pitch)
-        # add for the dots
-        size += self.dots * len(self.pitches)  # one dot for each note if it's a chord
-        # add for the beamings
-        size += len(self.beamings)
-        # add for the tuplets
-        size += len(self.tuplets)
-        # add for the articulations
-        size += len(self.articulations)
-        # add for the expressions
-        size += len(self.expressions)
-        return size
+        if self._cached_notation_size is None:
+            size: int = 0
+            # add for the pitches
+            for pitch in self.pitches:
+                size += M21Utils.pitch_size(pitch)
+            # add for the dots
+            size += self.dots * len(self.pitches)  # one dot for each note if it's a chord
+            # add for the beams/flags
+            size += len(self.beamings)
+            # add for the tuplets
+            size += len(self.tuplets)
+            # add for the articulations
+            size += len(self.articulations)
+            # add for the expressions
+            size += len(self.expressions)
+            # add 1 if there's a grace slash
+            if self.graceSlash is True:
+                size += 1
+            self._cached_notation_size = size
+
+        return self._cached_notation_size
 
     def get_identifying_string(self, name: str = "") -> str:
         string: str = ""
@@ -685,12 +691,10 @@ class AnnExtra:
                         smuflTextSuppressed=smuflTextSuppressed
                     )
 
-        # so far, always 1, but maybe some extra will be bigger someday
-        self._notation_size: int = 1
 
-        # precomputed representations for faster comparison
+        # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
-        self.precomputed_notation_size: int = self.notation_size()
+        self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
         """
@@ -699,7 +703,10 @@ class AnnExtra:
         Returns:
             int: The notation size of the annotated extra
         """
-        return self._notation_size
+        if self._cached_notation_size is None:
+            # so far, always 1, but maybe some extra will be bigger someday
+            self._cached_notation_size = 1
+        return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = self.content
@@ -818,11 +825,10 @@ class AnnLyric:
                 # sort styleDict before converting to string so we can compare strings
                 self.styledict = dict(sorted(self.styledict.items()))
 
-        self._notation_size: int = 1
 
-        # precomputed representations for faster comparison
+        # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
-        self.precomputed_notation_size: int = self.notation_size()
+        self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
         """
@@ -831,7 +837,10 @@ class AnnLyric:
         Returns:
             int: The notation size of the annotated extra
         """
-        return self._notation_size
+        if self._cached_notation_size is None:
+            # so far, always 1, but maybe some lyric will be bigger someday
+            self._cached_notation_size = 1
+        return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = f'"{self.lyric}"'
@@ -960,7 +969,7 @@ class AnnVoice:
 
         self.n_of_notes: int = len(self.annot_notes)
         self.precomputed_str: str = self.__str__()
-        self.precomputed_notation_size: int = self.notation_size()
+        self._cached_notation_size: int | None = None
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
@@ -979,7 +988,9 @@ class AnnVoice:
         Returns:
             int: The notation size of the annotated voice
         """
-        return sum([an.notation_size() for an in self.annot_notes])
+        if self._cached_notation_size is None:
+            self._cached_notation_size = sum([an.notation_size() for an in self.annot_notes])
+        return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = "["
@@ -1157,10 +1168,11 @@ class AnnMeasure:
             if self.lyrics_list:
                 self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.number))
 
-        # precomputed values to speed up the computation. As they start to be long, they are hashed
+        # precomputed/cached values to speed up the computation.
+        # As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())
         self.precomputed_repr: int = hash(self.__repr__())
-        self.precomputed_notation_size: int = self.notation_size()
+        self._cached_notation_size: int | None = None
 
     def __str__(self) -> str:
         output: str = ''
@@ -1223,17 +1235,18 @@ class AnnMeasure:
         Returns:
             int: The notation size of the annotated measure
         """
-        if self.includes_voicing:
-            return (
-                sum([v.notation_size() for v in self.voices_list])
-                + sum([e.notation_size() for e in self.extras_list])
-            )
-
-        return (
-            sum([n.notation_size() for n in self.annot_notes])
-            + sum([e.notation_size() for e in self.extras_list])
-        )
-
+        if self._cached_notation_size is None:
+            if self.includes_voicing:
+                self._cached_notation_size = (
+                    sum([v.notation_size() for v in self.voices_list])
+                    + sum([e.notation_size() for e in self.extras_list])
+                )
+            else:
+                self._cached_notation_size = (
+                    sum([n.notation_size() for n in self.annot_notes])
+                    + sum([e.notation_size() for e in self.extras_list])
+                )
+        return self._cached_notation_size
 
     def get_note_ids(self) -> list[str | int]:
         """
@@ -1289,7 +1302,7 @@ class AnnPart:
         # Precomputed str to speed up the computation.
         # String itself is pretty long, so it is hashed
         self.precomputed_str: int = hash(self.__str__())
-        self.precomputed_notation_size: int = self.notation_size()
+        self._cached_notation_size: int | None = None
 
     def __str__(self) -> str:
         output: str = 'Part: '
@@ -1317,7 +1330,9 @@ class AnnPart:
         Returns:
             int: The notation size of the annotated part
         """
-        return sum([b.notation_size() for b in self.bar_list])
+        if self._cached_notation_size is None:
+            self._cached_notation_size = sum([b.notation_size() for b in self.bar_list])
+        return self._cached_notation_size
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
@@ -1370,7 +1385,7 @@ class AnnStaffGroup:
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
-        self.precomputed_notation_size: int = self.notation_size()
+        self._cached_notation_size: int | None = None
 
     def __str__(self) -> str:
         output: str = "StaffGroup"
@@ -1448,7 +1463,9 @@ class AnnStaffGroup:
         """
         # notation_size = 5 because there are 5 main visible things about a StaffGroup:
         #   name, abbreviation, symbol shape, barline type, and which parts it encloses
-        return 5
+        if self._cached_notation_size is None:
+            self._cached_notation_size = 5
+        return self._cached_notation_size
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
@@ -1508,6 +1525,8 @@ class AnnMetadataItem:
         else:
             self.value = value
 
+        self._cached_notation_size: int | None = None
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, AnnMetadataItem):
             return False
@@ -1541,7 +1560,9 @@ class AnnMetadataItem:
         Returns:
             int: The notation size of the annotated metadata item
         """
-        return 1
+        if self._cached_notation_size is None:
+            self._cached_notation_size = 1
+        return self._cached_notation_size
 
     def make_value_string(self, value: m21.metadata.Contributor | m21.metadata.Text) -> str:
         # Unescapes a bunch of stuff (and strips off leading/trailing whitespace)
@@ -1639,6 +1660,9 @@ class AnnScore:
 
             self.metadata_items_list.sort(key=lambda each: (each.key, str(each.value)))
 
+        # cached notation size
+        self._cached_notation_size: int | None = None
+
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
         if not isinstance(other, AnnScore):
@@ -1656,7 +1680,12 @@ class AnnScore:
         Returns:
             int: The notation size of the annotated score
         """
-        return sum([p.notation_size() for p in self.part_list])
+        if self._cached_notation_size is None:
+            size: int = sum([p.notation_size() for p in self.part_list])
+            size += sum([sg.notation_size() for sg in self.staff_group_list])
+            size += sum([md.notation_size() for md in self.metadata_items_list])
+            self._cached_notation_size = size
+        return self._cached_notation_size
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!

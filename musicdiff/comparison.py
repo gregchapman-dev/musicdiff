@@ -391,14 +391,14 @@ class Comparison:
 
         if len(original) == 0:
             op_list, cost = Comparison._block_diff_lin(original, compare_to[1:])
-            cost += compare_to[0].precomputed_notation_size
-            op_list.append(("insbar", None, compare_to[0], compare_to[0].precomputed_notation_size))
+            cost += compare_to[0].notation_size()
+            op_list.append(("insbar", None, compare_to[0], compare_to[0].notation_size()))
             return op_list, cost
 
         if len(compare_to) == 0:
             op_list, cost = Comparison._block_diff_lin(original[1:], compare_to)
-            cost += original[0].precomputed_notation_size
-            op_list.append(("delbar", original[0], None, original[0].precomputed_notation_size))
+            cost += original[0].notation_size()
+            op_list.append(("delbar", original[0], None, original[0].notation_size()))
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
@@ -408,17 +408,17 @@ class Comparison:
         op_list_dict["delbar"], cost_dict["delbar"] = Comparison._block_diff_lin(
             original[1:], compare_to
         )
-        cost_dict["delbar"] += original[0].precomputed_notation_size
+        cost_dict["delbar"] += original[0].notation_size()
         op_list_dict["delbar"].append(
-            ("delbar", original[0], None, original[0].precomputed_notation_size)
+            ("delbar", original[0], None, original[0].notation_size())
         )
         # ins-bar
         op_list_dict["insbar"], cost_dict["insbar"] = Comparison._block_diff_lin(
             original, compare_to[1:]
         )
-        cost_dict["insbar"] += compare_to[0].precomputed_notation_size
+        cost_dict["insbar"] += compare_to[0].notation_size()
         op_list_dict["insbar"].append(
-            ("insbar", None, compare_to[0], compare_to[0].precomputed_notation_size)
+            ("insbar", None, compare_to[0], compare_to[0].notation_size())
         )
         # edit-bar
         op_list_dict["editbar"], cost_dict["editbar"] = Comparison._block_diff_lin(
@@ -480,16 +480,16 @@ class Comparison:
             cost = 0
             op_list, cost = Comparison._extras_diff_lin(original, compare_to[1:])
             op_list.append(
-                ("extrains", None, compare_to[0], compare_to[0].precomputed_notation_size)
+                ("extrains", None, compare_to[0], compare_to[0].notation_size())
             )
-            cost += compare_to[0].precomputed_notation_size
+            cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._extras_diff_lin(original[1:], compare_to)
-            op_list.append(("extradel", original[0], None, original[0].precomputed_notation_size))
-            cost += original[0].precomputed_notation_size
+            op_list.append(("extradel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
@@ -499,17 +499,17 @@ class Comparison:
         op_list["extradel"], cost["extradel"] = Comparison._extras_diff_lin(
             original[1:], compare_to
         )
-        cost["extradel"] += original[0].precomputed_notation_size
+        cost["extradel"] += original[0].notation_size()
         op_list["extradel"].append(
-            ("extradel", original[0], None, original[0].precomputed_notation_size)
+            ("extradel", original[0], None, original[0].notation_size())
         )
         # extrains
         op_list["extrains"], cost["extrains"] = Comparison._extras_diff_lin(
             original, compare_to[1:]
         )
-        cost["extrains"] += compare_to[0].precomputed_notation_size
+        cost["extrains"] += compare_to[0].notation_size()
         op_list["extrains"].append(
-            ("extrains", None, compare_to[0], compare_to[0].precomputed_notation_size)
+            ("extrains", None, compare_to[0], compare_to[0].notation_size())
         )
         # extrasub
         op_list["extrasub"], cost["extrasub"] = Comparison._extras_diff_lin(
@@ -541,16 +541,16 @@ class Comparison:
             cost = 0
             op_list, cost = Comparison._lyrics_diff_lin(original, compare_to[1:])
             op_list.append(
-                ("lyricins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+                ("lyricins", None, compare_to[0], compare_to[0].notation_size())
             )
-            cost += compare_to[0].precomputed_notation_size
+            cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._lyrics_diff_lin(original[1:], compare_to)
-            op_list.append(("lyricdel", original[0], None, original[0].precomputed_notation_size))
-            cost += original[0].precomputed_notation_size
+            op_list.append(("lyricdel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
@@ -560,17 +560,17 @@ class Comparison:
         op_list["lyricdel"], cost["lyricdel"] = Comparison._lyrics_diff_lin(
             original[1:], compare_to
         )
-        cost["lyricdel"] += original[0].precomputed_notation_size
+        cost["lyricdel"] += original[0].notation_size()
         op_list["lyricdel"].append(
-            ("lyricdel", original[0], None, original[0].precomputed_notation_size)
+            ("lyricdel", original[0], None, original[0].notation_size())
         )
         # lyricins
         op_list["lyricins"], cost["lyricins"] = Comparison._lyrics_diff_lin(
             original, compare_to[1:]
         )
-        cost["lyricins"] += compare_to[0].precomputed_notation_size
+        cost["lyricins"] += compare_to[0].notation_size()
         op_list["lyricins"].append(
-            ("lyricins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+            ("lyricins", None, compare_to[0], compare_to[0].notation_size())
         )
         # lyricsub
         op_list["lyricsub"], cost["lyricsub"] = Comparison._lyrics_diff_lin(
@@ -602,16 +602,16 @@ class Comparison:
             cost = 0
             op_list, cost = Comparison._metadata_items_diff_lin(original, compare_to[1:])
             op_list.append(
-                ("mditemins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+                ("mditemins", None, compare_to[0], compare_to[0].notation_size())
             )
-            cost += compare_to[0].precomputed_notation_size
+            cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._metadata_items_diff_lin(original[1:], compare_to)
-            op_list.append(("mditemdel", original[0], None, original[0].precomputed_notation_size))
-            cost += original[0].precomputed_notation_size
+            op_list.append(("mditemdel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
@@ -621,17 +621,17 @@ class Comparison:
         op_list["mditemdel"], cost["mditemdel"] = Comparison._metadata_items_diff_lin(
             original[1:], compare_to
         )
-        cost["mditemdel"] += original[0].precomputed_notation_size
+        cost["mditemdel"] += original[0].notation_size()
         op_list["mditemdel"].append(
-            ("mditemdel", original[0], None, original[0].precomputed_notation_size)
+            ("mditemdel", original[0], None, original[0].notation_size())
         )
         # mditemins
         op_list["mditemins"], cost["mditemins"] = Comparison._metadata_items_diff_lin(
             original, compare_to[1:]
         )
-        cost["mditemins"] += compare_to[0].precomputed_notation_size
+        cost["mditemins"] += compare_to[0].notation_size()
         op_list["mditemins"].append(
-            ("mditemins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+            ("mditemins", None, compare_to[0], compare_to[0].notation_size())
         )
         # mditemsub
         op_list["mditemsub"], cost["mditemsub"] = Comparison._metadata_items_diff_lin(
@@ -663,18 +663,18 @@ class Comparison:
             cost = 0
             op_list, cost = Comparison._staff_groups_diff_lin(original, compare_to[1:])
             op_list.append(
-                ("staffgrpins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+                ("staffgrpins", None, compare_to[0], compare_to[0].notation_size())
             )
-            cost += compare_to[0].precomputed_notation_size
+            cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._staff_groups_diff_lin(original[1:], compare_to)
             op_list.append(
-                ("staffgrpdel", original[0], None, original[0].precomputed_notation_size)
+                ("staffgrpdel", original[0], None, original[0].notation_size())
             )
-            cost += original[0].precomputed_notation_size
+            cost += original[0].notation_size()
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
@@ -684,17 +684,17 @@ class Comparison:
         op_list["staffgrpdel"], cost["staffgrpdel"] = Comparison._staff_groups_diff_lin(
             original[1:], compare_to
         )
-        cost["staffgrpdel"] += original[0].precomputed_notation_size
+        cost["staffgrpdel"] += original[0].notation_size()
         op_list["staffgrpdel"].append(
-            ("staffgrpdel", original[0], None, original[0].precomputed_notation_size)
+            ("staffgrpdel", original[0], None, original[0].notation_size())
         )
         # staffgrpins
         op_list["staffgrpins"], cost["staffgrpins"] = Comparison._staff_groups_diff_lin(
             original, compare_to[1:]
         )
-        cost["staffgrpins"] += compare_to[0].precomputed_notation_size
+        cost["staffgrpins"] += compare_to[0].notation_size()
         op_list["staffgrpins"].append(
-            ("staffgrpins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+            ("staffgrpins", None, compare_to[0], compare_to[0].notation_size())
         )
         # staffgrpsub
         op_list["staffgrpsub"], cost["staffgrpsub"] = Comparison._staff_groups_diff_lin(
@@ -942,16 +942,16 @@ class Comparison:
             cost = 0
             op_list, cost = Comparison._inside_bars_diff_lin(original, compare_to[1:])
             op_list.append(
-                ("noteins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+                ("noteins", None, compare_to[0], compare_to[0].notation_size())
             )
-            cost += compare_to[0].precomputed_notation_size
+            cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._inside_bars_diff_lin(original[1:], compare_to)
-            op_list.append(("notedel", original[0], None, original[0].precomputed_notation_size))
-            cost += original[0].precomputed_notation_size
+            op_list.append(("notedel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
@@ -961,17 +961,17 @@ class Comparison:
         op_list["notedel"], cost["notedel"] = Comparison._inside_bars_diff_lin(
             original[1:], compare_to
         )
-        cost["notedel"] += original[0].precomputed_notation_size
+        cost["notedel"] += original[0].notation_size()
         op_list["notedel"].append(
-            ("notedel", original[0], None, original[0].precomputed_notation_size)
+            ("notedel", original[0], None, original[0].notation_size())
         )
         # noteins
         op_list["noteins"], cost["noteins"] = Comparison._inside_bars_diff_lin(
             original, compare_to[1:]
         )
-        cost["noteins"] += compare_to[0].precomputed_notation_size
+        cost["noteins"] += compare_to[0].notation_size()
         op_list["noteins"].append(
-            ("noteins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+            ("noteins", None, compare_to[0], compare_to[0].notation_size())
         )
         # notesub
         op_list["notesub"], cost["notesub"] = Comparison._inside_bars_diff_lin(
@@ -1311,17 +1311,17 @@ class Comparison:
         # notedel
         if unpaired_orig_notes:
             for an in unpaired_orig_notes:
-                cost += an.precomputed_notation_size
+                cost += an.notation_size()
                 op_list.append(
-                    ("notedel", an, None, an.precomputed_notation_size, an.note_idx_in_chord)
+                    ("notedel", an, None, an.notation_size(), an.note_idx_in_chord)
                 )
 
         # noteins
         if unpaired_comp_notes:
             for an in unpaired_comp_notes:
-                cost += an.precomputed_notation_size
+                cost += an.notation_size()
                 op_list.append(
-                    ("noteins", None, an, an.precomputed_notation_size, an.note_idx_in_chord)
+                    ("noteins", None, an, an.notation_size(), an.note_idx_in_chord)
                 )
 
         # notesub
@@ -1355,17 +1355,17 @@ class Comparison:
             op_list, cost = Comparison._voices_coupling_recursive(original, compare_to[1:])
             # add for the inserted voice
             op_list.append(
-                ("voiceins", None, compare_to[0], compare_to[0].precomputed_notation_size)
+                ("voiceins", None, compare_to[0], compare_to[0].notation_size())
             )
-            cost += compare_to[0].precomputed_notation_size
+            cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             # deletion
             op_list, cost = Comparison._voices_coupling_recursive(original[1:], compare_to)
             # add for the deleted voice
-            op_list.append(("voicedel", original[0], None, original[0].precomputed_notation_size))
-            cost += original[0].precomputed_notation_size
+            op_list.append(("voicedel", original[0], None, original[0].notation_size()))
+            cost += original[0].notation_size()
             return op_list, cost
 
         cost = {}
@@ -1375,9 +1375,9 @@ class Comparison:
             original[1:], compare_to
         )
         op_list["voicedel"].append(
-            ("voicedel", original[0], None, original[0].precomputed_notation_size)
+            ("voicedel", original[0], None, original[0].notation_size())
         )
-        cost["voicedel"] += original[0].precomputed_notation_size
+        cost["voicedel"] += original[0].notation_size()
         for i, c in enumerate(compare_to):
             # substitution
             (
@@ -1439,10 +1439,10 @@ class Comparison:
                             "delpart",
                             deleted_part,
                             None,
-                            deleted_part.precomputed_notation_size
+                            deleted_part.notation_size()
                         )
                     )
-                    cost_total += deleted_part.precomputed_notation_size
+                    cost_total += deleted_part.notation_size()
             else:
                 # score2 has more parts that must be inserted
                 for part_idx in range(score1.n_of_parts, score2.n_of_parts):
@@ -1452,10 +1452,10 @@ class Comparison:
                             "inspart",
                             None,
                             inserted_part,
-                            inserted_part.precomputed_notation_size
+                            inserted_part.notation_size()
                         )
                     )
-                    cost_total += inserted_part.precomputed_notation_size
+                    cost_total += inserted_part.notation_size()
 
         # iterate over parts that exist in both scores
         for p_number in range(n_of_parts):
