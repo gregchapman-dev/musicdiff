@@ -835,7 +835,7 @@ class AnnLyric:
         Compute a measure of how many symbols are displayed in the score for this `AnnLyric`.
 
         Returns:
-            int: The notation size of the annotated extra
+            int: The notation size of the annotated lyric
         """
         if self._cached_notation_size is None:
             # so far, always 1, but maybe some lyric will be bigger someday
