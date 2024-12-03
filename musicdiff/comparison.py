@@ -479,9 +479,7 @@ class Comparison:
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._extras_diff_lin(original, compare_to[1:])
-            op_list.append(
-                ("extrains", None, compare_to[0], compare_to[0].notation_size())
-            )
+            op_list.append(("extrains", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 
@@ -540,9 +538,7 @@ class Comparison:
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._lyrics_diff_lin(original, compare_to[1:])
-            op_list.append(
-                ("lyricins", None, compare_to[0], compare_to[0].notation_size())
-            )
+            op_list.append(("lyricins", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 
@@ -601,9 +597,7 @@ class Comparison:
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._metadata_items_diff_lin(original, compare_to[1:])
-            op_list.append(
-                ("mditemins", None, compare_to[0], compare_to[0].notation_size())
-            )
+            op_list.append(("mditemins", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 
@@ -662,18 +656,14 @@ class Comparison:
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._staff_groups_diff_lin(original, compare_to[1:])
-            op_list.append(
-                ("staffgrpins", None, compare_to[0], compare_to[0].notation_size())
-            )
+            op_list.append(("staffgrpins", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._staff_groups_diff_lin(original[1:], compare_to)
-            op_list.append(
-                ("staffgrpdel", original[0], None, original[0].notation_size())
-            )
+            op_list.append(("staffgrpdel", original[0], None, original[0].notation_size()))
             cost += original[0].notation_size()
             return op_list, cost
 
@@ -941,9 +931,7 @@ class Comparison:
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._inside_bars_diff_lin(original, compare_to[1:])
-            op_list.append(
-                ("noteins", None, compare_to[0], compare_to[0].notation_size())
-            )
+            op_list.append(("noteins", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 
@@ -1312,17 +1300,13 @@ class Comparison:
         if unpaired_orig_notes:
             for an in unpaired_orig_notes:
                 cost += an.notation_size()
-                op_list.append(
-                    ("notedel", an, None, an.notation_size(), an.note_idx_in_chord)
-                )
+                op_list.append(("notedel", an, None, an.notation_size(), an.note_idx_in_chord))
 
         # noteins
         if unpaired_comp_notes:
             for an in unpaired_comp_notes:
                 cost += an.notation_size()
-                op_list.append(
-                    ("noteins", None, an, an.notation_size(), an.note_idx_in_chord)
-                )
+                op_list.append(("noteins", None, an, an.notation_size(), an.note_idx_in_chord))
 
         # notesub
         if paired_notes:
@@ -1354,9 +1338,7 @@ class Comparison:
             # insertion
             op_list, cost = Comparison._voices_coupling_recursive(original, compare_to[1:])
             # add for the inserted voice
-            op_list.append(
-                ("voiceins", None, compare_to[0], compare_to[0].notation_size())
-            )
+            op_list.append(("voiceins", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 

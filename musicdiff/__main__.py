@@ -106,21 +106,23 @@ if __name__ == "__main__":
         "--output",
         default=["visual"],
         nargs="*",
-        choices=["visual", "v", "text", "t"],
+        choices=["visual", "v", "text", "t", "ser", "s"],
         help="'visual'/'v' is marked up scores, rendered to PDFs;"
-        + " 'text'/'t' is diff-like, written to stdout."
-        + " Either, both, or neither can be requested."
+        + " 'text'/'t' is diff-like, written to stdout;"
+        + " 'ser'/'s is the symbolic error rate (symbol errors/total symbols),"
+        + " written to stdout."
+        + " Any, all, or none of these can be requested."
     )
 
     parser.add_argument(
         "--fix_first_file_syntax",
         action='store_true',
-        help="If set, syntax errors in the first input file will be fixed "
-        + "(if possible) so the diff can continue. Any fixes will be "
-        + "added to the returned cost in symbol errors). Note that errors "
-        + "in the second file (assumed to be the ground truth) are never "
-        + "corrected.  Note also that this currently only works for Humdrum "
-        + "**kern files."
+        help="If set, syntax errors in the first input file will be fixed"
+        + " (if possible) so the diff can continue. Any fixes will be"
+        + " added to the returned cost in symbol errors). Note that errors"
+        + " in the second file (assumed to be the ground truth) are never"
+        + " corrected.  Note also that this currently only works for Humdrum"
+        + " **kern files."
     )
 
     args = parser.parse_args()
@@ -233,6 +235,7 @@ if __name__ == "__main__":
 
     visualize_diffs: bool = "visual" in args.output or "v" in args.output
     print_text_output: bool = "text" in args.output or "t" in args.output
+    print_ser_output: bool = "ser" in args.output or "s" in args.output
     fix_first_file_syntax: bool = args.fix_first_file_syntax is True
 
     cost: int | None = diff(
@@ -241,14 +244,11 @@ if __name__ == "__main__":
         detail=detail,
         visualize_diffs=visualize_diffs,
         print_text_output=print_text_output,
+        print_ser_output=print_ser_output,
         fix_first_file_syntax=fix_first_file_syntax,
     )
 
     if cost is None:
         print('musicdiff failed.', file=sys.stderr)
-        sys.exit(0)
-
-    if cost == 0:
+    elif cost == 0:
         print(f'Scores in {args.file1} and {args.file2} are identical.', file=sys.stderr)
-
-    sys.exit(cost)

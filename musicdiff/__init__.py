@@ -52,6 +52,7 @@ def diff(
     force_parse: bool = True,
     visualize_diffs: bool = True,
     print_text_output: bool = False,
+    print_ser_output: bool = False,
     fix_first_file_syntax: bool = False,
     detail: DetailLevel | int = DetailLevel.Default
 ) -> int | None:
@@ -79,6 +80,10 @@ def diff(
             the only result of the call will be the return value (the number of differences).
             (default is True)
         print_text_output (bool): Whether or not to print diffs in diff-like text to stdout.
+            (default is False)
+        print_ser_output (bool): Whether or not to print the symbolic error rate (SER),
+            which is computed as number of symbolic errors divided by the max number of
+            symbols in the two scores.
             (default is False)
         fix_first_file_syntax (bool): Whether to attempt to fix syntax errors in the first
             file (and add the number of such fixes to the returned number of edits/cost in
@@ -204,6 +209,21 @@ def diff(
             # ask music21 to display the scores as PDFs.  Composer's name will be prepended with
             # 'score1 ' and 'score2 ', respectively, so you can see which is which.
             Visualization.show_diffs(score1, score2, out_path1, out_path2)
+
+        if print_ser_output:
+            num_syms1: int = annotated_score1.notation_size()
+            num_syms2: int = annotated_score2.notation_size()
+            num_symbols: int = max(num_syms1, num_syms2)
+            ser: float = float(cost) / float(num_symbols)
+            print(f'SER = {ser}')
+            print(f'    symbolic errors: {cost}')
+            print(f'    syms in score1: {num_syms1}')
+            print(f'    syms in score2: {num_syms2}')
+            print(f'    (SER = {cost}/{num_symbols})')
+
+        if print_ser_output and print_text_output:
+            # put a blank line between them
+            print('')
 
         if print_text_output:
             text_output: str = Visualization.get_text_output(
