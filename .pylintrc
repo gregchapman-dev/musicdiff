@@ -325,6 +325,7 @@ exclude-protected=_asdict,_fields,_replace,_source,_make
 
 # Maximum number of arguments for function / method
 max-args=5
+max-positional-arguments=10
 
 # maximum boolean expressions in a line (too-many-boolean-expressions)
 max-bool-expr=10

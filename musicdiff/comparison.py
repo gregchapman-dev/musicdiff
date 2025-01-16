@@ -1468,4 +1468,7 @@ class Comparison:
         op_list_total.extend(mditems_op_list)
         cost_total += mditems_cost
 
+        # add the cost of any syntax errors in score1 that were fixed during parsing
+        cost_total += score1.num_syntax_errors_fixed
+
         return op_list_total, cost_total

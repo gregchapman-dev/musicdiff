@@ -1600,6 +1600,10 @@ class AnnScore:
         self.part_list: list[AnnPart] = []
         self.staff_group_list: list[AnnStaffGroup] = []
         self.metadata_items_list: list[AnnMetadataItem] = []
+        self.num_syntax_errors_fixed: int = 0
+
+        if hasattr(score, "c21_syntax_errors_fixed"):
+            self.num_syntax_errors = score.c21_syntax_errors_fixed  # type: ignore
 
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
         part_to_index: dict[m21.stream.Part, int] = {}
