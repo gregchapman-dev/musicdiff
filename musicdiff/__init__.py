@@ -211,15 +211,12 @@ def diff(
             Visualization.show_diffs(score1, score2, out_path1, out_path2)
 
         if print_ser_output:
-            num_syms1: int = annotated_score1.notation_size()
-            num_syms2: int = annotated_score2.notation_size()
-            num_symbols: int = max(num_syms1, num_syms2)
-            ser: float = float(cost) / float(num_symbols)
+            num_syms_in_ground_truth: int = annotated_score2.notation_size()
+            ser: float = float(cost) / float(num_syms_in_ground_truth)
             print(f'SER = {ser}')
             print(f'    symbolic errors: {cost}')
-            print(f'    syms in score1: {num_syms1}')
-            print(f'    syms in score2: {num_syms2}')
-            print(f'    (SER = {cost}/{num_symbols})')
+            print(f'    syms in ground truth (score2): {num_syms_in_ground_truth}')
+            print(f'    (SER = {cost}/{num_syms_in_ground_truth})')
 
         if print_ser_output and print_text_output:
             # put a blank line between them
