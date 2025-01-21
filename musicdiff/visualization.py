@@ -22,7 +22,7 @@ from fractions import Fraction
 import music21 as m21
 from music21.common import OffsetQL, opFrac
 
-from musicdiff.annotation import AnnPart, AnnMeasure, AnnVoice, AnnNote
+from musicdiff.annotation import AnnScore, AnnPart, AnnMeasure, AnnVoice, AnnNote
 from musicdiff.annotation import AnnExtra, AnnLyric, AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
 
@@ -2966,4 +2966,18 @@ class Visualization:
                 outputList.insert(1, "+++ score2")
 
         output = '\n'.join(outputList)
+        return output
+
+    @staticmethod
+    def get_ser_output(
+        cost: int,
+        annotated_ground_truth_score: AnnScore,
+    ) -> dict[str, str]:
+        num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
+        ser: float = float(cost) / float(num_syms_in_ground_truth)
+        output: dict[str, str] = {
+            'SER': f'{ser}',
+            'numSymbolErrors': f'{cost}',
+            'numSymbolsInGroundTruth': f'{num_syms_in_ground_truth}',
+        }
         return output
