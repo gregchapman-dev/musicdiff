@@ -704,7 +704,7 @@ class AnnExtra:
             int: The notation size of the annotated extra
         """
         if self._cached_notation_size is None:
-            cost: int = len(self.content)
+            cost: int = 1  # someday we might count every character in the string
             if self.styledict:
                 cost += 1  # someday we might count items in styledict
             self._cached_notation_size = cost

@@ -742,11 +742,8 @@ class Comparison:
 
         # add for the content
         if annExtra1.content != annExtra2.content:
-            content_cost: int = (
-                Comparison._strings_leveinshtein_distance(annExtra1.content, annExtra2.content)
-            )
-            cost += content_cost
-            op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
+            cost += 1  # someday we might do a leveinshtein distance of the two strings
+            op_list.append(("extracontentedit", annExtra1, annExtra2, 1))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
@@ -764,7 +761,7 @@ class Comparison:
 
         # add for the style
         if annExtra1.styledict != annExtra2.styledict:
-            cost += 1
+            cost += 1  # someday we might count different items in the styledict
             op_list.append(("extrastyleedit", annExtra1, annExtra2, 1))
 
         return op_list, cost
@@ -794,13 +791,8 @@ class Comparison:
 
         # add for the identifier
         if annLyric1.identifier != annLyric2.identifier:
-            identifier_cost: int = (
-                Comparison._strings_leveinshtein_distance(
-                    annLyric1.identifier, annLyric2.identifier
-                )
-            )
-            cost += identifier_cost
-            op_list.append(("lyricidedit", annLyric1, annLyric2, identifier_cost))
+            cost += 1  # someday we might do a leveinshtein distance of the two ids
+            op_list.append(("lyricidedit", annLyric1, annLyric2, 1))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
@@ -811,7 +803,7 @@ class Comparison:
 
         # add for the style
         if annLyric1.styledict != annLyric2.styledict:
-            cost += 1
+            cost += 1  # someday we might count different items in the styledict
             op_list.append(("lyricstyleedit", annLyric1, annLyric2, 1))
 
         return op_list, cost
