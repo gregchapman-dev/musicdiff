@@ -705,14 +705,6 @@ class AnnExtra:
         """
         if self._cached_notation_size is None:
             cost: int = len(self.content)
-            # cost += duration in quarter notes (we ignore offset)
-            if self.duration == 0.0:
-                cost += 0
-            elif self.duration <= 1.0:
-                cost += 1
-            elif self.duration > 1.0:
-                # max is 4, for reasonability
-                cost += max(4, int(self.duration))
             if self.styledict:
                 cost += 1  # someday we might count items in styledict
             self._cached_notation_size = cost
