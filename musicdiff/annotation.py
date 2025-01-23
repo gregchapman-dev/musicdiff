@@ -704,8 +704,19 @@ class AnnExtra:
             int: The notation size of the annotated extra
         """
         if self._cached_notation_size is None:
-            # so far, always 1, but maybe some extra will be bigger someday
-            self._cached_notation_size = 1
+            cost: int = len(self.content)
+            # cost += duration in quarter notes (we ignore offset)
+            if self.duration == 0.0:
+                cost += 0
+            elif self.duration <= 1.0:
+                cost += 1
+            elif self.duration > 1.0:
+                # max is 4, for reasonability
+                cost += max(4, int(self.duration))
+            if self.styledict:
+                cost += 1  # someday we might count items in styledict
+            self._cached_notation_size = cost
+
         return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
@@ -825,7 +836,6 @@ class AnnLyric:
                 # sort styleDict before converting to string so we can compare strings
                 self.styledict = dict(sorted(self.styledict.items()))
 
-
         # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
         self._cached_notation_size: int | None = None
@@ -838,8 +848,14 @@ class AnnLyric:
             int: The notation size of the annotated lyric
         """
         if self._cached_notation_size is None:
-            # so far, always 1, but maybe some lyric will be bigger someday
-            self._cached_notation_size = 1
+            size: int = len(self.lyric)
+            if self.number:
+                size += 1
+            size += len(self.identifier)
+            if self.styledict:
+                size += 1  # maybe someday we'll count items in styledict?
+            self._cached_notation_size = size
+
         return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:

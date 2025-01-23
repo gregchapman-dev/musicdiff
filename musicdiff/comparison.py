@@ -753,8 +753,9 @@ class Comparison:
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.offset, annExtra2.offset):
             # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
-            # min cost is 1, though, don't round down to zero.
-            offset_cost: int = int(min(1, abs(float(annExtra1.offset) - float(annExtra2.offset))))
+            # min is 1, max is 4, for reasonability
+            offset_cost: int = int(max(1, abs(float(annExtra1.offset) - float(annExtra2.offset))))
+            offset_cost = min(4, offset_cost)
             cost += offset_cost
             op_list.append(("extraoffsetedit", annExtra1, annExtra2, offset_cost))
 
@@ -763,7 +764,9 @@ class Comparison:
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.duration, annExtra2.duration):
             # duration is in quarter-notes, so let's make the cost in quarter-notes as well.
-            duration_cost = int(min(1, abs(float(annExtra1.duration) - float(annExtra2.duration))))
+            # min is 1, max is 4, for reasonability.
+            duration_cost = int(max(1, abs(float(annExtra1.duration) - float(annExtra2.duration))))
+            duration_cost = min(4, duration_cost)
             cost += duration_cost
             op_list.append(("extradurationedit", annExtra1, annExtra2, duration_cost))
 
@@ -799,16 +802,22 @@ class Comparison:
 
         # add for the identifier
         if annLyric1.identifier != annLyric2.identifier:
-            cost += 1
-            op_list.append(("lyricidedit", annLyric1, annLyric2, 1))
+            identifier_cost: int = (
+                Comparison._strings_leveinshtein_distance(
+                    annLyric1.identifier, annLyric2.identifier
+                )
+            )
+            cost += identifier_cost
+            op_list.append(("lyricidedit", annLyric1, annLyric2, identifier_cost))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annLyric1.offset, annLyric2.offset):
             # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
-            # min cost is 1, though, don't round down to zero.
-            offset_cost: int = int(min(1, abs(float(annLyric1.offset) - float(annLyric2.offset))))
+            # min is 1, max is 4, for reasonability
+            offset_cost: int = int(max(1, abs(float(annLyric1.offset) - float(annLyric2.offset))))
+            offset_cost = min(4, offset_cost)
             cost += offset_cost
             op_list.append(("lyricoffsetedit", annLyric1, annLyric2, offset_cost))
 
