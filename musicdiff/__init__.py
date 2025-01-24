@@ -211,21 +211,21 @@ def diff(
             # 'score1 ' and 'score2 ', respectively, so you can see which is which.
             Visualization.show_diffs(score1, score2, out_path1, out_path2)
 
-        if print_ser_output:
-            ser_output: dict = Visualization.get_ser_output(
-                cost, annotated_score2
-            )
-            jsonStr: str = json.dumps(ser_output, indent=4)
-            print(jsonStr)
+    if print_ser_output:
+        ser_output: dict = Visualization.get_ser_output(
+            cost, annotated_score2
+        )
+        jsonStr: str = json.dumps(ser_output, indent=4)
+        print(jsonStr)
 
-        if print_ser_output and print_text_output:
-            # put a blank line between them
-            print('')
-
-        if print_text_output:
-            text_output: str = Visualization.get_text_output(
-                score1, score2, diff_list, score1Name=score1Name, score2Name=score2Name
-            )
+    if print_text_output:
+        text_output: str = Visualization.get_text_output(
+            score1, score2, diff_list, score1Name=score1Name, score2Name=score2Name
+        )
+        if text_output:
+            if print_ser_output and print_text_output:
+                # put a blank line between them
+                print('')
             print(text_output)
 
     return cost

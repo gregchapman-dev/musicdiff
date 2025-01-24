@@ -2974,7 +2974,11 @@ class Visualization:
         annotated_ground_truth_score: AnnScore,
     ) -> dict[str, str]:
         num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
-        ser: float = float(cost) / float(num_syms_in_ground_truth)
+        divisor: int = num_syms_in_ground_truth
+        if num_syms_in_ground_truth == 0:
+            # avoid divide by zero
+            divisor = 1
+        ser: float = float(cost) / float(divisor)
         output: dict[str, str] = {
             'SER': f'{ser}',
             'numSymbolErrors': f'{cost}',

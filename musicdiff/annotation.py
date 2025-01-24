@@ -843,7 +843,8 @@ class AnnLyric:
             size: int = len(self.lyric)
             if self.number:
                 size += 1
-            size += len(self.identifier)
+            if self.identifier:
+                size += 1
             if self.styledict:
                 size += 1  # maybe someday we'll count items in styledict?
             self._cached_notation_size = size
