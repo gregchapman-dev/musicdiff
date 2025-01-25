@@ -7,7 +7,8 @@
 -(Lyric) "lyric2", num=2
 @@ measure 1, staff 1, beat 1.0 @@
 -(Lyric) "lyric1", num=1
-@@ measure 2, staff 1, beat 1.0 @@
-+(measure) measure 2
-@@ measure 2, staff 1, beat 1.0 @@
--(measure) measure 2
+@@ measure 2, staff 1, beat 2.5 @@
+-(Dynamic) DY:mp
+@@ measure 2, staff 1, beat 5.0 @@
+-(Barline:content) BL:final
++(Barline:content) BL:double

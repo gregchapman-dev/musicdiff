@@ -14,6 +14,5 @@
 -(Note:flagsbeams) A3 (eighth note), 1 beam=stop
 +(Note:flagsbeams) A3 (eighth note), 1 flag
 @@ measure 2, staff 1, beat 5.0 @@
-+(Barline) BL:double
-@@ measure 2, staff 1, beat 5.0 @@
--(Barline) BL:final
+-(Barline:content) BL:final
++(Barline:content) BL:double
