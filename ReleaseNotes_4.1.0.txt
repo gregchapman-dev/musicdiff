@@ -6,8 +6,8 @@ Changes since 4.0.0:
         by zero.
     Add new API Visualization.get_ser_output() that returns a dict containing the
         symbolic error rate.
-    In support of SER, notation_sizes and diff costs (a.k.a. symbolic error counts) have
-        been reviewed and updated:
+    In support of SER, notation_sizes (a.k.a. symbol counts) and diff costs (a.k.a.
+        symbolic error counts) have been reviewed and updated:
         AnnNote.notation_size(): add 1 for slash on grace note
         AnnExtra.notation_size(): 1 for the text, add 1 if there is any style specified
         AnnExtra diff error count: text diff costs 1, offset diff costs 1, duration diff
@@ -29,8 +29,3 @@ Changes since 4.0.0:
     music21 has the concept of a (usually non-printed) time signature that has no meter
         information (m21.meter.SenzaMisuraTimeSignature).  musicdiff now treats that as
         equal to no time signature at all.
-    Add new option to attempt to fix syntax errors seen in the first file (e.g. for OMR DL
-        training using musicdiff as the evaluation function). The number of symbolic errors
-        fixed will be incorporated into the SER returned. This is currently very minimally
-        implemented (and for Humdrum files only).  Most syntax errors will still cause
-        failures.  This will be fleshed out more over the next few months.
