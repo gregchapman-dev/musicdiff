@@ -203,25 +203,26 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    if isinstance(insertionPoint1, m21.stream.Measure):
-                        # insertionPoint1 is a measure, put the textExp at offset 0
-                        # inside the measure
-                        insertionPoint1.insert(0, textExp)
-                    else:
-                        # insertionPoint1 is something else, put the textExp right next to it.
-                        insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp)
-                    if isinstance(insertionPoint2, m21.stream.Measure):
-                        # insertionPoint2 is a measure, put the textExp at offset 0
-                        # inside the measure
-                        insertionPoint2.insert(0, textExp)
-                    else:
-                        # insertionPoint2 is something else, put the textExp right next to it.
-                        insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp)
                 else:
-                    # extra is not a spanner, put the textExp right next to it
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                if isinstance(insertionPoint1, m21.stream.Measure):
+                    # insertionPoint1 is a measure, put the textExp at offset 0
+                    # inside the measure
+                    insertionPoint1.insert(0, textExp)
+                else:
+                    # insertionPoint1 is something else, put the textExp right next to it.
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp)
+                if isinstance(insertionPoint2, m21.stream.Measure):
+                    # insertionPoint2 is a measure, put the textExp at offset 0
+                    # inside the measure
+                    insertionPoint2.insert(0, textExp)
+                else:
+                    # insertionPoint2 is something else, put the textExp right next to it.
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp)
                 continue
 
             if op[0] == "extracontentedit":
@@ -240,12 +241,15 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 continue
 
             if op[0] == "extraoffsetedit":
@@ -266,12 +270,14 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 continue
 
             if op[0] == "extradurationedit":
@@ -292,12 +298,14 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 continue
 
             if op[0] == "extrastyleedit":
@@ -335,12 +343,14 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 continue
 
             # parts
