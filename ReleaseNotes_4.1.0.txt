@@ -30,6 +30,5 @@ Changes since 4.0.0:
         either delete the extra parts in score1, or add the extra parts in score2. The
         number of symbol errors for those edits is simply the notation_size of (the
         number of symbols in) the added or deleted parts.
-    music21 has the concept of a (usually non-printed) time signature that has no meter
-        information (m21.meter.SenzaMisuraTimeSignature).  musicdiff now treats that as
-        equal to no time signature at all.
+    Several smallish bugfixes.
+
