@@ -158,7 +158,7 @@ class AnnNote:
         if isinstance(general_note, m21.chord.ChordBase):
             notes: tuple[m21.note.NotRest, ...] = general_note.notes
             if hasattr(general_note, "sortDiatonicAscending"):
-                # PercussionChords don't have this
+                # PercussionChords don't have this, Chords do
                 notes = general_note.sortDiatonicAscending().notes
             self.pitches = []
             for p in notes:
@@ -256,19 +256,43 @@ class AnnNote:
             # add for the pitches
             for pitch in self.pitches:
                 size += M21Utils.pitch_size(pitch)
+            # add for the notehead (quarter, half, semibreve, breve, etc)
+            size += 1
             # add for the dots
             size += self.dots * len(self.pitches)  # one dot for each note if it's a chord
             # add for the beams/flags
             size += len(self.beamings)
             # add for the tuplets
             size += len(self.tuplets)
+            size += len(self.tuplet_info)
             # add for the articulations
             size += len(self.articulations)
             # add for the expressions
             size += len(self.expressions)
-            # add 1 if there's a grace slash
-            if self.graceSlash is True:
+            # add 1 if it's a gracenote, and 1 more if there's a grace slash
+            if self.graceType:
                 size += 1
+                if self.graceSlash is True:
+                    size += 1
+            # add 1 for abnormal note shape (diamond, etc)
+            if self.noteshape != 'normal':
+                size += 1
+            # add 1 for abnormal note fill
+            if self.noteheadFill is not None:
+                size += 1
+            # add 1 if there's a parenthesis around the note
+            if self.noteheadParenthesis:
+                size += 1
+            # add 1 if stem direction is specified
+            if self.stemDirection != 'unspecified':
+                size += 1
+            # add 1 if there is an empty space before this note
+            if self.gap_dur != 0:
+                size += 1
+            # add 1 for any other style info (in future might count the style entries)
+            if self.styledict:
+                size += 1
+
             self._cached_notation_size = size
 
         return self._cached_notation_size
@@ -705,6 +729,7 @@ class AnnExtra:
         """
         if self._cached_notation_size is None:
             cost: int = 1  # someday we might count every character in the string
+            cost += 2  # for offset and duration
             if self.styledict:
                 cost += 1  # someday we might count items in styledict
             self._cached_notation_size = cost
@@ -841,6 +866,7 @@ class AnnLyric:
         """
         if self._cached_notation_size is None:
             size: int = len(self.lyric)
+            size += 1  # for offset
             if self.number:
                 size += 1
             if self.identifier:
@@ -1476,10 +1502,15 @@ class AnnStaffGroup:
         Returns:
             int: The notation size of the annotated staff group
         """
-        # notation_size = 5 because there are 5 main visible things about a StaffGroup:
-        #   name, abbreviation, symbol shape, barline type, and which parts it encloses
+        # There are 5 main visible things about a StaffGroup:
+        #   name, abbreviation, symbol shape, barline type, and which staves it encloses
         if self._cached_notation_size is None:
-            self._cached_notation_size = 5
+            size: int = len(self.name)
+            size += 1  # for abbreviation
+            size += 1  # for symbol shape
+            size += 1  # for barline type
+            size += 1  # for list of staves enclosed
+            self._cached_notation_size = size
         return self._cached_notation_size
 
     def __repr__(self) -> str:
@@ -1576,7 +1607,9 @@ class AnnMetadataItem:
             int: The notation size of the annotated metadata item
         """
         if self._cached_notation_size is None:
-            self._cached_notation_size = 1
+            size: int = len(self.key)
+            size += len(self.value)
+            self._cached_notation_size = size
         return self._cached_notation_size
 
     def make_value_string(self, value: m21.metadata.Contributor | m21.metadata.Text) -> str:

@@ -866,12 +866,7 @@ class Comparison:
 
         # add for the abbreviation
         if annStaffGroup1.abbreviation != annStaffGroup2.abbreviation:
-            abbreviation_cost: int = (
-                Comparison._strings_leveinshtein_distance(
-                    annStaffGroup1.abbreviation,
-                    annStaffGroup2.abbreviation
-                )
-            )
+            abbreviation_cost: int = 1
             cost += abbreviation_cost
             op_list.append(
                 ("staffgrpabbreviationedit", annStaffGroup1, annStaffGroup2, abbreviation_cost)
@@ -895,14 +890,7 @@ class Comparison:
 
         # add for partIndices (sorted list of int)
         if annStaffGroup1.part_indices != annStaffGroup2.part_indices:
-            parts1: str = str(annStaffGroup1.part_indices)
-            parts2: str = str(annStaffGroup2.part_indices)
-            partIndices_cost: int = (
-                Comparison._strings_leveinshtein_distance(
-                    parts1,
-                    parts2
-                )
-            )
+            partIndices_cost: int = 1
             cost += partIndices_cost
             op_list.append(
                 ("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2, partIndices_cost)
