@@ -1541,6 +1541,8 @@ class AnnMetadataItem:
                 self.make_value_string(value)
                 + f'(language={value.language})'
             )
+            if isinstance(value, m21.metadata.Copyright):
+                self.value += f' role={value.role}'
         elif isinstance(value, m21.metadata.Contributor):
             # Create a string (same thing: value.name.isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
@@ -1569,7 +1571,8 @@ class AnnMetadataItem:
             if roleEmitted:
                 self.value += ')'
         else:
-            self.value = value
+            # Date types
+            self.value = str(value)
 
         self._cached_notation_size: int | None = None
 
