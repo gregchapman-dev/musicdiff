@@ -1,0 +1,162 @@
+First a glossary of terms:
+	AnnNote is a musicdiff-annotated note/rest/chord (by default, there are no chords, only the notes within them)
+	AnnVoice is a musicdiff-annotated voice (by default, there are no AnnVoices, only the AnnNotes within them)
+	AnnLyric is a musicidff-annotated lyric syllable
+	AnnExtra is a musicdiff-annotated musical object such as dynamic, text, clef, keysig, timesig, metronome mark, etc
+	AnnMeasure is a musicdiff-annotated measure
+	AnnPart is a musicdiff-annotated staff
+	AnnStaffGroup is a musicdiff-annotated staff group (as denoted by braces/brackets/etc to the left of the score)
+	AnnMetadataItem is a musicdiff-annotated metadata item, such as composer, date of composition, etc
+	AnnScore is a musicdiff-annotated score
+
+AnnNote symbol count (rest, note, chord):
+    (If Voicing is not specified explicitly on the command line, there are no chords,
+    only the individual notes from the chords)
+
+    For each note (1 rest, 1 note, or N notes in a chord):
+        1 symbol for the pitch (even if unpitched)
+        1 symbol if there is an accidental (even a triple flat is just 1 symbol)
+        1 symbol if a tie starts on the note (we don't count tie stops)
+
+    1 symbol for note head type: quarter, half, whole, breve etc
+    1 symbol for each dot (e.g. double-dotted quarter note gets 2 symbols for dots)
+    1 symbol for each flag or beam
+    1 symbol for each enclosing tuplet
+    1 symbol for each enclosing tuplet's style (is it visible? bracketed?)
+    # note head type + dots + flags/beams + tuplets implies duration
+    1 symbol for each articulation (staccato, tenuto, etc)
+    1 symbol for each expression (mordent, trill, etc) (*** someday add 1 for ornament accidental? ***)
+    1 symbol if a grace note
+        1 symbol if that grace note has a slash
+    1 symbol if there is abnormal note head shape (diamond, etc)
+    1 symbol if there is abnormal note head fill
+    1 symbol if there are parentheses around note head
+    1 symbol if stem direction is specified
+    1 symbol if there is a space (hidden rest) before the note
+    1 symbol for all specified style info (e.g. color, size, etc) (in future might count entries)
+
+AnnNote diff symbol error count:
+    for each note (1 rest, 1 note, or N notes in a chord):
+        pitch diff: 1
+        accidental diff: 1
+        tie start diff: 1
+    note head type (quarter/half/whole/breve/etc) diff: 1
+    dots diff: 1 for each dot added or deleted
+    grace type diff (acc vs unacc vs not grace): 1
+    grace slash diff: 1
+    beams/flags diff: Levenshtein distance between lists of beams/flags
+    tuplet diff: 1 for difference in tuplet actual count/normal count + 1 for difference in
+        visibility, bracketing, etc.  If there is more than one (nested) tuplet, instead of
+        1 + 1, use Levenshtein distance between lists of tuplets (actual/normal) + Levenshtein
+        distance between lists of tuplets (visibility/bracket).
+    articulation diff: Levenshtein distance between lists of articulations
+    expression diff: Levenshtein distance between lists of expressions
+    note shape diff (diamond, etc): 1
+    note head fill diff (beyond the usual quarter vs half): 1
+    note head parentheses diff: 1
+    "space before" diff: 1
+    note stem direction diff: 1
+    note style diff (e.g. color, size, etc): 1
+
+-------------------------------------------------------------------
+
+AnnExtra symbol count (dynamic, text, clef, keysig, timesig, metronome mark, etc):
+    len(string) symbols for the extra itself
+    1 symbol if styled (text style, color, etc)
+    1 symbol for offset (horizontal position in measure)
+    1 symbol for duration (horizontal length of, say, a crescendo wedge)
+
+AnnExtra diff symbol error count:
+    name/string diff: Levenshtein distance between strings
+    offset diff: 1
+    duration diff: 1
+    style diff: 1
+
+-------------------------------------------------------------------
+
+AnnLyric symbol count (a single word or syllable):
+    len(text) symbols for word/syllable (including any implied hyphens, etc)
+    1 symbol for offset (horizontal position in measure)
+    1 symbol if there is a verse number
+    1 symbol if there is a verse identifier (that is not the verse number)
+    1 symbol if styled (text style, color, etc)
+
+AnnLyric diff symbol error count:
+    text diff: Levenshtein distance between strings
+    verse number diff: 1
+    verse identifier diff: 1
+    offset diff: 1
+    style diff: 1
+
+-------------------------------------------------------------------
+
+AnnVoice symbol count (if Voicing is not explicitly specified on the command line,
+    there are no AnnVoices):
+    Sum of the symbols in all the AnnNotes in the AnnVoice
+
+AnnVoice diff symbol error count:
+    Sum of the symbol errors due to the AnnNotes in the AnnVoice
+    If a voice is deleted or added, the symbol error count is the AnnVoice symbol count.
+
+-------------------------------------------------------------------
+
+AnnMeasure symbol count:
+    if Voicing specified explicitly:
+        Sum of symbol count for all AnnVoices, AnnExtras, and AnnLyrics in the AnnMeasure
+    Normally:
+        Sum of symbol count for all AnnNotes, AnnExtras, and AnnLyrics in the AnnMeasure
+
+AnnMeasure diff symbol error count:
+    Sum of the symbol errors for all objects in the AnnMeasure.
+    If Voicing specified explicitly:
+        If an entire AnnVoice is deleted or added, the symbol error count is incremented
+            by that AnnVoice's symbol count.
+
+-------------------------------------------------------------------
+
+AnnPart symbol count:
+    Sum of symbol count for all AnnMeasures in the AnnPart
+
+AnnPart diff symbol error count:
+    Sum of the symbol errors for all AnnMeasures in the AnnPart.
+    If an entire AnnMeasure is deleted or added, the symbol error count is incremented
+        by the AnnMeasure symbol count.
+
+-------------------------------------------------------------------
+
+AnnStaffGroup symbol count:
+    len(name) symbols for staff group name (e.g. instrument name)
+    1 symbol for staff group abbreviation
+    1 symbol for staff group symbol shape (curly brace, bracket, line, etc)
+    1 symbol for staff group barline type (bar together, don't bar together, Mensurstrich)
+    1 symbol for the lowest staff index the staff group encloses (i.e. vertical position)
+    1 symbol for the highest staff index the staff group encloses (i.e. vertical height)
+
+AnnStaffGroup diff symbol error count:
+    name diff: Levenshtein distance between names
+    abbreviation diff: 1
+    symbol diff: 1
+    barline type diff: 1
+    staff list diff: 1 for lowest staff index diff, 1 for highest staff index diff
+
+-------------------------------------------------------------------
+
+AnnMetadataItem symbol count (e.g. composer name, date composed, etc):
+    len(key) + len(value) symbols for the item
+
+AnnMetadataItem diff symbol error count:
+    key difference: Levenshtein distance between key strings
+    value difference: Levenshtein distance between value strings
+
+-------------------------------------------------------------------
+
+AnnScore symbol count:
+    Sum of symbol counts for all AnnParts, AnnStaffGroups, and AnnMetadataItems in the AnnScore.
+
+AnnScore diff symbol error count:
+    Sum of symbol errors in all AnnParts, AnnStaffGroups, and AnnMetadataItems in the AnnScore
+    If an entire AnnPart is added or deleted, the symbol error count is incremented
+        by the AnnPart symbol count.
+
+
+
