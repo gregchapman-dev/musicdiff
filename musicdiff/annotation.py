@@ -728,7 +728,7 @@ class AnnExtra:
             int: The notation size of the annotated extra
         """
         if self._cached_notation_size is None:
-            cost: int = 1  # someday we might count every character in the string
+            cost: int = len(self.content)
             cost += 2  # for offset and duration
             if self.styledict:
                 cost += 1  # someday we might count items in styledict
@@ -1509,7 +1509,8 @@ class AnnStaffGroup:
             size += 1  # for abbreviation
             size += 1  # for symbol shape
             size += 1  # for barline type
-            size += 1  # for list of staves enclosed
+            size += 1  # for lowest staff index (vertical start)
+            size += 1  # for highest staff index (vertical height)
             self._cached_notation_size = size
         return self._cached_notation_size
 
@@ -1680,6 +1681,12 @@ class AnnScore:
                 ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
                 if ann_staff_group.n_of_parts > 0:
                     self.staff_group_list.append(ann_staff_group)
+
+            # now sort the staff_group_list in increasing order of first part index
+            # (secondary sort in decreasing order of last part index)
+            self.staff_group_list.sort(
+                key=lambda each: (each.part_indices[0], -each.part_indices[-1])
+            )
 
         if DetailLevel.includesMetadata(detail) and score.metadata:
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.

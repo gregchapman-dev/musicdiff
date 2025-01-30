@@ -742,8 +742,11 @@ class Comparison:
 
         # add for the content
         if annExtra1.content != annExtra2.content:
-            cost += 1  # someday we might do a leveinshtein distance of the two strings
-            op_list.append(("extracontentedit", annExtra1, annExtra2, 1))
+            content_cost: int = (
+                Comparison._strings_leveinshtein_distance(annExtra1.content, annExtra2.content)
+            )
+            cost += content_cost
+            op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
@@ -890,7 +893,14 @@ class Comparison:
 
         # add for partIndices (sorted list of int)
         if annStaffGroup1.part_indices != annStaffGroup2.part_indices:
-            partIndices_cost: int = 1
+            partIndices_cost: int = 0
+            if annStaffGroup1.part_indices[0] != annStaffGroup2.part_indices[0]:
+                partIndices_cost += 1  # vertical start
+            if annStaffGroup1.part_indices[-1] != annStaffGroup2.part_indices[-1]:
+                partIndices_cost += 1  # vertical height
+            if partIndices_cost == 0:
+                # should never get here, but we have to have a cost
+                partIndices_cost = 1
             cost += partIndices_cost
             op_list.append(
                 ("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2, partIndices_cost)
