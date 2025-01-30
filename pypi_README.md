@@ -7,7 +7,7 @@ musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/mu
     by [Francesco Foscarin](https://github.com/fosfrancesco).
 
 ## Setup
-Depends on [music21](https://pypi.org/project/music21) (version 9.1+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21) (version 3.2+). You also will need to configure music21 (instructions [here](https://web.mit.edu/music21/doc/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).  Requires Python 3.10+.
+Depends on [music21](https://pypi.org/project/music21) (version 9.1+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21) (version 3.3+). You also will need to configure music21 (instructions [here](https://web.mit.edu/music21/doc/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).  Requires Python 3.10+.
 
 ## Usage
 On the command line:
@@ -26,9 +26,10 @@ On the command line:
                     default this is ignored).
       -x/--exclude  one or more named details to exclude from comparison.  Can be any of the
                     named details accepted by -i/--include.
-      -o/--output   one or both of two output formats: text (or t) or visual (or v); the default
-                    is visual). visual (or v) requests production of marked-up score PDFs; text
-                    (or t) requests production of diff-like text output.
+      -o/--output   one or more of three output formats: text (or t) or visual (or v) or ser (or s);
+                    the default is visual). visual (or v) requests production of marked-up score
+                    PDFs; text (or t) requests production of diff-like text output; ser (or s)
+                    requests a JSON text output containing Symbolic Error Ratio information.
 
       file1         first music score file to compare (any format music21 or converter21 can parse)
       file2         second music score file to compare (any format music21 or converter21 can parse)
@@ -58,7 +59,7 @@ Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowin
 
 ## License
 The MIT License (MIT)
-Copyright (c) 2022-2024 Francesco Foscarin, Greg Chapman
+Copyright (c) 2022-2025 Francesco Foscarin, Greg Chapman
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
