@@ -3,6 +3,5 @@
 @@ measure 2, staff 1, beat 2.5 @@
 -(Dynamic) DY:mp
 @@ measure 2, staff 1, beat 5.0 @@
-+(Barline) BL:double
-@@ measure 2, staff 1, beat 5.0 @@
--(Barline) BL:final
+-(Barline:content) BL:final
++(Barline:content) BL:double

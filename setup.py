@@ -6,14 +6,14 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2025 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '4.0.0'
+musicdiffversion = '4.1.0'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         install_requires=[
             'music21>=9.1',
             'numpy',
-            'converter21>=3.2'
+            'converter21>=3.3'
         ],
 
         project_urls={

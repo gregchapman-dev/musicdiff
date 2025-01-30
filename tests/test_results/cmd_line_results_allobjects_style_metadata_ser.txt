@@ -1,3 +1,9 @@
+{
+    "SER": "0.2911392405063291",
+    "numSymbolErrors": "46",
+    "numSymbolsInGroundTruth": "158"
+}
+
 --- tests/test_scores/test_all_details_1a.mei
 +++ tests/test_scores/test_all_details_1b.mei
 @@ measure 0, staff 0, beat 0.0 @@

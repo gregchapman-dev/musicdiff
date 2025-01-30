@@ -14,6 +14,7 @@ mkresults notesandrests_barlines -i notesandrests barlines
 mkresults notesandrests_barlines_directions -i notesandrests barlines directions
 mkresults notesandrests_directions -i notesandrests barlines directions -x barlines
 mkresults notesandrests_barlines_directions -i notesandrests barlines directions
+mkresults notesandrests_ser ser --include notesandrests
 
 # combo include: decoratednotesandrests (with various excludes)
 mkresults decoratednotesandrests --include decoratednotesandrests
@@ -45,3 +46,4 @@ mkresults allobjects_style_no_lyrics -i allobjects style -x lyrics
 
 mkresults metadata -i metadata
 mkresults allobjects_style_metadata -i metadata style allobjects
+mkresults allobjects_style_metadata_ser ser -i metadata style allobjects

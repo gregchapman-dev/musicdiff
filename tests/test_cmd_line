@@ -29,8 +29,8 @@ run_test decoratednotesandrests_no_ties_beams_slurs --include notesandrests arti
 
 # test all the simple decorated notes includes (without excludes)
 run_test notesandrests --include notesandrests
-run_test notesandrests --include notesandrests
-
+# repeat with ser
+run_test notesandrests_ser ser --include notesandrests
 
 # simple includes (notesandrests barlines) + combo include (otherobjects), then exclude
 # otherobjects (which removes barlines, too), leaving notesandrests
@@ -70,6 +70,7 @@ run_test allobjects_no_lyrics_barlines -i otherobjects decoratednotesandrests -x
 run_test metadata --include metadata
 
 run_test allobjects_style_metadata -i metadata style allobjects
+run_test allobjects_style_metadata_ser ser -i metadata style allobjects
 
 
 print Total failures: ${fails}

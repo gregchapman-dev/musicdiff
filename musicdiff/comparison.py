@@ -752,24 +752,19 @@ class Comparison:
         # Note: offset here is a float, and some file formats have only four
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.offset, annExtra2.offset):
-            # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
-            # min cost is 1, though, don't round down to zero.
-            offset_cost: int = int(min(1, abs(float(annExtra1.offset) - float(annExtra2.offset))))
-            cost += offset_cost
-            op_list.append(("extraoffsetedit", annExtra1, annExtra2, offset_cost))
+            cost += 1
+            op_list.append(("extraoffsetedit", annExtra1, annExtra2, 1))
 
         # add for the duration
         # Note: duration here is a float, and some file formats have only four
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.duration, annExtra2.duration):
-            # duration is in quarter-notes, so let's make the cost in quarter-notes as well.
-            duration_cost = int(min(1, abs(float(annExtra1.duration) - float(annExtra2.duration))))
-            cost += duration_cost
-            op_list.append(("extradurationedit", annExtra1, annExtra2, duration_cost))
+            cost += 1
+            op_list.append(("extradurationedit", annExtra1, annExtra2, 1))
 
         # add for the style
         if annExtra1.styledict != annExtra2.styledict:
-            cost += 1
+            cost += 1  # someday we might count different items in the styledict
             op_list.append(("extrastyleedit", annExtra1, annExtra2, 1))
 
         return op_list, cost
@@ -799,22 +794,19 @@ class Comparison:
 
         # add for the identifier
         if annLyric1.identifier != annLyric2.identifier:
-            cost += 1
+            cost += 1  # someday we might do a leveinshtein distance of the two ids
             op_list.append(("lyricidedit", annLyric1, annLyric2, 1))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annLyric1.offset, annLyric2.offset):
-            # offset is in quarter-notes, so let's make the cost in quarter-notes as well.
-            # min cost is 1, though, don't round down to zero.
-            offset_cost: int = int(min(1, abs(float(annLyric1.offset) - float(annLyric2.offset))))
-            cost += offset_cost
-            op_list.append(("lyricoffsetedit", annLyric1, annLyric2, offset_cost))
+            cost += 1
+            op_list.append(("lyricoffsetedit", annLyric1, annLyric2, 1))
 
         # add for the style
         if annLyric1.styledict != annLyric2.styledict:
-            cost += 1
+            cost += 1  # someday we might count different items in the styledict
             op_list.append(("lyricstyleedit", annLyric1, annLyric2, 1))
 
         return op_list, cost
@@ -877,12 +869,7 @@ class Comparison:
 
         # add for the abbreviation
         if annStaffGroup1.abbreviation != annStaffGroup2.abbreviation:
-            abbreviation_cost: int = (
-                Comparison._strings_leveinshtein_distance(
-                    annStaffGroup1.abbreviation,
-                    annStaffGroup2.abbreviation
-                )
-            )
+            abbreviation_cost: int = 1
             cost += abbreviation_cost
             op_list.append(
                 ("staffgrpabbreviationedit", annStaffGroup1, annStaffGroup2, abbreviation_cost)
@@ -906,14 +893,14 @@ class Comparison:
 
         # add for partIndices (sorted list of int)
         if annStaffGroup1.part_indices != annStaffGroup2.part_indices:
-            parts1: str = str(annStaffGroup1.part_indices)
-            parts2: str = str(annStaffGroup2.part_indices)
-            partIndices_cost: int = (
-                Comparison._strings_leveinshtein_distance(
-                    parts1,
-                    parts2
-                )
-            )
+            partIndices_cost: int = 0
+            if annStaffGroup1.part_indices[0] != annStaffGroup2.part_indices[0]:
+                partIndices_cost += 1  # vertical start
+            if annStaffGroup1.part_indices[-1] != annStaffGroup2.part_indices[-1]:
+                partIndices_cost += 1  # vertical height
+            if partIndices_cost == 0:
+                # should never get here, but we have to have a cost
+                partIndices_cost = 1
             cost += partIndices_cost
             op_list.append(
                 ("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2, partIndices_cost)
@@ -1398,12 +1385,48 @@ class Comparison:
         # The cached results are no longer valid.
         Comparison._clear_memoizer_caches()
 
-        # for now just working with equal number of parts that are already pairs
-        # TODO : extend to different number of parts
-        assert score1.n_of_parts == score2.n_of_parts
-        n_of_parts = score1.n_of_parts
-        op_list_total, cost_total = [], 0
-        # iterate for all parts in the score
+        op_list_total: list[tuple] = []
+        cost_total: int = 0
+
+        if score1.n_of_parts == score2.n_of_parts:
+            n_of_parts = score1.n_of_parts
+        else:
+            # The two scores have differing number of parts.  For now, assume that
+            # the parts are in the same order in both scores, and that the missing
+            # parts are the ones that should have been at the end of the smaller
+            # score. In future we could do something like we do with voices, where
+            # we try all the combinations and compare the most-similar pairs of
+            # parts, and the rest are considered to be the extra parts (deleted
+            # from score1, or inserted into score2).
+            n_of_parts = min(score1.n_of_parts, score2.n_of_parts)
+            if score1.n_of_parts > score2.n_of_parts:
+                # score1 has more parts that must be deleted
+                for part_idx in range(score2.n_of_parts, score1.n_of_parts):
+                    deleted_part = score1.part_list[part_idx]
+                    op_list_total.append(
+                        (
+                            "delpart",
+                            deleted_part,
+                            None,
+                            deleted_part.notation_size()
+                        )
+                    )
+                    cost_total += deleted_part.notation_size()
+            else:
+                # score2 has more parts that must be inserted
+                for part_idx in range(score1.n_of_parts, score2.n_of_parts):
+                    inserted_part = score2.part_list[part_idx]
+                    op_list_total.append(
+                        (
+                            "inspart",
+                            None,
+                            inserted_part,
+                            inserted_part.notation_size()
+                        )
+                    )
+                    cost_total += inserted_part.notation_size()
+
+        # iterate over parts that exist in both scores
         for p_number in range(n_of_parts):
             # compute non-common-subseq
             ncs = Comparison._non_common_subsequences_of_measures(
@@ -1431,5 +1454,8 @@ class Comparison:
         )
         op_list_total.extend(mditems_op_list)
         cost_total += mditems_cost
+
+        # add the cost of any syntax errors in score1 that were fixed during parsing
+        cost_total += score1.num_syntax_errors_fixed
 
         return op_list_total, cost_total

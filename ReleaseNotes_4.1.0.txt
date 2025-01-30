@@ -1,0 +1,34 @@
+Changes since 4.0.0:
+    Add new output option that prints JSON containing the symbolic error rate (SER =
+        numSymbolErrors / numSymbolsInGroundTruth) to stdout (the JSON actually
+        contains all three numbers).  Ground truth is assumed to be the second file.
+        If numSymbolsInGroundTruth == 0, SER will be numSymbolErrors, to avoid divide
+        by zero.
+    Add new API Visualization.get_ser_output() that returns a dict containing the
+        symbolic error rate.
+    In support of SER, notation_sizes (a.k.a. symbol counts) and diff costs (a.k.a.
+        symbolic error counts) have been reviewed and updated:
+        AnnNote.notation_size(): add 1 symbol for slash on grace note
+        AnnExtra.notation_size(): 1 symbol for the text, add 1 symbol if there is any
+            style specified
+        AnnExtra diff error count: text diff is 1 symbol error, offset diff is 1 symbol
+            error, duration diff is 1 symbol error, style diff is 1 symbol error
+        AnnLyric.notation_size(): use len(text) as symbol count instead of 1;
+            add 1 symbol if there's a verse number;
+            add 1 symbol if there's a verse identifier different from the number;
+            add 1 symbol if styled
+        AnnLyric diff cost: text diff symbol error count is the Levenshtein distance,
+            verse number diff is 1 symbol error,  verse identifier diff is 1 symbol
+            error, offset diff is 1 symbol error, style diff is 1 symbol error
+        AnnMeasure.notation_size(): not just notes' symbols and extras' symbols, add in
+            the lyrics' symbols
+        AnnScore.notation_size(): not just parts' symbols, add in staff_groups' symbols
+            and metadata_items' symbols
+    Add support for comparing scores that have different number of parts (this previously
+        caused a failure). The existing parts are assumed to line up by index (as before,
+        score1 part 0 is compared with score2 part 0), and then we generate edits that
+        either delete the extra parts in score1, or add the extra parts in score2. The
+        number of symbol errors for those edits is simply the notation_size of (the
+        number of symbols in) the added or deleted parts.
+    Several smallish bugfixes.
+

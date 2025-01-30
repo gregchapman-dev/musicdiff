@@ -22,7 +22,7 @@ from fractions import Fraction
 import music21 as m21
 from music21.common import OffsetQL, opFrac
 
-from musicdiff.annotation import AnnMeasure, AnnVoice, AnnNote
+from musicdiff.annotation import AnnScore, AnnPart, AnnMeasure, AnnVoice, AnnNote
 from musicdiff.annotation import AnnExtra, AnnLyric, AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
 
@@ -203,25 +203,26 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    if isinstance(insertionPoint1, m21.stream.Measure):
-                        # insertionPoint1 is a measure, put the textExp at offset 0
-                        # inside the measure
-                        insertionPoint1.insert(0, textExp)
-                    else:
-                        # insertionPoint1 is something else, put the textExp right next to it.
-                        insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp)
-                    if isinstance(insertionPoint2, m21.stream.Measure):
-                        # insertionPoint2 is a measure, put the textExp at offset 0
-                        # inside the measure
-                        insertionPoint2.insert(0, textExp)
-                    else:
-                        # insertionPoint2 is something else, put the textExp right next to it.
-                        insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp)
                 else:
-                    # extra is not a spanner, put the textExp right next to it
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                if isinstance(insertionPoint1, m21.stream.Measure):
+                    # insertionPoint1 is a measure, put the textExp at offset 0
+                    # inside the measure
+                    insertionPoint1.insert(0, textExp)
+                else:
+                    # insertionPoint1 is something else, put the textExp right next to it.
+                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp)
+                if isinstance(insertionPoint2, m21.stream.Measure):
+                    # insertionPoint2 is a measure, put the textExp at offset 0
+                    # inside the measure
+                    insertionPoint2.insert(0, textExp)
+                else:
+                    # insertionPoint2 is something else, put the textExp right next to it.
+                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp)
                 continue
 
             if op[0] == "extracontentedit":
@@ -240,12 +241,15 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 continue
 
             if op[0] == "extraoffsetedit":
@@ -266,12 +270,14 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 continue
 
             if op[0] == "extradurationedit":
@@ -292,12 +298,14 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 continue
 
             if op[0] == "extrastyleedit":
@@ -335,12 +343,52 @@ class Visualization:
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
                     insertionPoint1 = extra1.getFirst()
-                    insertionPoint2 = extra2.getFirst()
-                    insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
-                    insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
                 else:
-                    extra1.activeSite.insert(extra1.offset, textExp1)
-                    extra2.activeSite.insert(extra2.offset, textExp2)
+                    insertionPoint1 = extra1
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                continue
+
+            # parts
+            if op[0] == "inspart":
+                assert isinstance(op[2], AnnPart)
+                # add a textExpression describing the insertion.
+                part2 = score2.recurse().getElementById(
+                    op[2].part  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert part2 is not None
+                textExp = m21.expressions.TextExpression("inserted Part")
+                textExp.style.color = Visualization.INSERTED_COLOR
+                # insert text at offset 0 in first measure of added part (part2)
+                insertionSite = part2[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp)
+                # color every note/rest in the inserted part
+                for el in part2.recurse().notesAndRests:
+                    el.style.color = Visualization.INSERTED_COLOR
+
+                continue
+
+            if op[0] == "delpart":
+                assert isinstance(op[1], AnnPart)
+                # add a textExpression describing the deletion.
+                part1 = score1.recurse().getElementById(
+                    op[1].part  # type: ignore
+                )
+                if t.TYPE_CHECKING:
+                    assert part1 is not None
+                textExp = m21.expressions.TextExpression("deleted Part")
+                textExp.style.color = Visualization.DELETED_COLOR
+                # insert text at offset 0 in first measure of deleted part (part1)
+                insertionSite = part1[m21.stream.Measure].first()
+                insertionSite.insert(0, textExp)
+                # color every note/rest in the deleted part
+                for el in part1.recurse().notesAndRests:
+                    el.style.color = Visualization.INSERTED_COLOR
                 continue
 
             # staff groups
@@ -1671,6 +1719,16 @@ class Visualization:
             output += f"beat {M21Utils.ql_to_string(fractionalBeats)}"
             return output
 
+        # part
+        if isinstance(m21obj, m21.stream.Part):
+            staffNum = M21Utils.get_part_index(m21obj, score)
+            staffNum += 1  # staffNum is 1-based
+            output = "measure 0, "
+            output += f"staff {staffNum}, "
+            fractionalBeats = 1.
+            output += f"beat {M21Utils.ql_to_string(fractionalBeats)}"
+            return output
+
         # measure
         if isinstance(m21obj, m21.stream.Measure):
             part = score.containerInHierarchy(m21obj)
@@ -1763,13 +1821,38 @@ class Visualization:
         oneOutput: str  # one string, multiple lines (with \n at end of all but last line)
 
         for op in operations:
+            # part
+            if op[0] == "inspart":
+                assert isinstance(op[2], AnnPart)
+                part2 = score2.recurse().getElementById(op[2].part)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert part2 is not None
+                newLine: str = f"@@ {Visualization._location_of(part2, score2)} @@\n"
+                oneOutput = newLine
+                newLine = f"+(part) {op[2].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "delpart":
+                assert isinstance(op[1], AnnPart)
+                part1 = score1.recurse().getElementById(op[1].part)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert part1 is not None
+                newLine = f"@@ {Visualization._location_of(part1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-(part) {op[1].readable_str()}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
             # bar
             if op[0] == "insbar":
                 assert isinstance(op[2], AnnMeasure)
                 measure2 = score2.recurse().getElementById(op[2].measure)  # type: ignore
                 if t.TYPE_CHECKING:
                     assert measure2 is not None
-                newLine: str = f"@@ {Visualization._location_of(measure2, score2)} @@\n"
+                newLine = f"@@ {Visualization._location_of(measure2, score2)} @@\n"
                 oneOutput = newLine
                 newLine = f"+(measure) {op[2].readable_str()}"
                 oneOutput += newLine
@@ -2893,4 +2976,22 @@ class Visualization:
                 outputList.insert(1, "+++ score2")
 
         output = '\n'.join(outputList)
+        return output
+
+    @staticmethod
+    def get_ser_output(
+        cost: int,
+        annotated_ground_truth_score: AnnScore,
+    ) -> dict[str, str]:
+        num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
+        divisor: int = num_syms_in_ground_truth
+        if num_syms_in_ground_truth == 0:
+            # avoid divide by zero
+            divisor = 1
+        ser: float = float(cost) / float(divisor)
+        output: dict[str, str] = {
+            'SER': f'{ser}',
+            'numSymbolErrors': f'{cost}',
+            'numSymbolsInGroundTruth': f'{num_syms_in_ground_truth}',
+        }
         return output

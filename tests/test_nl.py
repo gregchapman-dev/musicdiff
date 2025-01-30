@@ -49,7 +49,7 @@ class TestNl:
         n1.tie = m21.tie.Tie("start")
         # create annotated note
         anote = AnnNote(n1, 0., [], [], [])
-        assert anote.notation_size() == 2
+        assert anote.notation_size() == 3
 
 
     def test_annotNote_size2(self):
@@ -57,7 +57,7 @@ class TestNl:
         n1.tie = m21.tie.Tie("start")
         # create annotated note
         anote = AnnNote(n1, 0., [], [], [])
-        assert anote.notation_size() == 4
+        assert anote.notation_size() == 5
 
 
     def test_noteNode_size3(self):
@@ -65,7 +65,7 @@ class TestNl:
         n1 = m21.chord.Chord(["D", "F#", "A"], duration=d)
         # create annotated note
         anote = AnnNote(n1, 0., [], [], [])
-        assert anote.notation_size() == 7
+        assert anote.notation_size() == 8
 
 
     def test_noteNode_size4(self):
@@ -77,7 +77,7 @@ class TestNl:
         chord = m21.chord.Chord([n1, n2, n3], duration=d)
         # create annotated note
         anote = AnnNote(chord, 0., [], [], [])
-        assert anote.notation_size() == 12
+        assert anote.notation_size() == 13
 
 
     def test_noteNode_size5(self):
@@ -90,7 +90,7 @@ class TestNl:
             .voices_list[0]
             .annot_notes[2]
             .notation_size()
-            == 2
+            == 3
         )
 
 
@@ -138,7 +138,7 @@ class TestNl:
         # number of voices for each measure in part 0
         for m in score_lin1.part_list[0].bar_list:
             assert len(m.voices_list) == 1
-        assert score_lin1.part_list[0].bar_list[0].voices_list[0].notation_size() == 14
+        assert score_lin1.part_list[0].bar_list[0].voices_list[0].notation_size() == 20
 
 
     def test_ties1(self):
@@ -159,7 +159,7 @@ class TestNl:
             "[C4]4Bcosr,[D4]4Bspsp,[E4,G4,C5]4,[E4]4Bsr,[F4T]4Bsp]"
         )
         assert str(score_lin1.part_list[0].bar_list[0].voices_list[0]) == expected_tree_repr
-        assert score_lin1.part_list[0].bar_list[0].voices_list[0].notation_size() == 27
+        assert score_lin1.part_list[0].bar_list[0].voices_list[0].notation_size() == 36
 
 
     def test_equality_an1(self):

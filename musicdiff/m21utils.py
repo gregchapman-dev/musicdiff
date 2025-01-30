@@ -726,6 +726,7 @@ class M21Utils:
         initialList = list(
             measure.recurse().getElementsNotOfClass(
                 (m21.note.GeneralNote,
+                 m21.meter.SenzaMisuraTimeSignature,  # no timesig
                  m21.spanner.SpannerAnchor,
                  m21.stream.Stream,
                  m21.spanner.Spanner)

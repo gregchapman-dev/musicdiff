@@ -158,7 +158,7 @@ class AnnNote:
         if isinstance(general_note, m21.chord.ChordBase):
             notes: tuple[m21.note.NotRest, ...] = general_note.notes
             if hasattr(general_note, "sortDiatonicAscending"):
-                # PercussionChords don't have this
+                # PercussionChords don't have this, Chords do
                 notes = general_note.sortDiatonicAscending().notes
             self.pitches = []
             for p in notes:
@@ -240,8 +240,9 @@ class AnnNote:
                 if self.expressions:
                     self.expressions.sort()
 
-        # precomputed representations for faster comparison
+        # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
         """
@@ -250,21 +251,51 @@ class AnnNote:
         Returns:
             int: The notation size of the annotated note
         """
-        size: int = 0
-        # add for the pitches
-        for pitch in self.pitches:
-            size += M21Utils.pitch_size(pitch)
-        # add for the dots
-        size += self.dots * len(self.pitches)  # one dot for each note if it's a chord
-        # add for the beamings
-        size += len(self.beamings)
-        # add for the tuplets
-        size += len(self.tuplets)
-        # add for the articulations
-        size += len(self.articulations)
-        # add for the expressions
-        size += len(self.expressions)
-        return size
+        if self._cached_notation_size is None:
+            size: int = 0
+            # add for the pitches
+            for pitch in self.pitches:
+                size += M21Utils.pitch_size(pitch)
+            # add for the notehead (quarter, half, semibreve, breve, etc)
+            size += 1
+            # add for the dots
+            size += self.dots * len(self.pitches)  # one dot for each note if it's a chord
+            # add for the beams/flags
+            size += len(self.beamings)
+            # add for the tuplets
+            size += len(self.tuplets)
+            size += len(self.tuplet_info)
+            # add for the articulations
+            size += len(self.articulations)
+            # add for the expressions
+            size += len(self.expressions)
+            # add 1 if it's a gracenote, and 1 more if there's a grace slash
+            if self.graceType:
+                size += 1
+                if self.graceSlash is True:
+                    size += 1
+            # add 1 for abnormal note shape (diamond, etc)
+            if self.noteshape != 'normal':
+                size += 1
+            # add 1 for abnormal note fill
+            if self.noteheadFill is not None:
+                size += 1
+            # add 1 if there's a parenthesis around the note
+            if self.noteheadParenthesis:
+                size += 1
+            # add 1 if stem direction is specified
+            if self.stemDirection != 'unspecified':
+                size += 1
+            # add 1 if there is an empty space before this note
+            if self.gap_dur != 0:
+                size += 1
+            # add 1 for any other style info (in future might count the style entries)
+            if self.styledict:
+                size += 1
+
+            self._cached_notation_size = size
+
+        return self._cached_notation_size
 
     def get_identifying_string(self, name: str = "") -> str:
         string: str = ""
@@ -684,11 +715,10 @@ class AnnExtra:
                         smuflTextSuppressed=smuflTextSuppressed
                     )
 
-        # so far, always 1, but maybe some extra will be bigger someday
-        self._notation_size: int = 1
 
-        # precomputed representations for faster comparison
+        # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
         """
@@ -697,7 +727,14 @@ class AnnExtra:
         Returns:
             int: The notation size of the annotated extra
         """
-        return self._notation_size
+        if self._cached_notation_size is None:
+            cost: int = len(self.content)
+            cost += 2  # for offset and duration
+            if self.styledict:
+                cost += 1  # someday we might count items in styledict
+            self._cached_notation_size = cost
+
+        return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = self.content
@@ -816,19 +853,29 @@ class AnnLyric:
                 # sort styleDict before converting to string so we can compare strings
                 self.styledict = dict(sorted(self.styledict.items()))
 
-        self._notation_size: int = 1
-
-        # precomputed representations for faster comparison
+        # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnLyric`.
 
         Returns:
-            int: The notation size of the annotated extra
+            int: The notation size of the annotated lyric
         """
-        return self._notation_size
+        if self._cached_notation_size is None:
+            size: int = len(self.lyric)
+            size += 1  # for offset
+            if self.number:
+                size += 1
+            if self.identifier:
+                size += 1
+            if self.styledict:
+                size += 1  # maybe someday we'll count items in styledict?
+            self._cached_notation_size = size
+
+        return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = f'"{self.lyric}"'
@@ -957,6 +1004,7 @@ class AnnVoice:
 
         self.n_of_notes: int = len(self.annot_notes)
         self.precomputed_str: str = self.__str__()
+        self._cached_notation_size: int | None = None
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
@@ -975,7 +1023,9 @@ class AnnVoice:
         Returns:
             int: The notation size of the annotated voice
         """
-        return sum([an.notation_size() for an in self.annot_notes])
+        if self._cached_notation_size is None:
+            self._cached_notation_size = sum([an.notation_size() for an in self.annot_notes])
+        return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = "["
@@ -1153,9 +1203,11 @@ class AnnMeasure:
             if self.lyrics_list:
                 self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.number))
 
-        # precomputed values to speed up the computation. As they start to be long, they are hashed
+        # precomputed/cached values to speed up the computation.
+        # As they start to be long, they are hashed
         self.precomputed_str: int = hash(self.__str__())
         self.precomputed_repr: int = hash(self.__repr__())
+        self._cached_notation_size: int | None = None
 
     def __str__(self) -> str:
         output: str = ''
@@ -1218,17 +1270,20 @@ class AnnMeasure:
         Returns:
             int: The notation size of the annotated measure
         """
-        if self.includes_voicing:
-            return (
-                sum([v.notation_size() for v in self.voices_list])
-                + sum([e.notation_size() for e in self.extras_list])
-            )
-
-        return (
-            sum([n.notation_size() for n in self.annot_notes])
-            + sum([e.notation_size() for e in self.extras_list])
-        )
-
+        if self._cached_notation_size is None:
+            if self.includes_voicing:
+                self._cached_notation_size = (
+                    sum([v.notation_size() for v in self.voices_list])
+                    + sum([e.notation_size() for e in self.extras_list])
+                    + sum([lyr.notation_size() for lyr in self.lyrics_list])
+                )
+            else:
+                self._cached_notation_size = (
+                    sum([n.notation_size() for n in self.annot_notes])
+                    + sum([e.notation_size() for e in self.extras_list])
+                    + sum([lyr.notation_size() for lyr in self.lyrics_list])
+                )
+        return self._cached_notation_size
 
     def get_note_ids(self) -> list[str | int]:
         """
@@ -1252,6 +1307,7 @@ class AnnPart:
         self,
         part: m21.stream.Part,
         score: m21.stream.Score,
+        part_idx: int,
         spannerBundle: m21.spanner.SpannerBundle,
         detail: DetailLevel | int = DetailLevel.Default
     ):
@@ -1272,6 +1328,7 @@ class AnnPart:
                 Style, Metadata, or Voicing.
         """
         self.part: int | str = part.id
+        self.part_idx: int = part_idx
         self.bar_list: list[AnnMeasure] = []
         for measure in part.getElementsByClass("Measure"):
             # create the bar objects
@@ -1282,6 +1339,7 @@ class AnnPart:
         # Precomputed str to speed up the computation.
         # String itself is pretty long, so it is hashed
         self.precomputed_str: int = hash(self.__str__())
+        self._cached_notation_size: int | None = None
 
     def __str__(self) -> str:
         output: str = 'Part: '
@@ -1298,6 +1356,10 @@ class AnnPart:
 
         return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
 
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        string: str = f"part {self.part_idx}"
+        return string
+
     def notation_size(self) -> int:
         """
         Compute a measure of how many symbols are displayed in the score for this `AnnPart`.
@@ -1305,7 +1367,9 @@ class AnnPart:
         Returns:
             int: The notation size of the annotated part
         """
-        return sum([b.notation_size() for b in self.bar_list])
+        if self._cached_notation_size is None:
+            self._cached_notation_size = sum([b.notation_size() for b in self.bar_list])
+        return self._cached_notation_size
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
@@ -1358,6 +1422,7 @@ class AnnStaffGroup:
 
         # precomputed representations for faster comparison
         self.precomputed_str: str = self.__str__()
+        self._cached_notation_size: int | None = None
 
     def __str__(self) -> str:
         output: str = "StaffGroup"
@@ -1392,6 +1457,10 @@ class AnnStaffGroup:
             return False
 
         if self.barTogether != other.barTogether:
+            return False
+
+        if self.n_of_parts != other.n_of_parts:
+            # trying to avoid the more expensive part_indices array comparison
             return False
 
         if self.part_indices != other.part_indices:
@@ -1433,9 +1502,17 @@ class AnnStaffGroup:
         Returns:
             int: The notation size of the annotated staff group
         """
-        # notation_size = 5 because there are 5 main visible things about a StaffGroup:
-        #   name, abbreviation, symbol shape, barline type, and which parts it encloses
-        return 5
+        # There are 5 main visible things about a StaffGroup:
+        #   name, abbreviation, symbol shape, barline type, and which staves it encloses
+        if self._cached_notation_size is None:
+            size: int = len(self.name)
+            size += 1  # for abbreviation
+            size += 1  # for symbol shape
+            size += 1  # for barline type
+            size += 1  # for lowest staff index (vertical start)
+            size += 1  # for highest staff index (vertical height)
+            self._cached_notation_size = size
+        return self._cached_notation_size
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
@@ -1465,6 +1542,8 @@ class AnnMetadataItem:
                 self.make_value_string(value)
                 + f'(language={value.language})'
             )
+            if isinstance(value, m21.metadata.Copyright):
+                self.value += f' role={value.role}'
         elif isinstance(value, m21.metadata.Contributor):
             # Create a string (same thing: value.name.isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
@@ -1493,7 +1572,10 @@ class AnnMetadataItem:
             if roleEmitted:
                 self.value += ')'
         else:
-            self.value = value
+            # Date types
+            self.value = str(value)
+
+        self._cached_notation_size: int | None = None
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, AnnMetadataItem):
@@ -1528,7 +1610,11 @@ class AnnMetadataItem:
         Returns:
             int: The notation size of the annotated metadata item
         """
-        return 1
+        if self._cached_notation_size is None:
+            size: int = len(self.key)
+            size += len(self.value)
+            self._cached_notation_size = size
+        return self._cached_notation_size
 
     def make_value_string(self, value: m21.metadata.Contributor | m21.metadata.Text) -> str:
         # Unescapes a bunch of stuff (and strips off leading/trailing whitespace)
@@ -1560,6 +1646,10 @@ class AnnScore:
         self.part_list: list[AnnPart] = []
         self.staff_group_list: list[AnnStaffGroup] = []
         self.metadata_items_list: list[AnnMetadataItem] = []
+        self.num_syntax_errors_fixed: int = 0
+
+        if hasattr(score, "c21_syntax_errors_fixed"):
+            self.num_syntax_errors = score.c21_syntax_errors_fixed  # type: ignore
 
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
         part_to_index: dict[m21.stream.Part, int] = {}
@@ -1574,7 +1664,7 @@ class AnnScore:
             # create and add the AnnPart object to part_list
             # and to part_to_index dict
             part_to_index[part] = idx
-            ann_part = AnnPart(part, score, spannerBundle, detail)
+            ann_part = AnnPart(part, score, idx, spannerBundle, detail)
             self.part_list.append(ann_part)
 
         self.n_of_parts: int = len(self.part_list)
@@ -1591,6 +1681,12 @@ class AnnScore:
                 ann_staff_group = AnnStaffGroup(staffGroup, part_to_index, detail)
                 if ann_staff_group.n_of_parts > 0:
                     self.staff_group_list.append(ann_staff_group)
+
+            # now sort the staff_group_list in increasing order of first part index
+            # (secondary sort in decreasing order of last part index)
+            self.staff_group_list.sort(
+                key=lambda each: (each.part_indices[0], -each.part_indices[-1])
+            )
 
         if DetailLevel.includesMetadata(detail) and score.metadata:
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
@@ -1626,6 +1722,9 @@ class AnnScore:
 
             self.metadata_items_list.sort(key=lambda each: (each.key, str(each.value)))
 
+        # cached notation size
+        self._cached_notation_size: int | None = None
+
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
         if not isinstance(other, AnnScore):
@@ -1643,7 +1742,12 @@ class AnnScore:
         Returns:
             int: The notation size of the annotated score
         """
-        return sum([p.notation_size() for p in self.part_list])
+        if self._cached_notation_size is None:
+            size: int = sum([p.notation_size() for p in self.part_list])
+            size += sum([sg.notation_size() for sg in self.staff_group_list])
+            size += sum([md.notation_size() for md in self.metadata_items_list])
+            self._cached_notation_size = size
+        return self._cached_notation_size
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
