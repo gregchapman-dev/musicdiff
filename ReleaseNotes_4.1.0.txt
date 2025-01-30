@@ -9,10 +9,10 @@ Changes since 4.0.0:
     In support of SER, notation_sizes (a.k.a. symbol counts) and diff costs (a.k.a.
         symbolic error counts) have been reviewed and updated:
         AnnNote.notation_size(): add 1 symbol for slash on grace note
-        AnnExtra.notation_size(): 1 symbol for the text, add 1 symbol if there is any
+        AnnExtra.notation_size(): len(text) for the text, add 1 symbol if there is any
             style specified
-        AnnExtra diff error count: text diff is 1 symbol error, offset diff is 1 symbol
-            error, duration diff is 1 symbol error, style diff is 1 symbol error
+        AnnExtra diff error count: text diff is Levenshtein distance, offset diff is
+            1 symbol error, duration diff is 1 symbol error, style diff is 1 symbol error
         AnnLyric.notation_size(): use len(text) as symbol count instead of 1;
             add 1 symbol if there's a verse number;
             add 1 symbol if there's a verse identifier different from the number;
