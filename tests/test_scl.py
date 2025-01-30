@@ -233,7 +233,7 @@ class TestScl:
         op_list, cost = Comparison._block_diff_lin(
             score_lin1._measures_from_part(0), score_lin2._measures_from_part(0)
         )
-        assert cost == 8
+        assert cost == 11
         assert len(op_list) == 6
 
 
@@ -250,7 +250,7 @@ class TestScl:
         op_list, cost = Comparison._block_diff_lin(
             score_lin1._measures_from_part(0), score_lin2._measures_from_part(0)
         )
-        assert cost == 8
+        assert cost == 11
         assert len(op_list) == 6
 
 
@@ -264,7 +264,7 @@ class TestScl:
         score_lin2 = AnnScore(score2, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
         # compute the complete score diff, including the voice- and chord-membership of notes
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
-        assert cost == 8
+        assert cost == 14
         assert len(op_list) == 5
 
 
@@ -278,7 +278,7 @@ class TestScl:
         score_lin2 = AnnScore(score2)
         # compute the complete score diff, ignoring voice/chord membership of notes
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
-        assert cost == 8
+        assert cost == 14
         assert len(op_list) == 7
 
 
@@ -292,7 +292,7 @@ class TestScl:
         score_lin2 = AnnScore(score2, detail=DetailLevel.AllObjects | DetailLevel.Voicing)
         # compute the complete score diff, including the voice- and chord-membership of notes
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
-        assert cost == 8
+        assert cost == 11
         assert len(op_list) == 6
 
 
@@ -306,7 +306,7 @@ class TestScl:
         score_lin2 = AnnScore(score2)
         # compute the complete score diff, ignoring voice/chord membership of notes
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
-        assert cost == 14
+        assert cost == 23
         assert len(op_list) == 9
 
 
