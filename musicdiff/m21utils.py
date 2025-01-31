@@ -936,39 +936,37 @@ class M21Utils:
     @staticmethod
     def extra_to_kind(extra: m21.base.Music21Object) -> str:
         if isinstance(extra, m21.clef.Clef):
-            return 'CL'
+            return 'clef'
         if isinstance(extra, m21.meter.TimeSignature):
-            return 'TS'
+            return 'timesig'
         if isinstance(extra, m21.tempo.TempoIndication):
-            return 'MM'
+            return 'metronomemark'
         if isinstance(extra, m21.bar.Barline):
             if isinstance(extra, m21.bar.Repeat):
-                return 'RPT'
-            return 'BL'
+                return 'repeat'
+            return 'barline'
         if isinstance(extra, m21.spanner.Ottava):
-            return 'OTT'
+            return 'ottava'
         if isinstance(extra, m21.key.KeySignature):
-            return 'KS'
+            return 'keysig'
         if isinstance(extra, m21.expressions.TextExpression):
-            return 'TX'
+            return 'direction'
         if isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge)):
-            return 'DY'
+            return 'dynamic'
         if isinstance(extra, m21.spanner.Slur):
-            return 'SLUR'
-        if isinstance(extra, m21.expressions.ArpeggioMark):
-            return 'ARP'
-        if isinstance(extra, m21.expressions.ArpeggioMarkSpanner):
-            return 'ARPS'
+            return 'slur'
+        if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
+            return 'arpeggio'
         if isinstance(extra, m21.harmony.ChordSymbol):
-            return 'CSYM'
+            return 'chordsym'
         if isinstance(extra, m21.spanner.RepeatBracket):
-            return 'END'
+            return 'ending'
         if isinstance(extra, m21.layout.StaffLayout):
-            return 'STAFF'
+            return 'staffinfo'
         if isinstance(extra, m21.layout.SystemLayout):
-            return 'SB'
+            return 'systembreak'
         if isinstance(extra, m21.layout.PageLayout):
-            return 'PB'
+            return 'pagebreak'
         if isinstance(extra, m21.expressions.TremoloSpanner):
             return 'fTrem'
         return ''
