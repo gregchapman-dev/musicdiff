@@ -740,31 +740,38 @@ class AnnExtra:
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = self.content
         if name == "":
-            string += f" offset={M21Utils.ql_to_string(self.offset)}"
-            if self.duration > 0:
-                string += f" dur={M21Utils.ql_to_string(self.duration)}"
-            if self.numNotes != 1:
-                string += f" numNotes={self.numNotes}"
+            if self.duration != 0:
+                if string:
+                    string += " "
+                string += f"dur={M21Utils.ql_to_string(self.duration)}"
             return string
 
         if name == "content":
             return string
 
         if name == "offset":
-            string += f" offset={M21Utils.ql_to_string(self.offset)}"
+            if string:
+                string += " "
+            string += f"offset={M21Utils.ql_to_string(self.offset)}"
             return string
 
         if name == "duration":
-            string += f" dur={M21Utils.ql_to_string(self.duration)}"
+            if string:
+                string += " "
+            string += f"dur={M21Utils.ql_to_string(self.duration)}"
             return string
 
         if name == "style":
             changedKeys: list[str] = changedStr.split(',')
             if not changedKeys:
-                string += " changedStyle={}"
+                if string:
+                    string += " "
+                string += "changedStyle={}"
                 return string
 
-            string += " changedStyle={"
+            if string:
+                string += " "
+            string += "changedStyle={"
 
             needsComma: bool = False
             for i, k in enumerate(changedKeys):
