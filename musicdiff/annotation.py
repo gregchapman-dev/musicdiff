@@ -690,6 +690,7 @@ class AnnExtra:
             self.offset = extra.getOffsetInHierarchy(measure)
             self.duration = extra.duration.quarterLength
 
+        self.kind: str = M21Utils.extra_to_kind(extra)
         self.content: str = M21Utils.extra_to_string(extra, detail)
         self.styledict: dict = {}
 
@@ -739,6 +740,7 @@ class AnnExtra:
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = self.content
         if name == "":
+            string += f" offset={M21Utils.ql_to_string(self.offset)}"
             if self.duration > 0:
                 string += f" dur={M21Utils.ql_to_string(self.duration)}"
             if self.numNotes != 1:
@@ -1187,7 +1189,8 @@ class AnnMeasure:
 
         # For correct comparison, sort the extras_list, so that any extras
         # that all have the same offset are sorted alphabetically.
-        self.extras_list.sort(key=lambda e: (e.offset, str(e)))
+        # 888 need to sort by class here?  Or not at all?
+        self.extras_list.sort(key=lambda e: (e.kind, e.offset))
 
         self.lyrics_list: list[AnnLyric] = []
         if DetailLevel.includesLyrics(detail):

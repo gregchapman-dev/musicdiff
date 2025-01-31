@@ -767,6 +767,10 @@ class M21Utils:
                 # first Part in the Score.
                 if part is not score.parts[0]:
                     continue
+                # we also ignore (for the moment) anything that doesn't represent
+                # a page break or a system break
+                if not el.isNew:
+                    continue
 
             if isinstance(el, m21.bar.Barline):
                 if el.type == 'none':
@@ -782,9 +786,8 @@ class M21Utils:
                     # that's what no left or right barline at all means)
                     continue
 
-            if M21Utils.extra_to_string(el, detail) == '':
+            if M21Utils.extra_to_kind(el) == '':
                 # skip unrecognized extras.
-                # (extra_to_string complains about unrecognized extras)
                 continue
 
             if isinstance(el, m21.clef.Clef):
@@ -931,12 +934,52 @@ class M21Utils:
         return out
 
     @staticmethod
+    def extra_to_kind(extra: m21.base.Music21Object) -> str:
+        if isinstance(extra, m21.clef.Clef):
+            return 'CL'
+        if isinstance(extra, m21.meter.TimeSignature):
+            return 'TS'
+        if isinstance(extra, m21.tempo.TempoIndication):
+            return 'MM'
+        if isinstance(extra, m21.bar.Barline):
+            if isinstance(extra, m21.bar.Repeat):
+                return 'RPT'
+            return 'BL'
+        if isinstance(extra, m21.spanner.Ottava):
+            return 'OTT'
+        if isinstance(extra, m21.key.KeySignature):
+            return 'KS'
+        if isinstance(extra, m21.expressions.TextExpression):
+            return 'TX'
+        if isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge)):
+            return 'DY'
+        if isinstance(extra, m21.spanner.Slur):
+            return 'SLUR'
+        if isinstance(extra, m21.expressions.ArpeggioMark):
+            return 'ARP'
+        if isinstance(extra, m21.expressions.ArpeggioMarkSpanner):
+            return 'ARPS'
+        if isinstance(extra, m21.harmony.ChordSymbol):
+            return 'CSYM'
+        if isinstance(extra, m21.spanner.RepeatBracket):
+            return 'END'
+        if isinstance(extra, m21.layout.StaffLayout):
+            return 'STAFF'
+        if isinstance(extra, m21.layout.SystemLayout):
+            return 'SB'
+        if isinstance(extra, m21.layout.PageLayout):
+            return 'PB'
+        if isinstance(extra, m21.expressions.TremoloSpanner):
+            return 'fTrem'
+        return ''
+
+    @staticmethod
     def clef_to_string(clef: m21.clef.Clef) -> str:
         # sign(str), line(int), octaveChange(int == # octaves to shift up(+) or down(-))
         sign: str = '' if clef.sign is None else clef.sign
         line: str = '0' if clef.line is None else f'{clef.line}'
         octave: str = '' if clef.octaveChange == 0 else f'{8 * clef.octaveChange:+}'
-        output: str = f'CL:{sign}{line}{octave}'
+        output: str = f'{sign}{line}{octave}'
         return output
 
     @staticmethod
@@ -944,13 +987,13 @@ class M21Utils:
         output: str = ''
 
         if not timesig.symbol:
-            output = f'TS:{timesig.numerator}/{timesig.denominator}'
+            output = f'{timesig.numerator}/{timesig.denominator}'
         elif timesig.symbol in ('common', 'cut'):
-            output = f'TS:{timesig.symbol}'
+            output = f'{timesig.symbol}'
         elif timesig.symbol == 'single-number':
-            output = f'TS:{timesig.numerator}'
+            output = f'{timesig.numerator}'
         else:
-            output = f'TS:{timesig.numerator}/{timesig.denominator}'
+            output = f'{timesig.numerator}/{timesig.denominator}'
 
         return output
 
@@ -962,9 +1005,9 @@ class M21Utils:
         output: str = ''
         if isinstance(mm, m21.tempo.TempoText):
             if mm._textExpression is None:
-                output = 'MM:'
+                output = ''
             else:
-                output = f'MM:{M21Utils.extra_to_string(mm._textExpression)}'
+                output = f'{M21Utils.extra_to_string(mm._textExpression)}'
             return output
 
         if isinstance(mm, m21.tempo.MetricModulation):
@@ -981,32 +1024,30 @@ class M21Utils:
 
         # special case: numberImplicit is True, and non-implicit text is of the form:
         # SMUFLNoteCode = nnn (with no leading text).
-        # We annotate this just like f'MM:{mm.referent.fullName}={float(mm.number)}',
+        # We annotate this just like f'{mm.referent.fullName}={float(mm.number)}',
         # but getting the fullName and number from parsing the text.
         if mm.numberImplicit is True and mm.textImplicit is False:
             noteFullName: str | None = None
             number: float | int | None = None
             noteFullName, number = M21Utils.parse_note_equal_num(mm.text)
             if noteFullName is not None and number is not None:
-                output = f'MM:{noteFullName}={float(number)}'
+                output = f'{noteFullName}={float(number)}'
                 return output
 
         if mm.textImplicit is True or mm._tempoText is None:
             if mm.referent is None or mm.number is None:
-                output = 'MM:'
+                output = ''
             else:
-                output = f'MM:{mm.referent.fullName}={float(mm.number)}'
+                output = f'{mm.referent.fullName}={float(mm.number)}'
             return output
 
         if mm.numberImplicit is True or mm.number is None:
             if mm._tempoText is None:
-                output = 'MM:'
+                output = ''
             else:
-                # no 'MM:' prefix, TempoText adds their own
                 output = f'{M21Utils.tempo_to_string(mm._tempoText)}'
             return output
 
-        # no 'MM:' prefix, TempoText adds their own
         output = (
             f'{M21Utils.tempo_to_string(mm._tempoText)}'
             + f' {mm.referent.fullName}={float(mm.number)}'
@@ -1099,41 +1140,32 @@ class M21Utils:
 
         output: str = f'{barline.type}{pauseStr}'
         if not isinstance(barline, m21.bar.Repeat):
-            return f'BL:{output}'
+            return output
 
         # add the Repeat fields (direction, times)
         if barline.direction is not None:
             output += f' direction={barline.direction}'
         if barline.times is not None:
             output += f' times={barline.times}'
-        return f'RPT:{output}'
+        return output
 
     @staticmethod
     def ottava_to_string(ottava: m21.spanner.Ottava) -> str:
-        output: str = f'OTT:{ottava.type}'
+        output: str = f'{ottava.type}'
         return output
 
     @staticmethod
     def keysig_to_string(keysig: m21.key.Key | m21.key.KeySignature) -> str:
-        output: str = f'KS:{keysig.sharps}'
+        output: str = f'{keysig.sharps}'
         return output
 
     @staticmethod
     def textexp_to_string(textexp: m21.expressions.TextExpression) -> str:
-        content: str = textexp.content.strip()
-        if not content:
-            return ''
-        output: str = f'TX:{content}'
-        return output
+        return textexp.content.strip()
 
     @staticmethod
     def dynamic_to_string(dynamic: m21.dynamics.Dynamic) -> str:
-        value: str = str(dynamic.value)
-        value = value.strip()
-        if not value:
-            return ''
-        output: str = f'DY:{value}'
-        return output
+        return str(dynamic.value).strip()
 
     @staticmethod
     def notestyle_to_dict(
@@ -1319,27 +1351,20 @@ class M21Utils:
 
     @staticmethod
     def slur_to_string(slur: m21.spanner.Slur) -> str:
-        return 'SLUR'
+        return ''
 
     @staticmethod
     def dynwedge_to_string(dynwedge: m21.dynamics.DynamicWedge) -> str:
-        output: str = ''
-        if isinstance(dynwedge, m21.dynamics.Crescendo):
-            output = '<'
-        elif isinstance(dynwedge, m21.dynamics.Diminuendo):
-            output = '>'
-        else:
-            output = 'wedge'
-        return f'DY:{output}'
+        return ''
 
     @staticmethod
     def arpeggiomark_to_string(
         arp: m21.expressions.ArpeggioMark | m21.expressions.ArpeggioMarkSpanner
     ) -> str:
         if isinstance(arp, m21.expressions.ArpeggioMark):
-            return f'ARP:{arp.type}'
+            return f'{arp.type}'
         if isinstance(arp, m21.expressions.ArpeggioMarkSpanner):
-            return f'ARPS:{arp.type}:len={len(arp)}'
+            return f'{arp.type}:len={len(arp)}'
         return ''
 
     @staticmethod
@@ -1352,7 +1377,7 @@ class M21Utils:
             printedStr: str = cs.chordKindStr
             if printedStr:
                 printedStr = '(' + printedStr + ')'
-            return f'CSYM:N.C.{printedStr}'
+            return f'N.C.{printedStr}'
 
         root: str = cs.root().name
         bass: str = cs.bass().name
@@ -1384,7 +1409,7 @@ class M21Utils:
         # return f'CSYM:{root} {cs.chordKind}({cs.chordKindStr}){bass}{pitchStr}'
 
         if cs.chordKindStr:
-            return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
+            return f'{root}{cs.chordKindStr}{bass}{pitchStr}'
         else:
             # no chordKindStr, so make one up.  Simplify the chord symbol first
             # (look for a better chordKind that has fewer chordStepModifications)
@@ -1393,14 +1418,14 @@ class M21Utils:
             chordKindStr: str = M21Utilities.convertChordSymbolFigureToPrintableText(
                 simplerCS.findFigure(), removeNoteNames=True
             )
-            return f'CSYM:{root}{chordKindStr}{bass}{pitchStr}'
+            return f'{root}{chordKindStr}{bass}{pitchStr}'
 
     @staticmethod
     def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
         if rb.overrideDisplay:
-            return f'END:{rb.number,rb.overrideDisplay}:len={len(rb)}'
+            return f'{rb.number,rb.overrideDisplay}:len={len(rb)}'
         else:
-            return f'END:{rb.number}:len={len(rb)}'
+            return f'{rb.number}:len={len(rb)}'
 
     @staticmethod
     def stafflayout_to_string(
@@ -1409,30 +1434,22 @@ class M21Utils:
     ) -> str:
         output: str = ''
         if sl.staffLines is not None:
-            if not output:
-                output = 'STAFF:'
             output += f'lines={sl.staffLines}'
         if DetailLevel.includesStyle(detail):
             if sl.staffSize is not None:
-                if not output:
-                    output = 'STAFF:'
-                else:
+                if output:
                     output += ','
                 output += f'size={sl.staffSize:.2g}%'
         return output
 
     @staticmethod
     def systemlayout_to_string(sb: m21.layout.SystemLayout) -> str:
-        if sb.isNew:
-            return 'SB'
         return ''
 
     @staticmethod
     def pagelayout_to_string(pb: m21.layout.PageLayout) -> str:
-        if pb.isNew:
-            if pb.pageNumber is not None:
-                return f'PB:num={pb.pageNumber}'
-            return 'PB'
+        if pb.pageNumber is not None:
+            return f'num={pb.pageNumber}'
         return ''
 
     @staticmethod
