@@ -649,51 +649,29 @@ class AnnExtra:
                 Style, Metadata, or Voicing.
         """
         self.extra = extra.id
-        self.offset: OffsetQL
-        self.duration: OffsetQL
-        self.numNotes: int = 1
-
-        if isinstance(extra, m21.spanner.Spanner):
-            self.numNotes = len(extra)
-            firstNote: m21.note.GeneralNote | m21.spanner.SpannerAnchor = (
-                M21Utils.getPrimarySpannerElement(extra)
-            )
-            lastNote: m21.note.GeneralNote | m21.spanner.SpannerAnchor = (
-                extra.getLast()
-            )
-            self.offset = firstNote.getOffsetInHierarchy(measure)
-            # to compute duration we need to use offset-in-score, since the end note might
-            # be in another Measure.  Except for ArpeggioMarkSpanners, where the duration
-            # doesn't matter, so we just set it to 0, rather than figuring out the longest
-            # duration in all the notes/chords in the arpeggio.
-            if isinstance(extra, m21.expressions.ArpeggioMarkSpanner):
-                self.duration = 0.
-            else:
-                startOffsetInScore: OffsetQL = firstNote.getOffsetInHierarchy(score)
-                try:
-                    endOffsetInScore: OffsetQL = opFrac(
-                        lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength
-                    )
-                except m21.sites.SitesException:
-                    endOffsetInScore = startOffsetInScore
-                self.duration = opFrac(endOffsetInScore - startOffsetInScore)
-        elif isinstance(extra, m21.bar.Barline):
-            # we ignore offset for barlines; barline offset is derived from the objects in the
-            # measure, which are already being compared.
-            self.offset = 0.0
-            self.duration = extra.duration.quarterLength
-        elif isinstance(extra, m21.harmony.ChordSymbol):
-            # we ignore duration for ChordSymbols, it is often 0.0 or 1.0, and meaningless.
-            self.offset = extra.getOffsetInHierarchy(measure)
-            self.duration = 0.0
-        else:
-            self.offset = extra.getOffsetInHierarchy(measure)
-            self.duration = extra.duration.quarterLength
-
         self.kind: str = M21Utils.extra_to_kind(extra)
-        self.content: str = M21Utils.extra_to_string(extra, detail)
         self.styledict: dict = {}
 
+        # kind-specific fields (set to None if not relevant)
+
+        # content is a string that (if not None) should be counted as 1 symbol per character
+        # (e.g. "con fiero")
+        self.content: str | None = M21Utils.extra_to_string(extra, self.kind, detail)
+
+        # symbolic is a string that (if not None) should be counted as 1 symbol (e.g. "clef:G2+8")
+        self.symbolic: str | None = M21Utils.extra_to_symbolic(extra, self.kind, detail)
+
+        # offset and/or duration are sometimes relevant
+        self.offset: OffsetQL | None = None
+        self.duration: OffsetQL | None = None
+        self.offset, self.duration = M21Utils.extra_to_offset_and_duration(
+            extra, self.kind, measure, score, detail
+        )
+
+        # infodict (kind-specific elements; each element is worth one musical symbol)
+        self.infodict: dict[str, str] = M21Utils.extra_to_infodict(extra, self.kind, detail)
+
+        # styledict
         if DetailLevel.includesStyle(detail):
             if not isinstance(extra, m21.harmony.ChordSymbol):
                 # We don't (yet) compare style of ChordSymbols, because Humdrum has no way (yet)
@@ -706,8 +684,7 @@ class AnnExtra:
                     smuflTextSuppressed: bool = False
                     if (isinstance(extra, m21.tempo.MetronomeMark)
                             and not extra.textImplicit
-                            and extra.text
-                            and not self.content.startswith('MM:TX:')):
+                            and M21Utils.parse_note_equal_num(extra.text) != (None, None)):
                         smuflTextSuppressed = True
 
                     self.styledict = M21Utils.obj_to_styledict(
@@ -729,40 +706,85 @@ class AnnExtra:
             int: The notation size of the annotated extra
         """
         if self._cached_notation_size is None:
-            cost: int = len(self.content)
-            cost += 2  # for offset and duration
+            cost: int = 0
+            if self.content is not None:
+                cost += len(self.content)
+            if self.symbolic is not None:
+                cost += 1
+            if self.offset is not None:
+                cost += 1
+            if self.duration is not None:
+                cost += 1
+            cost += len(self.infodict)
             if self.styledict:
-                cost += 1  # someday we might count items in styledict
+                cost += 1  # someday we might add len(styledict) instead of 1
             self._cached_notation_size = cost
 
         return self._cached_notation_size
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = self.content
+        string: str = self.content or ""
         if name == "":
-            if self.duration != 0:
+            if self.symbolic is not None:
+                if string:
+                    string += " "
+                string += self.symbolic
+            if self.duration is not None:
                 if string:
                     string += " "
                 string += f"dur={M21Utils.ql_to_string(self.duration)}"
             return string
 
         if name == "content":
+            if string is None:
+                return ""
             return string
 
+        if name == "symbolic":
+            if self.symbolic is None:
+                return ""
+            return self.symbolic
+
         if name == "offset":
+            if self.offset is None:
+                return ""
             if string:
                 string += " "
             string += f"offset={M21Utils.ql_to_string(self.offset)}"
             return string
 
         if name == "duration":
+            if self.duration is None:
+                return ""
             if string:
                 string += " "
             string += f"dur={M21Utils.ql_to_string(self.duration)}"
             return string
 
-        if name == "style":
+        if name == "info":
             changedKeys: list[str] = changedStr.split(',')
+            if not changedKeys:
+                if string:
+                    string += " "
+                string += "changedInfo={}"
+                return string
+
+            if string:
+                string += " "
+            string += "changedInfo={"
+
+            needsComma: bool = False
+            for i, k in enumerate(changedKeys):
+                if k in self.infodict:
+                    if needsComma:
+                        string += ", "
+                    string += f"{k}:{self.infodict[k]}"
+                    needsComma = True
+            string += "}"
+            return string
+
+        if name == "style":
+            changedKeys = changedStr.split(',')
             if not changedKeys:
                 if string:
                     string += " "
@@ -773,7 +795,7 @@ class AnnExtra:
                 string += " "
             string += "changedStyle={"
 
-            needsComma: bool = False
+            needsComma = False
             for i, k in enumerate(changedKeys):
                 if k in self.styledict:
                     if needsComma:
@@ -798,8 +820,6 @@ class AnnExtra:
             str: the compared representation of the AnnExtra. Does not consider music21 id.
         """
         string = f'{self.content},off={self.offset},dur={self.duration}'
-        if self.numNotes != 1:
-            string += f',numNotes={self.numNotes}'
         # and then any style fields
         for k, v in self.styledict.items():
             string += f",{k}={v}"

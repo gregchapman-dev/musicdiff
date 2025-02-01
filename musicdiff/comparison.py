@@ -728,9 +728,17 @@ class Comparison:
         return distance
 
     @staticmethod
-    def _areDifferentEnough(off1: OffsetQL, off2: OffsetQL) -> bool:
+    def _areDifferentEnough(off1: OffsetQL | None, off2: OffsetQL | None) -> bool:
         if off1 == off2:
             return False
+
+        # this should never happen, but...
+        if off1 is None or off2 is None:
+            if off1 is None and off2 is not None:
+                return True
+            if off1 is not None and off2 is None:
+                return True
+            return False  # both are None, therefore not different at all
 
         diff: OffsetQL = off1 - off2
         if diff < 0:
@@ -752,10 +760,32 @@ class Comparison:
         # add for the content
         if annExtra1.content != annExtra2.content:
             content_cost: int = (
-                Comparison._strings_leveinshtein_distance(annExtra1.content, annExtra2.content)
+                Comparison._strings_leveinshtein_distance(
+                    annExtra1.content or '',
+                    annExtra2.content or ''
+                )
             )
             cost += content_cost
             op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
+
+        # add for the symbolic (cost 1)
+        if annExtra1.symbolic != annExtra2.symbolic:
+            cost += 1
+            op_list.append(("extrasymboledit", annExtra1, annExtra2, 1))
+
+        # add for the infodict
+        if annExtra1.infodict != annExtra2.infodict:
+            info_cost: int = 0
+            # handle everything in annExtra1 (whether or not it is in annExtra2)
+            for k, v in annExtra1.infodict.items():
+                if v != annExtra2.infodict.get(k, None):
+                    info_cost += 1
+            # handle everything in annExtra2 that is not in annExtra1
+            for k in annExtra2.infodict:
+                if k not in annExtra1.infodict:
+                    info_cost += 1
+            cost += info_cost
+            op_list.append(("extrainfoedit", annExtra1, annExtra2, info_cost))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
