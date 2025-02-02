@@ -724,26 +724,22 @@ class AnnExtra:
 
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         string: str = self.content or ""
+        if self.symbolic:
+            if string:
+                string += " "
+            string += self.symbolic
+
         if name == "":
-            if self.symbolic is not None:
-                if string:
-                    string += " "
-                string += self.symbolic
             if self.duration is not None:
                 if string:
                     string += " "
                 string += f"dur={M21Utils.ql_to_string(self.duration)}"
             return string
 
-        if name == "content":
+        if name in ("content", "symbolic"):
             if string is None:
                 return ""
             return string
-
-        if name == "symbolic":
-            if self.symbolic is None:
-                return ""
-            return self.symbolic
 
         if name == "offset":
             if self.offset is None:

@@ -1245,13 +1245,13 @@ class M21Utils:
         output: str = ''
 
         if not timesig.symbol:
-            output = f'timesig: {timesig.numerator}/{timesig.denominator}'
+            output = f'{timesig.numerator}/{timesig.denominator}'
         elif timesig.symbol in ('common', 'cut'):
-            output = f'timesig: {timesig.symbol}'
+            output = f'{timesig.symbol}'
         elif timesig.symbol == 'single-number':
-            output = f'timesig: {timesig.numerator}'
+            output = f'{timesig.numerator}'
         else:
-            output = f'timesig: {timesig.numerator}/{timesig.denominator}'
+            output = f'{timesig.numerator}/{timesig.denominator}'
 
         return output
 
@@ -1352,21 +1352,21 @@ class M21Utils:
             number: float | int | None = None
             noteFullName, number = M21Utils.parse_note_equal_num(mm.text)
             if noteFullName is not None and number is not None:
-                output = f'tempo: {noteFullName}={float(number)}'
+                output = f'{noteFullName}={float(number)}'
                 return output
 
         if mm.textImplicit is True or mm._tempoText is None:
             if mm.referent is None or mm.number is None:
                 output = None
             else:
-                output = f'tempo: {mm.referent.fullName}={float(mm.number)}'
+                output = f'{mm.referent.fullName}={float(mm.number)}'
             return output
 
         if mm.numberImplicit is True or mm.number is None:
             return None
 
         # it's both a string (_tempoText) and symbolic (fullName=number)
-        output = f'tempo: {mm.referent.fullName}={float(mm.number)}'
+        output = f'{mm.referent.fullName}={float(mm.number)}'
         return output
 
     @staticmethod
@@ -1463,7 +1463,7 @@ class M21Utils:
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
-        return None
+        return f'{barline.type}'
 
     @staticmethod
     def barline_to_infodict(
@@ -1481,8 +1481,6 @@ class M21Utils:
             if barline.pause.shape != 'normal':
                 # weird shape counts as another symbol
                 output['fermatashape'] = f'{barline.pause.shape}'
-
-        output['barlinetype'] = f'{barline.type}'
 
         if isinstance(barline, m21.bar.Repeat):
             # add the Repeat fields (direction, times)
@@ -1506,7 +1504,7 @@ class M21Utils:
         kind: str = 'ottava',
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
-        output: str = f'ottava: {ottava.type}'
+        output: str = f'{ottava.type}'
         return output
 
     @staticmethod
@@ -1531,7 +1529,7 @@ class M21Utils:
         kind: str = 'keysig',
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
-        output: str = f'keysig: {keysig.sharps}'
+        output: str = f'{keysig.sharps}'
         return output
 
     @staticmethod
@@ -1583,12 +1581,14 @@ class M21Utils:
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
         if isinstance(dynamic, m21.dynamics.Dynamic):
-            return f'dynamic: {dynamic.value.strip()}'
+            return f'{dynamic.value.strip()}'
         if isinstance(dynamic, m21.dynamics.DynamicWedge):
             if isinstance(dynamic, m21.dynamics.Crescendo):
-                return '<'
+                return None
             if isinstance(dynamic, m21.dynamics.Diminuendo):
-                return '>'
+                return None
+            else:
+                return 'wedge'  # shouldn't happen
         return None  # shouldn't happen
 
     @staticmethod
@@ -1843,7 +1843,7 @@ class M21Utils:
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
-        return f'arpeggio: {arp.type}'
+        return f'{arp.type}'
 
     @staticmethod
     def arpeggio_to_infodict(
@@ -1877,7 +1877,7 @@ class M21Utils:
             printedStr: str = cs.chordKindStr
             if printedStr:
                 printedStr = ' ("' + printedStr + '")'
-            return f'chordsym: N.C.{printedStr}'
+            return f'N.C.{printedStr}'
 
         root: str = cs.root().name
         bass: str = cs.bass().name
@@ -1909,7 +1909,7 @@ class M21Utils:
         # return f'CSYM:{root} {cs.chordKind}({cs.chordKindStr}){bass}{pitchStr}'
 
         if cs.chordKindStr:
-            return f'chordsym: {root}{cs.chordKindStr}{bass}{pitchStr}'
+            return f'{root}{cs.chordKindStr}{bass}{pitchStr}'
         else:
             # no chordKindStr, so make one up.  Simplify the chord symbol first
             # (look for a better chordKind that has fewer chordStepModifications)
@@ -1918,7 +1918,7 @@ class M21Utils:
             chordKindStr: str = M21Utilities.convertChordSymbolFigureToPrintableText(
                 simplerCS.findFigure(), removeNoteNames=True
             )
-            return f'chordsym: {root}{chordKindStr}{bass}{pitchStr}'
+            return f'{root}{chordKindStr}{bass}{pitchStr}'
 
     @staticmethod
     def chordsym_to_infodict(
