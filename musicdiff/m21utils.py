@@ -1383,7 +1383,10 @@ class M21Utils:
         return {}
 
     @staticmethod
-    def parse_note_equal_num(text: str) -> tuple[str | None, float | int | None]:
+    def parse_note_equal_num(text: str | None) -> tuple[str | None, float | int | None]:
+        if not text:
+            return None, None
+
         from converter21.shared import SharedConstants
         THIN_SPACE: str = chr(0x2009)
         HAIR_SPACE: str = chr(0x200A)
