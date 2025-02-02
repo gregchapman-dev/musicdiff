@@ -728,6 +728,11 @@ class AnnExtra:
             if string:
                 string += " "
             string += self.symbolic
+        if self.infodict:
+            for i, k in enumerate(self.infodict):
+                if string:
+                    string += " "
+                string += f"{k}:{self.infodict[k]}"
 
         if name == "":
             if self.duration is not None:
