@@ -2049,7 +2049,7 @@ class Visualization:
                     assert extra2 is not None
                 newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
                 oneOutput = newLine
-                newLine = f"-({extra1.classes[0]}:content) {op[1].readable_str('symbolic')}"
+                newLine = f"-({extra1.classes[0]}:symbolic) {op[1].readable_str('symbolic')}"
                 oneOutput += newLine
                 if op[1].offset != op[2].offset:
                     outputList.append(oneOutput)
@@ -2057,7 +2057,7 @@ class Visualization:
                     oneOutput = newLine
                 else:
                     oneOutput += "\n"
-                newLine = f"+({extra2.classes[0]}:content) {op[2].readable_str('symbolic')}"
+                newLine = f"+({extra2.classes[0]}:symbolic) {op[2].readable_str('symbolic')}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
                 continue

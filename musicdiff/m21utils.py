@@ -1540,7 +1540,11 @@ class M21Utils:
         if keysig.sharps == 0:
             return 'no sharps/flats'
         if keysig.sharps < 0:
+            if keysig.sharps == -1:
+                return '1 flat'
             return f'{-keysig.sharps} flats'
+        if keysig.sharps == 1:
+            return '1 sharp'
         return f'{keysig.sharps} sharps'
 
     @staticmethod

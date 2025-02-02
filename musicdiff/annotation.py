@@ -741,10 +741,15 @@ class AnnExtra:
                 string += f"dur={M21Utils.ql_to_string(self.duration)}"
             return string
 
-        if name in ("content", "symbolic"):
-            if string is None:
+        if name == "content":
+            if self.content is None:
                 return ""
-            return string
+            return self.content
+
+        if name == "symbolic":
+            if self.symbolic is None:
+                return ""
+            return self.symbolic
 
         if name == "offset":
             if self.offset is None:
