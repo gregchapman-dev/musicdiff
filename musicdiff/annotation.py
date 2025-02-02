@@ -658,7 +658,7 @@ class AnnExtra:
         # (e.g. "con fiero")
         self.content: str | None = M21Utils.extra_to_string(extra, self.kind, detail)
 
-        # symbolic is a string that (if not None) should be counted as 1 symbol (e.g. "clef:G2+8")
+        # symbolic is a string that (if not None) should be counted as 1 symbol (e.g. "G2+8")
         self.symbolic: str | None = M21Utils.extra_to_symbolic(extra, self.kind, detail)
 
         # offset and/or duration are sometimes relevant

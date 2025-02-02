@@ -1222,7 +1222,7 @@ class M21Utils:
         sign: str = '' if clef.sign is None else clef.sign
         line: str = '0' if clef.line is None else f'{clef.line}'
         octave: str = '' if clef.octaveChange == 0 else f'{8 * clef.octaveChange:+}'
-        output: str = f'clef: {sign}{line}{octave}'
+        output: str = f'{sign}{line}{octave}'
         return output
 
     @staticmethod
@@ -1537,8 +1537,11 @@ class M21Utils:
         kind: str = 'keysig',
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
-        output: str = f'{keysig.sharps}'
-        return output
+        if keysig.sharps == 0:
+            return 'no sharps/flats'
+        if keysig.sharps < 0:
+            return f'{-keysig.sharps} flats'
+        return f'{keysig.sharps} sharps'
 
     @staticmethod
     def keysig_to_infodict(
