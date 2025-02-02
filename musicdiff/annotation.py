@@ -815,7 +815,11 @@ class AnnExtra:
         Returns:
             str: the compared representation of the AnnExtra. Does not consider music21 id.
         """
-        string = f'{self.content},off={self.offset},dur={self.duration}'
+        string = f'{self.kind},content={self.content},symbol={self.symbolic}'
+        string += f',off={self.offset},dur={self.duration}'
+        # then any info fields
+        for k, v in self.infodict.items():
+            string += f",{k}={v}"
         # and then any style fields
         for k, v in self.styledict.items():
             string += f",{k}={v}"

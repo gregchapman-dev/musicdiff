@@ -1806,30 +1806,6 @@ class M21Utils:
         return {}
 
     @staticmethod
-    def dynwedge_to_string(
-        dynwedge: m21.dynamics.DynamicWedge,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str | None:
-        return None
-
-    @staticmethod
-    def dynwedge_to_symbolic(
-        dynwedge: m21.dynamics.DynamicWedge,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str | None:
-        return None
-
-    @staticmethod
-    def dynwedge_to_infodict(
-        dynwedge: m21.dynamics.DynamicWedge,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> dict[str, str]:
-        return {}
-
-    @staticmethod
     def arpeggio_to_string(
         arp: m21.expressions.ArpeggioMark | m21.expressions.ArpeggioMarkSpanner,
         kind: str,
@@ -2047,10 +2023,8 @@ class M21Utils:
             return M21Utils.keysig_to_string(extra, kind, detail)
         if isinstance(extra, m21.expressions.TextExpression):
             return M21Utils.textexp_to_string(extra, kind, detail)
-        if isinstance(extra, m21.dynamics.Dynamic):
+        if isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge)):
             return M21Utils.dynamic_to_string(extra, kind, detail)
-        if isinstance(extra, m21.dynamics.DynamicWedge):
-            return M21Utils.dynwedge_to_string(extra, kind, detail)
         if isinstance(extra, m21.clef.Clef):
             return M21Utils.clef_to_string(extra, kind, detail)
         if isinstance(extra, m21.meter.TimeSignature):
