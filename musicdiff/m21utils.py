@@ -1188,10 +1188,15 @@ class M21Utils:
             # we ignore offset and duration for barlines and repeats; barline offset is
             # derived from the objects in the measure, which are already being compared.
             pass
-        elif kind in ('chordsym', 'ending'):
+        elif kind in ('chordsym', 'ending', 'direction',
+                'clef', 'keysig', 'timesig', 'tempo',
+                'staffinfo', 'systembreak', 'pagebreak'):
             # we ignore duration for ChordSymbols, it is often 0.0 or 1.0, and meaningless.
             # we also ignore duration for endings (RepeatBrackets).  We count how many measures
             # instead.
+            offset = extra.getOffsetInHierarchy(measure)
+        elif isinstance(extra, m21.dynamics.Dynamic):
+            # don't check kind; DynamicWedges are kind='dynamic' too, and have duration
             offset = extra.getOffsetInHierarchy(measure)
         else:
             offset = extra.getOffsetInHierarchy(measure)
