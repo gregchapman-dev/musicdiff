@@ -728,7 +728,7 @@ class AnnExtra:
             if string:
                 string += " "
             string += self.symbolic
-        if self.infodict:
+        if self.infodict and name != "info":
             for i, k in enumerate(self.infodict):
                 if string:
                     string += " "
