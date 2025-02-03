@@ -731,14 +731,56 @@ class M21Utils:
         return True
 
     @staticmethod
-    def extra_is_invisible(el: m21.base.Music21Object) -> bool:
+    def extra_is_ignored(
+        el: m21.base.Music21Object,
+        kind: str,
+        measure: m21.stream.Measure,
+        part: m21.stream.Part,
+        score: m21.stream.Score,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> bool:
         if el.hasStyleInformation and el.style.hideObjectOnPrint:
+            # we ignore all invisible objects
             return True
 
-        if isinstance(el, m21.expressions.TextExpression):
-            # empty (or white-space-only) TextExpressions are also invisible
-            if not M21Utils.textexp_to_string(el):
+        if kind in ('direction', 'tempo', 'staffinfo'):
+            # we ignore empty TextExpressions/MetronomeMarks/StaffLayouts
+            if M21Utils.extra_to_string(el, kind, detail):
+                # not empty, don't ignore
+                return False
+            if M21Utils.extra_to_symbolic(el, kind, detail):
+                # not empty, don't ignore
+                return False
+            if M21Utils.extra_to_infodict(el, kind, detail):
+                # not empty, don't ignore
+                return False
+            # definitely empty, ignore
+            return True
+
+        if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
+            # we ignore PageLayouts and SystemLayouts that are not in the
+            # first Part in the Score.
+            if part is not score.parts[0]:
                 return True
+            # we also ignore (for the moment) anything that doesn't represent
+            # a page break or a system break
+            if not el.isNew:
+                return True
+
+        if isinstance(el, m21.bar.Barline):
+            if el.type == 'none':
+                # we ignore hidden barlines
+                return True
+
+            barlineOffset: OffsetQL = el.musicdiff_offset_in_measure  # type: ignore
+            if ((barlineOffset in (0, measure.duration.quarterLength))
+                    and el.type == 'regular'
+                    and el.pause is None
+                    and not el.hasStyleInformation):
+                # we ignore unadorned regular left or right barlines (since
+                # that's what no left or right barline at all means)
+                return True
+
         return False
 
     @staticmethod
@@ -790,36 +832,12 @@ class M21Utils:
                 # ignore objects that were not requested
                 continue
 
-            if M21Utils.extra_is_invisible(el):
-                # we ignore invisible extras
+            kind: str = M21Utils.extra_to_kind(el)
+            if kind == '':
+                # skip unrecognized extras.
                 continue
 
-            if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
-                # we ignore PageLayouts and SystemLayouts that are not in the
-                # first Part in the Score.
-                if part is not score.parts[0]:
-                    continue
-                # we also ignore (for the moment) anything that doesn't represent
-                # a page break or a system break
-                if not el.isNew:
-                    continue
-
-            if isinstance(el, m21.bar.Barline):
-                if el.type == 'none':
-                    # we ignore hidden barlines
-                    continue
-
-                barlineOffset: OffsetQL = el.musicdiff_offset_in_measure  # type: ignore
-                if ((barlineOffset in (0, measure.duration.quarterLength))
-                        and el.type == 'regular'
-                        and el.pause is None
-                        and not el.hasStyleInformation):
-                    # we ignore unadorned regular left or right barlines (since
-                    # that's what no left or right barline at all means)
-                    continue
-
-            if M21Utils.extra_to_kind(el) == '':
-                # skip unrecognized extras.
+            if M21Utils.extra_is_ignored(el, kind, measure, part, score, detail):
                 continue
 
             if isinstance(el, m21.clef.Clef):
