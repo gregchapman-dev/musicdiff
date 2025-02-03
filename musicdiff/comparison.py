@@ -1368,6 +1368,7 @@ class Comparison:
             fallback_i: int = -1
             found_it: bool = False
             for i, comp_x in enumerate(unpaired_comp_extras):
+                # kind and offset are required for pairing
                 if orig_x.kind != comp_x.kind:
                     continue
                 if orig_x.offset != comp_x.offset:
@@ -1376,20 +1377,42 @@ class Comparison:
                     fallback = comp_x
                     fallback_i = i
 
+                # duration is preferred for pairing
                 if orig_x.duration != comp_x.duration:
                     continue
+
+                # there are a few kind-specific elements that are also preferred:
+                #   'direction'/'ending': content (visible text)
+                #   'keysig'/'timesig'/'clef': symbolic (there are sometimes two
+                #       simultaneous keysigs, timesigs, or clefs, and we don't
+                #       want to confuse which one is which, producing a diff where
+                #       there actually isn't one)
+                #   'slur': placements (because there are often two identical slurs
+                #       whose only difference is 'above' vs 'below', producing a diff
+                #       where there actually isn't one)
+                if orig_x.kind in ('direction', 'ending'):
+                    if orig_x.content != comp_x.content:
+                        continue
+                if orig_x.kind in ('keysig', 'timesig', 'clef'):
+                    if orig_x.symbolic != comp_x.symbolic:
+                        continue
+                if orig_x.kind == 'slur':
+                    orig_placement: str = orig_x.styledict.get('placement', '')
+                    comp_placement: str = comp_x.styledict.get('placement', '')
+                    if orig_placement != comp_placement:
+                        continue
 
                 # found a perfect match
                 paired_extras.append((orig_x, comp_x))
 
-                # remove comp_n from unpaired_comp_notes
+                # remove comp_n from unpaired_comp_extras
                 unpaired_comp_extras.pop(i)  # remove(comp_n) would sometimes get the wrong one
 
                 found_it = True
                 break
 
             if found_it:
-                # on to the next original note
+                # on to the next original extra
                 continue
 
             # did we find a fallback (matched except for duration)?
@@ -1419,7 +1442,7 @@ class Comparison:
         if paired_extras:
             for extrao, extrac in paired_extras:
                 if extrao == extrac:
-                    # if equal, avoid _annotated_note_diff call
+                    # if equal, avoid _annotated_extra_diff call
                     extrasub_op, extrasub_cost = [], 0
                 else:
                     extrasub_op, extrasub_cost = (
