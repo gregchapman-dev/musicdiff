@@ -60,7 +60,7 @@ AnnNote diff symbol error count:
 
 -------------------------------------------------------------------
 
-AnnExtras are each counted differently, as follows:
+AnnExtras have custom counts by type, as follows:
 
 clef symbol count:
     1 symbol for clef itself (e.g. G2, F4, C3, G2-8, etc)
@@ -89,7 +89,7 @@ keysig diff symbol error count:
 tempo symbol count:
     1 symbol for anything like "<note> = 80"
     len(string) symbols for any other string (like "Andante")
-    len(string) + 1 for both (e.g. "Andante <note> = 80" is 7+1=8)
+        - both may be present (e.g. "Andante <note> = 80" is len(“Andante”)+1=8)
     1 symbol if styled in any way
 
 tempo diff symbol error count:
@@ -119,6 +119,7 @@ ottava symbol count:
 ottava diff symbol error count:
     ottava type diff: 1
     ottava duration diff: 1
+    style diff: 1
 
 direction symbol count:
     len(string) symbols for direction string
@@ -155,7 +156,7 @@ slur diff symbol error count:
     style diff: 1
 
 arpeggio symbol count:
-    1 symbol for arpeggio type (up, down, undirected, non-arp)
+    1 symbol for arpeggio type (up, down, undirected, non-arpeggiated)
     1 symbol if span length > 1 (e.g. if arpeggio spans multiple chords)
     1 symbol if styled in any way
 
