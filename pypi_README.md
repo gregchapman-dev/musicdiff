@@ -7,7 +7,7 @@ musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/mu
     by [Francesco Foscarin](https://github.com/fosfrancesco).
 
 ## Setup
-Depends on [music21](https://pypi.org/project/music21) (version 9.1+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21) (version 3.3+). You also will need to configure music21 (instructions [here](https://web.mit.edu/music21/doc/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).  Requires Python 3.10+.
+Depends on [music21](https://pypi.org/project/music21) (version 9.1+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21) (version 3.4+). You also will need to configure music21 (instructions [here](https://web.mit.edu/music21/doc/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).  Requires Python 3.10+.
 
 ## Usage
 On the command line:

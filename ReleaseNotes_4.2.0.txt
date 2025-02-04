@@ -1,0 +1,2 @@
+Changes since 4.1.0:
+    Add new extra (non-note/rest) annotation/comparison algorithm, using set distance.
