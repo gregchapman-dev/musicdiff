@@ -60,17 +60,139 @@ AnnNote diff symbol error count:
 
 -------------------------------------------------------------------
 
-AnnExtra symbol count (dynamic, text, clef, keysig, timesig, metronome mark, etc):
-    len(string) symbols for the extra itself
-    1 symbol if styled (text style, color, etc)
-    1 symbol for offset (horizontal position in measure)
-    1 symbol for duration (horizontal length of, say, a crescendo wedge)
+AnnExtras are each counted differently, as follows:
 
-AnnExtra diff symbol error count:
-    name/string diff: Levenshtein distance between strings
-    offset diff: 1
+clef symbol count:
+    1 symbol for clef itself (e.g. G2, F4, C3, G2-8, etc)
+    1 symbol if styled in any way
+
+clef diff symbol error count:
+    clef diff: 1
+    clef style diff: 1
+
+timesig symbol count:
+    1 symbol for timesig itself (e.g. 2/2, 4/4, 3/8, common, cut)
+    1 symbol if styled in any way
+
+timesig diff symbol error count:
+    timesig diff: 1
+    timesig style diff: 1
+
+keysig symbol count:
+    1 symbol for keysig itself (number of sharps/flats)
+    1 symbol if styled in any way
+
+keysig diff symbol error count:
+    keysig diff: 1
+    keysig style diff: 1
+
+tempo symbol count:
+    1 symbol for anything like "<note> = 80"
+    len(string) symbols for any other string (like "Andante")
+    len(string) + 1 for both (e.g. "Andante <note> = 80" is 7+1=8)
+    1 symbol if styled in any way
+
+tempo diff symbol error count:
+    diff in "<note> = 80" portion: 1
+    diff in other string portion: Levenshtein distance between other string portions
+    tempo style diff: 1
+
+barline symbol count:
+    1 symbol for non-regular barline (e.g. double, light-heavy, repeat, etc)
+    1 symbol for repeat direction, if present
+    1 symbol for repeat count, if specified
+    1 symbol for barline fermata if present
+    1 symbol for non-normal barline fermata shape (if barline fermata present)
+
+barline diff symbol error count:
+    barline type diff: 1
+    repeat direction diff: 1
+    repeat count diff: 1
+    barline fermata diff: 1
+    barline fermata shape diff: 1
+
+ottava symbol count:
+    1 symbol for ottava type (e.g. 8va, 8ba, 15ma)
+    1 symbol for ottava duration
+    1 symbol if styled in any way
+
+ottava diff symbol error count:
+    ottava type diff: 1
+    ottava duration diff: 1
+
+direction symbol count:
+    len(string) symbols for direction string
+    1 symbol if styled in any way (italics, bold, color, placement, etc)
+
+direction diff symbol error count:
+    string diff: Levenshtein distance between strings
+    style diff: 1
+
+dynamic (text, not wedge) symbol count:
+    1 symbol for the name (e.g. fff)
+    1 symbol if styled in any way (italics, bold, color, placement, etc)
+
+dynamic diff symbol error count:
+    string diff: 1
+    style diff: 1
+
+dynamic wedge symbol count:
+    1 symbol for the wedge type (crescendo or diminuendo)
+    1 symbol for the wedge duration
+    1 symbol if styled in any way (placement, etc)
+
+dynamic wedge diff symbol error count:
+    wedge type diff: 1
     duration diff: 1
     style diff: 1
+
+slur symbol count:
+    1 symbol for the slur duration
+    1 symbol if styled in any way (placement, etc)
+
+slur diff symbol error count:
+    duration diff: 1
+    style diff: 1
+
+arpeggio symbol count:
+    1 symbol for arpeggio type (up, down, undirected, non-arp)
+    1 symbol if span length > 1 (e.g. if arpeggio spans multiple chords)
+    1 symbol if styled in any way
+
+arpeggio diff symbol error count:
+    arpeggio type diff: 1
+    span length diff: 1
+    style diff: 1
+
+chordsym symbol count:
+    1 symbol for chord name
+    1 symbol if styled in any way
+
+chordsym diff symbol error count:
+    chord name diff: 1
+    style diff: 1
+
+ending symbol count:
+    len(string) symbols for ending name
+    1 symbol for measure count
+
+ending diff symbol error count:
+    name diff: Levenshtein distance between strings
+    measure count diff: 1
+
+system break/page break symbol count:
+    1 symbol
+
+system break/page break diff symbol error count:
+    they are never different, just deleted/inserted
+
+staffinfo symbol count:
+    1 symbol if lines per staff specified
+    1 symbol if staff size % specified
+
+staffinfo diff symbol error count:
+    lines/staff diff: 1
+    staff size diff: 1
 
 -------------------------------------------------------------------
 

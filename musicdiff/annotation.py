@@ -711,8 +711,6 @@ class AnnExtra:
                 cost += len(self.content)
             if self.symbolic is not None:
                 cost += 1
-            if self.offset is not None:
-                cost += 1
             if self.duration is not None:
                 cost += 1
             cost += len(self.infodict)

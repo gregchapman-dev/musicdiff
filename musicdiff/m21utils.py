@@ -1081,7 +1081,7 @@ class M21Utils:
         if kind == 'staffinfo':
             if t.TYPE_CHECKING:
                 assert isinstance(extra, m21.layout.StaffLayout)
-            return M21Utils.staffinfo_symbolic(extra, kind, detail)
+            return M21Utils.staffinfo_to_symbolic(extra, kind, detail)
         if kind == 'systembreak':
             if t.TYPE_CHECKING:
                 assert isinstance(extra, m21.layout.SystemLayout)
@@ -1156,7 +1156,7 @@ class M21Utils:
         if kind == 'staffinfo':
             if t.TYPE_CHECKING:
                 assert isinstance(extra, m21.layout.StaffLayout)
-            return M21Utils.staffinfo_infodict(extra, kind, detail)
+            return M21Utils.staffinfo_to_infodict(extra, kind, detail)
         if kind == 'systembreak':
             if t.TYPE_CHECKING:
                 assert isinstance(extra, m21.layout.SystemLayout)
@@ -1967,7 +1967,7 @@ class M21Utils:
         return output
 
     @staticmethod
-    def staffinfo_string(
+    def staffinfo_to_string(
         sl: m21.layout.StaffLayout,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
@@ -1975,7 +1975,7 @@ class M21Utils:
         return None
 
     @staticmethod
-    def staffinfo_symbolic(
+    def staffinfo_to_symbolic(
         sl: m21.layout.StaffLayout,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
@@ -1983,7 +1983,7 @@ class M21Utils:
         return None
 
     @staticmethod
-    def staffinfo_infodict(
+    def staffinfo_to_infodict(
         sl: m21.layout.StaffLayout,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
@@ -1993,7 +1993,7 @@ class M21Utils:
             output['lines'] = f'{sl.staffLines}'
         if DetailLevel.includesStyle(detail):
             if sl.staffSize is not None:
-                output['size'] = f'{sl.staffSize:.2g}%'
+                output['size'] = f'{sl.staffSize:.3g}%'
         return output
 
     @staticmethod
@@ -2078,7 +2078,7 @@ class M21Utils:
         if isinstance(extra, m21.harmony.ChordSymbol):
             return M21Utils.chordsym_to_string(extra, kind, detail)
         if isinstance(extra, m21.layout.StaffLayout):
-            return M21Utils.staffinfo_string(extra, kind, detail)
+            return M21Utils.staffinfo_to_string(extra, kind, detail)
         if isinstance(extra, m21.layout.SystemLayout):
             return M21Utils.systembreak_to_string(extra, kind, detail)
         if isinstance(extra, m21.layout.PageLayout):
