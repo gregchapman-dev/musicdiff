@@ -7,7 +7,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2025 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -178,10 +178,14 @@ class M21Utils:
             return theName
 
         if isinstance(expr, m21.expressions.Tremolo):
-            return M21Utils.tremolo_to_string(expr, detail)
+            # TODO: we probably need full string, symbolic, infodict for expressions.
+            # For now (because some tremolos are also extras) we call symbolic here,
+            # to get the one-symbol representation of the tremolo.
+            return M21Utils.tremolo_to_symbolic(expr, detail=detail)
 
         if isinstance(expr, m21.expressions.TextExpression):
-            return M21Utils.textexp_to_string(expr)
+            te: str | None = M21Utils.textexp_to_string(expr, M21Utils.extra_to_kind(expr))
+            return te or ''
 
         # all others just get expr.name
         theName = expr.name
@@ -190,6 +194,15 @@ class M21Utils:
     @staticmethod
     def tremolo_to_string(
         expr: m21.expressions.Tremolo | m21.expressions.TremoloSpanner,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def tremolo_to_symbolic(
+        expr: m21.expressions.Tremolo | m21.expressions.TremoloSpanner,
+        kind: str = 'tremolo',
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
         if isinstance(expr, m21.expressions.Tremolo):
@@ -197,6 +210,14 @@ class M21Utils:
         if isinstance(expr, m21.expressions.TremoloSpanner):
             return 'fTrem'
         return ''
+
+    @staticmethod
+    def tremolo_to_infodict(
+        expr: m21.expressions.Tremolo | m21.expressions.TremoloSpanner,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
 
     @staticmethod
     def articulation_to_string(
@@ -710,6 +731,59 @@ class M21Utils:
         return True
 
     @staticmethod
+    def extra_is_ignored(
+        el: m21.base.Music21Object,
+        kind: str,
+        measure: m21.stream.Measure,
+        part: m21.stream.Part,
+        score: m21.stream.Score,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> bool:
+        if el.hasStyleInformation and el.style.hideObjectOnPrint:
+            # we ignore all invisible objects
+            return True
+
+        if kind in ('direction', 'tempo', 'staffinfo'):
+            # we ignore empty TextExpressions/MetronomeMarks/StaffLayouts
+            if M21Utils.extra_to_string(el, kind, detail):
+                # not empty, don't ignore
+                return False
+            if M21Utils.extra_to_symbolic(el, kind, detail):
+                # not empty, don't ignore
+                return False
+            if M21Utils.extra_to_infodict(el, kind, detail):
+                # not empty, don't ignore
+                return False
+            # definitely empty, ignore
+            return True
+
+        if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
+            # we ignore PageLayouts and SystemLayouts that are not in the
+            # first Part in the Score.
+            if part is not score.parts[0]:
+                return True
+            # we also ignore (for the moment) anything that doesn't represent
+            # a page break or a system break
+            if not el.isNew:
+                return True
+
+        if isinstance(el, m21.bar.Barline):
+            if el.type == 'none':
+                # we ignore hidden barlines
+                return True
+
+            barlineOffset: OffsetQL = el.musicdiff_offset_in_measure  # type: ignore
+            if ((barlineOffset in (0, measure.duration.quarterLength))
+                    and el.type == 'regular'
+                    and el.pause is None
+                    and not el.hasStyleInformation):
+                # we ignore unadorned regular left or right barlines (since
+                # that's what no left or right barline at all means)
+                return True
+
+        return False
+
+    @staticmethod
     def get_extras(
         measure: m21.stream.Measure,
         part: m21.stream.Part,
@@ -758,33 +832,12 @@ class M21Utils:
                 # ignore objects that were not requested
                 continue
 
-            if el.hasStyleInformation and el.style.hideObjectOnPrint:
-                # we ignore hidden extras
+            kind: str = M21Utils.extra_to_kind(el)
+            if kind == '':
+                # skip unrecognized extras.
                 continue
 
-            if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
-                # we ignore PageLayouts and SystemLayouts that are not in the
-                # first Part in the Score.
-                if part is not score.parts[0]:
-                    continue
-
-            if isinstance(el, m21.bar.Barline):
-                if el.type == 'none':
-                    # we ignore hidden barlines
-                    continue
-
-                barlineOffset: OffsetQL = el.musicdiff_offset_in_measure  # type: ignore
-                if ((barlineOffset in (0, measure.duration.quarterLength))
-                        and el.type == 'regular'
-                        and el.pause is None
-                        and not el.hasStyleInformation):
-                    # we ignore unadorned regular left or right barlines (since
-                    # that's what no left or right barline at all means)
-                    continue
-
-            if M21Utils.extra_to_string(el, detail) == '':
-                # skip unrecognized extras.
-                # (extra_to_string complains about unrecognized extras)
+            if M21Utils.extra_is_ignored(el, kind, measure, part, score, detail):
                 continue
 
             if isinstance(el, m21.clef.Clef):
@@ -931,40 +984,323 @@ class M21Utils:
         return out
 
     @staticmethod
-    def clef_to_string(clef: m21.clef.Clef) -> str:
+    def extra_to_kind(extra: m21.base.Music21Object) -> str:
+        if isinstance(extra, m21.clef.Clef):
+            return 'clef'
+        if isinstance(extra, m21.meter.TimeSignature):
+            return 'timesig'
+        if isinstance(extra, m21.tempo.TempoIndication):
+            return 'tempo'
+        if isinstance(extra, m21.bar.Barline):
+            if isinstance(extra, m21.bar.Repeat):
+                return 'repeat'
+            return 'barline'
+        if isinstance(extra, m21.spanner.Ottava):
+            return 'ottava'
+        if isinstance(extra, m21.key.KeySignature):
+            return 'keysig'
+        if isinstance(extra, m21.expressions.TextExpression):
+            return 'direction'
+        if isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge)):
+            return 'dynamic'
+        if isinstance(extra, m21.spanner.Slur):
+            return 'slur'
+        if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
+            return 'arpeggio'
+        if isinstance(extra, m21.harmony.ChordSymbol):
+            return 'chordsym'
+        if isinstance(extra, m21.spanner.RepeatBracket):
+            return 'ending'
+        if isinstance(extra, m21.layout.StaffLayout):
+            return 'staffinfo'
+        if isinstance(extra, m21.layout.SystemLayout):
+            return 'systembreak'
+        if isinstance(extra, m21.layout.PageLayout):
+            return 'pagebreak'
+        if isinstance(extra, (m21.expressions.Tremolo, m21.expressions.TremoloSpanner)):
+            return 'tremolo'
+        return ''
+
+    @staticmethod
+    def extra_to_symbolic(
+        extra: m21.base.Music21Object,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        if kind == 'clef':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.clef.Clef)
+            return M21Utils.clef_to_symbolic(extra, kind, detail)
+        if kind == 'timesig':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.meter.TimeSignature)
+            return M21Utils.timesig_to_symbolic(extra, kind, detail)
+        if kind == 'tempo':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.tempo.TempoIndication)
+            return M21Utils.tempo_to_symbolic(extra, kind, detail)
+        if kind in ('barline', 'repeat'):
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.bar.Barline)
+            return M21Utils.barline_to_symbolic(extra, kind, detail)
+        if kind == 'ottava':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.spanner.Ottava)
+            return M21Utils.ottava_to_symbolic(extra, kind, detail)
+        if kind == 'keysig':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.key.KeySignature)
+            return M21Utils.keysig_to_symbolic(extra, kind, detail)
+        if kind == 'direction':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.expressions.TextExpression)
+            return M21Utils.textexp_to_symbolic(extra, kind, detail)
+        if kind == 'dynamic':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge))
+            return M21Utils.dynamic_to_symbolic(extra, kind, detail)
+        if kind == 'slur':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.spanner.Slur)
+            return M21Utils.slur_to_symbolic(extra, kind, detail)
+        if kind == 'arpeggio':
+            if t.TYPE_CHECKING:
+                assert isinstance(
+                    extra,
+                    (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)
+                )
+            return M21Utils.arpeggio_to_symbolic(extra, kind, detail)
+        if kind == 'chordsym':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.harmony.ChordSymbol)
+            return M21Utils.chordsym_to_symbolic(extra, kind, detail)
+        if kind == 'ending':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.spanner.RepeatBracket)
+            return M21Utils.repeatbracket_to_symbolic(extra, kind, detail)
+        if kind == 'staffinfo':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.layout.StaffLayout)
+            return M21Utils.staffinfo_symbolic(extra, kind, detail)
+        if kind == 'systembreak':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.layout.SystemLayout)
+            return M21Utils.systembreak_to_symbolic(extra, kind, detail)
+        if kind == 'pagebreak':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.layout.PageLayout)
+            return M21Utils.pagebreak_to_symbolic(extra, kind, detail)
+        if kind == 'tremolo':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, (m21.expressions.Tremolo, m21.expressions.TremoloSpanner))
+            return M21Utils.tremolo_to_symbolic(extra, kind, detail)
+        return None
+
+    @staticmethod
+    def extra_to_infodict(
+        extra: m21.base.Music21Object,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        if kind == 'clef':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.clef.Clef)
+            return M21Utils.clef_to_infodict(extra, kind, detail)
+        if kind == 'timesig':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.meter.TimeSignature)
+            return M21Utils.timesig_to_infodict(extra, kind, detail)
+        if kind == 'tempo':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.tempo.TempoIndication)
+            return M21Utils.tempo_to_infodict(extra, kind, detail)
+        if kind in ('barline', 'repeat'):
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.bar.Barline)
+            return M21Utils.barline_to_infodict(extra, kind, detail)
+        if kind == 'ottava':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.spanner.Ottava)
+            return M21Utils.ottava_to_infodict(extra, kind, detail)
+        if kind == 'keysig':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.key.KeySignature)
+            return M21Utils.keysig_to_infodict(extra, kind, detail)
+        if kind == 'direction':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.expressions.TextExpression)
+            return M21Utils.textexp_to_infodict(extra, kind, detail)
+        if kind == 'dynamic':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge))
+            return M21Utils.dynamic_to_infodict(extra, kind, detail)
+        if kind == 'slur':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.spanner.Slur)
+            return M21Utils.slur_to_infodict(extra, kind, detail)
+        if kind == 'arpeggio':
+            if t.TYPE_CHECKING:
+                assert isinstance(
+                    extra,
+                    (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)
+                )
+            return M21Utils.arpeggio_to_infodict(extra, kind, detail)
+        if kind == 'chordsym':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.harmony.ChordSymbol)
+            return M21Utils.chordsym_to_infodict(extra, kind, detail)
+        if kind == 'ending':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.spanner.RepeatBracket)
+            return M21Utils.repeatbracket_to_infodict(extra, kind, detail)
+        if kind == 'staffinfo':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.layout.StaffLayout)
+            return M21Utils.staffinfo_infodict(extra, kind, detail)
+        if kind == 'systembreak':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.layout.SystemLayout)
+            return M21Utils.systembreak_to_infodict(extra, kind, detail)
+        if kind == 'pagebreak':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.layout.PageLayout)
+            return M21Utils.pagebreak_to_infodict(extra, kind, detail)
+        if kind == 'tremolo':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, (m21.expressions.Tremolo, m21.expressions.TremoloSpanner))
+            return M21Utils.tremolo_to_infodict(extra, kind, detail)
+        return {}
+
+    @staticmethod
+    def extra_to_offset_and_duration(
+        extra: m21.base.Music21Object,
+        kind: str,
+        measure: m21.stream.Measure,
+        score: m21.stream.Score,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> tuple[OffsetQL | None, OffsetQL | None]:
+        offset: OffsetQL | None = None
+        duration: OffsetQL | None = None
+
+        if isinstance(extra, m21.spanner.Spanner):
+            firstNote: m21.note.GeneralNote | m21.spanner.SpannerAnchor = (
+                M21Utils.getPrimarySpannerElement(extra)
+            )
+            lastNote: m21.note.GeneralNote | m21.spanner.SpannerAnchor = (
+                extra.getLast()
+            )
+            offset = firstNote.getOffsetInHierarchy(measure)
+            # to compute duration we need to use offset-in-score, since the end note might
+            # be in another Measure.  Except for arpeggios, where the duration
+            # isn't relevant.
+            if kind != 'arpeggio':
+                startOffsetInScore: OffsetQL = firstNote.getOffsetInHierarchy(score)
+                try:
+                    endOffsetInScore: OffsetQL = opFrac(
+                        lastNote.getOffsetInHierarchy(score) + lastNote.duration.quarterLength
+                    )
+                except m21.sites.SitesException:
+                    endOffsetInScore = startOffsetInScore
+                duration = opFrac(endOffsetInScore - startOffsetInScore)
+        elif kind in ('barline', 'repeat'):
+            # we ignore offset and duration for barlines and repeats; barline offset is
+            # derived from the objects in the measure, which are already being compared.
+            pass
+        elif kind in ('chordsym', 'ending', 'direction',
+                'clef', 'keysig', 'timesig', 'tempo',
+                'staffinfo', 'systembreak', 'pagebreak'):
+            # we ignore duration for ChordSymbols, it is often 0.0 or 1.0, and meaningless.
+            # we also ignore duration for endings (RepeatBrackets).  We count how many measures
+            # instead.
+            offset = extra.getOffsetInHierarchy(measure)
+        elif isinstance(extra, m21.dynamics.Dynamic):
+            # don't check kind; DynamicWedges are kind='dynamic' too, and have duration
+            offset = extra.getOffsetInHierarchy(measure)
+        else:
+            offset = extra.getOffsetInHierarchy(measure)
+            duration = extra.duration.quarterLength
+
+        return offset, duration
+
+    @staticmethod
+    def clef_to_string(
+        clef: m21.clef.Clef,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def clef_to_symbolic(
+        clef: m21.clef.Clef,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
         # sign(str), line(int), octaveChange(int == # octaves to shift up(+) or down(-))
         sign: str = '' if clef.sign is None else clef.sign
         line: str = '0' if clef.line is None else f'{clef.line}'
         octave: str = '' if clef.octaveChange == 0 else f'{8 * clef.octaveChange:+}'
-        output: str = f'CL:{sign}{line}{octave}'
+        output: str = f'{sign}{line}{octave}'
         return output
 
     @staticmethod
-    def timesig_to_string(timesig: m21.meter.TimeSignature) -> str:
+    def clef_to_infodict(
+        clef: m21.clef.Clef,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def timesig_to_string(
+        timesig: m21.meter.TimeSignature,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def timesig_to_symbolic(
+        timesig: m21.meter.TimeSignature,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
         output: str = ''
 
         if not timesig.symbol:
-            output = f'TS:{timesig.numerator}/{timesig.denominator}'
+            output = f'{timesig.numerator}/{timesig.denominator}'
         elif timesig.symbol in ('common', 'cut'):
-            output = f'TS:{timesig.symbol}'
+            output = f'{timesig.symbol}'
         elif timesig.symbol == 'single-number':
-            output = f'TS:{timesig.numerator}'
+            output = f'{timesig.numerator}'
         else:
-            output = f'TS:{timesig.numerator}/{timesig.denominator}'
+            output = f'{timesig.numerator}/{timesig.denominator}'
 
         return output
 
     @staticmethod
-    def tempo_to_string(mm: m21.tempo.TempoIndication) -> str:
+    def timesig_to_infodict(
+        timesig: m21.meter.TimeSignature,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def tempo_to_string(
+        mm: m21.tempo.TempoIndication,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
         # pylint: disable=protected-access
         # We need direct access to mm._textExpression and mm._tempoText, to avoid
         # the extra formatting that referencing via the .text property will perform.
-        output: str = ''
+        output: str | None = None
         if isinstance(mm, m21.tempo.TempoText):
             if mm._textExpression is None:
-                output = 'MM:'
+                output = None
             else:
-                output = f'MM:{M21Utils.extra_to_string(mm._textExpression)}'
+                output = f'{M21Utils.extra_to_string(mm._textExpression, kind, detail)}'
             return output
 
         if isinstance(mm, m21.tempo.MetricModulation):
@@ -977,45 +1313,98 @@ class M21Utils:
 
         # ignore "playback only" metronome marks (they are not printed)
         if not mm.text and (not mm.number or mm.numberImplicit):
-            return ''
+            return None
 
         # special case: numberImplicit is True, and non-implicit text is of the form:
         # SMUFLNoteCode = nnn (with no leading text).
-        # We annotate this just like f'MM:{mm.referent.fullName}={float(mm.number)}',
+        # We annotate this just like f'{mm.referent.fullName}={float(mm.number)}',
         # but getting the fullName and number from parsing the text.
         if mm.numberImplicit is True and mm.textImplicit is False:
             noteFullName: str | None = None
             number: float | int | None = None
             noteFullName, number = M21Utils.parse_note_equal_num(mm.text)
             if noteFullName is not None and number is not None:
-                output = f'MM:{noteFullName}={float(number)}'
-                return output
+                # not a string, it's symbolic
+                return None
 
         if mm.textImplicit is True or mm._tempoText is None:
-            if mm.referent is None or mm.number is None:
-                output = 'MM:'
-            else:
-                output = f'MM:{mm.referent.fullName}={float(mm.number)}'
-            return output
+            # not a string, it's symbolic
+            return None
 
         if mm.numberImplicit is True or mm.number is None:
             if mm._tempoText is None:
-                output = 'MM:'
+                output = None
             else:
-                # no 'MM:' prefix, TempoText adds their own
-                output = f'{M21Utils.tempo_to_string(mm._tempoText)}'
+                output = f'{M21Utils.tempo_to_string(mm._tempoText, kind, detail)}'
             return output
 
-        # no 'MM:' prefix, TempoText adds their own
-        output = (
-            f'{M21Utils.tempo_to_string(mm._tempoText)}'
-            + f' {mm.referent.fullName}={float(mm.number)}'
-        )
+        # it's both a string (_tempoText) and symbolic (fullName=number)
+        output = f'{M21Utils.tempo_to_string(mm._tempoText, kind, detail)}'
         return output
         # pylint: enable=protected-access
 
     @staticmethod
-    def parse_note_equal_num(text: str) -> tuple[str | None, float | int | None]:
+    def tempo_to_symbolic(
+        mm: m21.tempo.TempoIndication,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        output: str | None = ''
+        if isinstance(mm, m21.tempo.TempoText):
+            # just text, no symbolic
+            return None
+
+        if isinstance(mm, m21.tempo.MetricModulation):
+            # convert to MetronomeMark
+            mm = mm.newMetronome
+
+        # mm must be a MetronomeMark if we get here.
+        if t.TYPE_CHECKING:
+            assert isinstance(mm, m21.tempo.MetronomeMark)
+
+        # ignore "playback only" metronome marks (they are not printed)
+        if not mm.text and (not mm.number or mm.numberImplicit):
+            return None
+
+        # special case: numberImplicit is True, and non-implicit text is of the form:
+        # SMUFLNoteCode = nnn (with no leading text).
+        # We annotate this just like f'{mm.referent.fullName}={float(mm.number)}',
+        # but getting the fullName and number from parsing the text.
+        if mm.numberImplicit is True and mm.textImplicit is False:
+            noteFullName: str | None = None
+            number: float | int | None = None
+            noteFullName, number = M21Utils.parse_note_equal_num(mm.text)
+            if noteFullName is not None and number is not None:
+                output = f'{noteFullName}={float(number)}'
+                return output
+
+        if mm.textImplicit is True or mm._tempoText is None:
+            if mm.referent is None or mm.number is None:
+                output = None
+            else:
+                output = f'{mm.referent.fullName}={float(mm.number)}'
+            return output
+
+        if mm.numberImplicit is True or mm.number is None:
+            return None
+
+        # it's both a string (_tempoText) and symbolic (fullName=number)
+        output = f'{mm.referent.fullName}={float(mm.number)}'
+        return output
+
+    @staticmethod
+    def tempo_to_infodict(
+        mm: m21.tempo.TempoIndication,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def parse_note_equal_num(text: str | None) -> tuple[str | None, float | int | None]:
+        if not text:
+            return None, None
+
         from converter21.shared import SharedConstants
         THIN_SPACE: str = chr(0x2009)
         HAIR_SPACE: str = chr(0x200A)
@@ -1087,53 +1476,161 @@ class M21Utils:
         return fullName, num
 
     @staticmethod
-    def barline_to_string(barline: m21.bar.Barline) -> str:
-        # for all Barlines: type, pause
+    def barline_to_string(
+        barline: m21.bar.Barline,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def barline_to_symbolic(
+        barline: m21.bar.Barline,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return f'{barline.type}'
+
+    @staticmethod
+    def barline_to_infodict(
+        barline: m21.bar.Barline,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        # each element is one symbol
+        output: dict[str, str] = {}
+
+        # for all Barlines: type, fermata
         # for Repeat Barlines: direction, times
-        pauseStr: str = ''
-        if barline.pause is not None:
-            if isinstance(barline.pause, m21.expressions.Fermata):
-                pauseStr = f' with fermata({barline.pause.type},{barline.pause.shape})'
+        if isinstance(barline.pause, m21.expressions.Fermata):
+            output['fermata'] = f'type={barline.pause.type}'  # e.g. 'inverted'
+            if barline.pause.shape != 'normal':
+                # weird shape counts as another symbol
+                output['fermatashape'] = f'{barline.pause.shape}'
+
+        if isinstance(barline, m21.bar.Repeat):
+            # add the Repeat fields (direction, times)
+            if barline.direction is not None:
+                output['repeatdirection'] = f'{barline.direction}'
+            if barline.times is not None:
+                output['repeatcount'] = f'{barline.times}'
+        return output
+
+    @staticmethod
+    def ottava_to_string(
+        ottava: m21.spanner.Ottava,
+        kind: str = 'ottava',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def ottava_to_symbolic(
+        ottava: m21.spanner.Ottava,
+        kind: str = 'ottava',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        output: str = f'{ottava.type}'
+        return output
+
+    @staticmethod
+    def ottava_to_infodict(
+        ottava: m21.spanner.Ottava,
+        kind: str = 'ottava',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def keysig_to_string(
+        keysig: m21.key.Key | m21.key.KeySignature,
+        kind: str = 'keysig',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def keysig_to_symbolic(
+        keysig: m21.key.Key | m21.key.KeySignature,
+        kind: str = 'keysig',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        if keysig.sharps == 0:
+            return 'no sharps/flats'
+        if keysig.sharps < 0:
+            if keysig.sharps == -1:
+                return '1 flat'
+            return f'{-keysig.sharps} flats'
+        if keysig.sharps == 1:
+            return '1 sharp'
+        return f'{keysig.sharps} sharps'
+
+    @staticmethod
+    def keysig_to_infodict(
+        keysig: m21.key.Key | m21.key.KeySignature,
+        kind: str = 'keysig',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def textexp_to_string(
+        textexp: m21.expressions.TextExpression,
+        kind: str = 'direction',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        if textexp.content is None:
+            return None
+        return textexp.content.strip()
+
+    @staticmethod
+    def textexp_to_symbolic(
+        textexp: m21.expressions.TextExpression,
+        kind: str = 'direction',
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def textexp_to_infodict(
+        textexp: m21.expressions.TextExpression,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def dynamic_to_string(
+        dynamic: m21.dynamics.Dynamic | m21.dynamics.DynamicWedge,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def dynamic_to_symbolic(
+        dynamic: m21.dynamics.Dynamic | m21.dynamics.DynamicWedge,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        if isinstance(dynamic, m21.dynamics.Dynamic):
+            return f'{dynamic.value.strip()}'
+        if isinstance(dynamic, m21.dynamics.DynamicWedge):
+            if isinstance(dynamic, m21.dynamics.Crescendo):
+                return None
+            if isinstance(dynamic, m21.dynamics.Diminuendo):
+                return None
             else:
-                pauseStr = ' with pause (non-fermata)'
-
-        output: str = f'{barline.type}{pauseStr}'
-        if not isinstance(barline, m21.bar.Repeat):
-            return f'BL:{output}'
-
-        # add the Repeat fields (direction, times)
-        if barline.direction is not None:
-            output += f' direction={barline.direction}'
-        if barline.times is not None:
-            output += f' times={barline.times}'
-        return f'RPT:{output}'
+                return 'wedge'  # shouldn't happen
+        return None  # shouldn't happen
 
     @staticmethod
-    def ottava_to_string(ottava: m21.spanner.Ottava) -> str:
-        output: str = f'OTT:{ottava.type}'
-        return output
-
-    @staticmethod
-    def keysig_to_string(keysig: m21.key.Key | m21.key.KeySignature) -> str:
-        output: str = f'KS:{keysig.sharps}'
-        return output
-
-    @staticmethod
-    def textexp_to_string(textexp: m21.expressions.TextExpression) -> str:
-        content: str = textexp.content.strip()
-        if not content:
-            return ''
-        output: str = f'TX:{content}'
-        return output
-
-    @staticmethod
-    def dynamic_to_string(dynamic: m21.dynamics.Dynamic) -> str:
-        value: str = str(dynamic.value)
-        value = value.strip()
-        if not value:
-            return ''
-        output: str = f'DY:{value}'
-        return output
+    def dynamic_to_infodict(
+        dynamic: m21.dynamics.Dynamic | m21.dynamics.DynamicWedge,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
 
     @staticmethod
     def notestyle_to_dict(
@@ -1318,41 +1815,78 @@ class M21Utils:
         return output
 
     @staticmethod
-    def slur_to_string(slur: m21.spanner.Slur) -> str:
-        return 'SLUR'
+    def slur_to_string(
+        slur: m21.spanner.Slur,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
 
     @staticmethod
-    def dynwedge_to_string(dynwedge: m21.dynamics.DynamicWedge) -> str:
-        output: str = ''
-        if isinstance(dynwedge, m21.dynamics.Crescendo):
-            output = '<'
-        elif isinstance(dynwedge, m21.dynamics.Diminuendo):
-            output = '>'
-        else:
-            output = 'wedge'
-        return f'DY:{output}'
+    def slur_to_symbolic(
+        slur: m21.spanner.Slur,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
 
     @staticmethod
-    def arpeggiomark_to_string(
-        arp: m21.expressions.ArpeggioMark | m21.expressions.ArpeggioMarkSpanner
-    ) -> str:
-        if isinstance(arp, m21.expressions.ArpeggioMark):
-            return f'ARP:{arp.type}'
+    def slur_to_infodict(
+        slur: m21.spanner.Slur,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def arpeggio_to_string(
+        arp: m21.expressions.ArpeggioMark | m21.expressions.ArpeggioMarkSpanner,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def arpeggio_to_symbolic(
+        arp: m21.expressions.ArpeggioMark | m21.expressions.ArpeggioMarkSpanner,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return f'{arp.type}'
+
+    @staticmethod
+    def arpeggio_to_infodict(
+        arp: m21.expressions.ArpeggioMark | m21.expressions.ArpeggioMarkSpanner,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        output: dict[str, str] = {}
         if isinstance(arp, m21.expressions.ArpeggioMarkSpanner):
-            return f'ARPS:{arp.type}:len={len(arp)}'
-        return ''
+            if len(arp) > 1:
+                output['arpeggiospanlength'] = f'{len(arp)}'
+        return output
 
     @staticmethod
-    def chordsymbol_to_string(
-        cs: m21.harmony.ChordSymbol
-    ) -> str:
+    def chordsym_to_string(
+        cs: m21.harmony.ChordSymbol,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def chordsym_to_symbolic(
+        cs: m21.harmony.ChordSymbol,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
         from converter21.shared import M21Utilities
 
         if isinstance(cs, m21.harmony.NoChord):
             printedStr: str = cs.chordKindStr
             if printedStr:
-                printedStr = '(' + printedStr + ')'
-            return f'CSYM:N.C.{printedStr}'
+                printedStr = ' ("' + printedStr + '")'
+            return f'N.C.{printedStr}'
 
         root: str = cs.root().name
         bass: str = cs.bass().name
@@ -1384,7 +1918,7 @@ class M21Utils:
         # return f'CSYM:{root} {cs.chordKind}({cs.chordKindStr}){bass}{pitchStr}'
 
         if cs.chordKindStr:
-            return f'CSYM:{root}{cs.chordKindStr}{bass}{pitchStr}'
+            return f'{root}{cs.chordKindStr}{bass}{pitchStr}'
         else:
             # no chordKindStr, so make one up.  Simplify the chord symbol first
             # (look for a better chordKind that has fewer chordStepModifications)
@@ -1393,88 +1927,162 @@ class M21Utils:
             chordKindStr: str = M21Utilities.convertChordSymbolFigureToPrintableText(
                 simplerCS.findFigure(), removeNoteNames=True
             )
-            return f'CSYM:{root}{chordKindStr}{bass}{pitchStr}'
+            return f'{root}{chordKindStr}{bass}{pitchStr}'
 
     @staticmethod
-    def repeatbracket_to_string(rb: m21.spanner.RepeatBracket) -> str:
-        if rb.overrideDisplay:
-            return f'END:{rb.number,rb.overrideDisplay}:len={len(rb)}'
-        else:
-            return f'END:{rb.number}:len={len(rb)}'
-
-    @staticmethod
-    def stafflayout_to_string(
-        sl: m21.layout.StaffLayout,
+    def chordsym_to_infodict(
+        cs: m21.harmony.ChordSymbol,
+        kind: str,
         detail: DetailLevel | int = DetailLevel.Default
-    ) -> str:
-        output: str = ''
-        if sl.staffLines is not None:
-            if not output:
-                output = 'STAFF:'
-            output += f'lines={sl.staffLines}'
-        if DetailLevel.includesStyle(detail):
-            if sl.staffSize is not None:
-                if not output:
-                    output = 'STAFF:'
-                else:
-                    output += ','
-                output += f'size={sl.staffSize:.2g}%'
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def repeatbracket_to_string(
+        rb: m21.spanner.RepeatBracket,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        if rb.overrideDisplay:
+            return f'{rb.overrideDisplay}'
+        else:
+            return f'{rb.number}'
+
+    @staticmethod
+    def repeatbracket_to_symbolic(
+        rb: m21.spanner.RepeatBracket,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def repeatbracket_to_infodict(
+        rb: m21.spanner.RepeatBracket,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        output: dict[str, str] = {}
+        output['measurecount'] = f'{len(rb)}'
         return output
 
     @staticmethod
-    def systemlayout_to_string(sb: m21.layout.SystemLayout) -> str:
-        if sb.isNew:
-            return 'SB'
-        return ''
+    def staffinfo_string(
+        sl: m21.layout.StaffLayout,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
 
     @staticmethod
-    def pagelayout_to_string(pb: m21.layout.PageLayout) -> str:
-        if pb.isNew:
-            if pb.pageNumber is not None:
-                return f'PB:num={pb.pageNumber}'
-            return 'PB'
-        return ''
+    def staffinfo_symbolic(
+        sl: m21.layout.StaffLayout,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def staffinfo_infodict(
+        sl: m21.layout.StaffLayout,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        output: dict[str, str] = {}
+        if sl.staffLines is not None:
+            output['lines'] = f'{sl.staffLines}'
+        if DetailLevel.includesStyle(detail):
+            if sl.staffSize is not None:
+                output['size'] = f'{sl.staffSize:.2g}%'
+        return output
+
+    @staticmethod
+    def systembreak_to_string(
+        sb: m21.layout.SystemLayout,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def systembreak_to_symbolic(
+        sb: m21.layout.SystemLayout,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return 'systembreak'
+
+    @staticmethod
+    def systembreak_to_infodict(
+        sb: m21.layout.SystemLayout,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def pagebreak_to_string(
+        sb: m21.layout.PageLayout,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        return None
+
+    @staticmethod
+    def pagebreak_to_symbolic(
+        sb: m21.layout.PageLayout,
+        kind: str,
+        detail: DetailLevel | int
+    ) -> str | None:
+        return 'pagebreak'
+
+    @staticmethod
+    def pagebreak_to_infodict(
+        sb: m21.layout.PageLayout,
+        kind: str,
+        detail: DetailLevel | int
+    ) -> dict[str, str]:
+        return {}
 
     @staticmethod
     def extra_to_string(
         extra: m21.base.Music21Object,
+        kind: str,
         detail: DetailLevel | int = DetailLevel.Default
-    ) -> str:
+    ) -> str | None:
         if isinstance(extra, m21.spanner.Slur):
-            return M21Utils.slur_to_string(extra)
+            return M21Utils.slur_to_string(extra, kind, detail)
         if isinstance(extra, (m21.key.Key, m21.key.KeySignature)):
-            return M21Utils.keysig_to_string(extra)
+            return M21Utils.keysig_to_string(extra, kind, detail)
         if isinstance(extra, m21.expressions.TextExpression):
-            return M21Utils.textexp_to_string(extra)
-        if isinstance(extra, m21.dynamics.Dynamic):
-            return M21Utils.dynamic_to_string(extra)
-        if isinstance(extra, m21.dynamics.DynamicWedge):
-            return M21Utils.dynwedge_to_string(extra)
+            return M21Utils.textexp_to_string(extra, kind, detail)
+        if isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge)):
+            return M21Utils.dynamic_to_string(extra, kind, detail)
         if isinstance(extra, m21.clef.Clef):
-            return M21Utils.clef_to_string(extra)
+            return M21Utils.clef_to_string(extra, kind, detail)
         if isinstance(extra, m21.meter.TimeSignature):
-            return M21Utils.timesig_to_string(extra)
+            return M21Utils.timesig_to_string(extra, kind, detail)
         if isinstance(extra, m21.tempo.TempoIndication):
-            return M21Utils.tempo_to_string(extra)
+            return M21Utils.tempo_to_string(extra, kind, detail)
         if isinstance(extra, m21.bar.Barline):
-            return M21Utils.barline_to_string(extra)
+            return M21Utils.barline_to_string(extra, kind, detail)
         if isinstance(extra, m21.spanner.Ottava):
-            return M21Utils.ottava_to_string(extra)
+            return M21Utils.ottava_to_string(extra, kind, detail)
         if isinstance(extra, m21.spanner.RepeatBracket):
-            return M21Utils.repeatbracket_to_string(extra)
+            return M21Utils.repeatbracket_to_string(extra, kind, detail)
         if isinstance(extra, m21.expressions.TremoloSpanner):
-            return M21Utils.tremolo_to_string(extra)
+            return M21Utils.tremolo_to_string(extra, kind, detail)
         if isinstance(extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
-            return M21Utils.arpeggiomark_to_string(extra)
+            return M21Utils.arpeggio_to_string(extra, kind, detail)
         if isinstance(extra, m21.harmony.ChordSymbol):
-            return M21Utils.chordsymbol_to_string(extra)
+            return M21Utils.chordsym_to_string(extra, kind, detail)
         if isinstance(extra, m21.layout.StaffLayout):
-            return M21Utils.stafflayout_to_string(extra, detail)
+            return M21Utils.staffinfo_string(extra, kind, detail)
         if isinstance(extra, m21.layout.SystemLayout):
-            return M21Utils.systemlayout_to_string(extra)
+            return M21Utils.systembreak_to_string(extra, kind, detail)
         if isinstance(extra, m21.layout.PageLayout):
-            return M21Utils.pagelayout_to_string(extra)
+            return M21Utils.pagebreak_to_string(extra, kind, detail)
 
         # print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''

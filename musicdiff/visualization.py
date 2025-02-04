@@ -7,7 +7,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022-2024 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2025 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -236,7 +236,79 @@ class Visualization:
                     assert extra1 is not None
                     assert extra2 is not None
                 textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} text")
-                textExp2 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} text")
+                textExp2 = m21.expressions.TextExpression(f"changed {extra2.classes[0]} text")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                else:
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                continue
+
+            if op[0] == "extrasymboledit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
+                extra2 = score2.recurse().getElementById(op[2].extra)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert extra1 is not None
+                    assert extra2 is not None
+                textExp1 = m21.expressions.TextExpression(f"changed {extra1.classes[0]} symbol")
+                textExp2 = m21.expressions.TextExpression(f"changed {extra2.classes[0]} symbol")
+                textExp1.style.color = Visualization.CHANGED_COLOR
+                textExp2.style.color = Visualization.CHANGED_COLOR
+                if isinstance(extra1, m21.spanner.Spanner):
+                    insertionPoint1 = extra1.getFirst()
+                else:
+                    insertionPoint1 = extra1
+                if isinstance(extra2, m21.spanner.Spanner):
+                    insertionPoint2 = extra2.getFirst()
+                else:
+                    insertionPoint2 = extra2
+
+                insertionPoint1.activeSite.insert(insertionPoint1.offset, textExp1)
+                insertionPoint2.activeSite.insert(insertionPoint2.offset, textExp2)
+                continue
+
+            if op[0] == "extrainfoedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                sd1 = op[1].infodict
+                sd2 = op[2].infodict
+                changedStr = "info: "
+                for k1, v1 in sd1.items():
+                    if k1 not in sd2 or sd2[k1] != v1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k1
+
+                # one last thing: check for keys in sd2 that aren't in sd1
+                for k2 in sd2:
+                    if k2 not in sd1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k2
+
+                # color the extra using Visualization.CHANGED_COLOR, and add a textExpression
+                # describing the change.
+                extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
+                extra2 = score2.recurse().getElementById(op[2].extra)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert extra1 is not None
+                    assert extra2 is not None
+                textExp1 = m21.expressions.TextExpression(
+                    f"changed {extra1.classes[0]} {changedStr}")
+                textExp2 = m21.expressions.TextExpression(
+                    f"changed {extra2.classes[0]} {changedStr}")
                 textExp1.style.color = Visualization.CHANGED_COLOR
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
@@ -265,7 +337,7 @@ class Visualization:
                 textExp1 = m21.expressions.TextExpression(
                     f"changed {extra1.classes[0]} offset")
                 textExp2 = m21.expressions.TextExpression(
-                    f"changed {extra1.classes[0]} offset")
+                    f"changed {extra2.classes[0]} offset")
                 textExp1.style.color = Visualization.CHANGED_COLOR
                 textExp2.style.color = Visualization.CHANGED_COLOR
                 if isinstance(extra1, m21.spanner.Spanner):
@@ -313,7 +385,7 @@ class Visualization:
                 assert isinstance(op[2], AnnExtra)
                 sd1 = op[1].styledict
                 sd2 = op[2].styledict
-                changedStr = ""
+                changedStr = "style: "
                 for k1, v1 in sd1.items():
                     if k1 not in sd2 or sd2[k1] != v1:
                         if changedStr:
@@ -1966,6 +2038,71 @@ class Visualization:
                 oneOutput += newLine
                 outputList.append(oneOutput)
                 continue
+
+            if op[0] == "extrasymboledit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
+                extra2 = score2.recurse().getElementById(op[2].extra)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert extra1 is not None
+                    assert extra2 is not None
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
+                oneOutput = newLine
+                newLine = f"-({extra1.classes[0]}:symbolic) {op[1].readable_str('symbolic')}"
+                oneOutput += newLine
+                if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
+                    newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
+                    oneOutput = newLine
+                else:
+                    oneOutput += "\n"
+                newLine = f"+({extra2.classes[0]}:symbolic) {op[2].readable_str('symbolic')}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
+            if op[0] == "extrainfoedit":
+                assert isinstance(op[1], AnnExtra)
+                assert isinstance(op[2], AnnExtra)
+                sd1 = op[1].infodict
+                sd2 = op[2].infodict
+                changedStr = ""
+                for k1, v1 in sd1.items():
+                    if k1 not in sd2 or sd2[k1] != v1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k1
+
+                # one last thing: check for keys in sd2 that aren't in sd1
+                for k2 in sd2:
+                    if k2 not in sd1:
+                        if changedStr:
+                            changedStr += ","
+                        changedStr += k2
+
+                extra1 = score1.recurse().getElementById(op[1].extra)  # type: ignore
+                extra2 = score2.recurse().getElementById(op[2].extra)  # type: ignore
+                if t.TYPE_CHECKING:
+                    assert extra1 is not None
+                    assert extra2 is not None
+                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
+                oneOutput = newLine
+                info1: str = op[1].readable_str('info', changedStr=changedStr)
+                info2: str = op[2].readable_str('info', changedStr=changedStr)
+                newLine = f"-({extra1.classes[0]}:{changedStr}) {info1}"
+                oneOutput += newLine
+                if op[1].offset != op[2].offset:
+                    outputList.append(oneOutput)
+                    newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
+                    oneOutput = newLine
+                else:
+                    oneOutput += "\n"
+                newLine = f"+({extra2.classes[0]}:{changedStr}) {info2}"
+                oneOutput += newLine
+                outputList.append(oneOutput)
+                continue
+
 
             if op[0] == "extraoffsetedit":
                 assert isinstance(op[1], AnnExtra)

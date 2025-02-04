@@ -7,7 +7,7 @@
 #                   https://github.com/fosfrancesco/music-score-diff.git
 #                   by Francesco Foscarin <foscarin.francesco@gmail.com>
 #
-# Copyright:     (c) 2022, 2023 Francesco Foscarin, Greg Chapman
+# Copyright:     (c) 2022-2025 Francesco Foscarin, Greg Chapman
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
@@ -35,6 +35,15 @@ def _memoize_notes_set_distance(func):
 
     return memoizer
 
+def _memoize_extras_set_distance(func):
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
+
+    return memoizer
+
 def _memoize_inside_bars_diff_lin(func):
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
@@ -44,14 +53,14 @@ def _memoize_inside_bars_diff_lin(func):
 
     return memoizer
 
-def _memoize_extras_diff_lin(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
+# def _memoize_extras_diff_lin(func):
+#     def memoizer(original, compare_to):
+#         key = repr(original) + repr(compare_to)
+#         if key not in Comparison._memoizer_mem:
+#             Comparison._memoizer_mem[key] = func(original, compare_to)
+#         return copy.deepcopy(Comparison._memoizer_mem[key])
+#
+#     return memoizer
 
 def _memoize_lyrics_diff_lin(func):
     def memoizer(original, compare_to):
@@ -431,9 +440,9 @@ class Comparison:
             inside_bar_op_list = []
             inside_bar_cost = 0
         else:
-            # diff the bar extras (like _inside_bars_diff_lin, but with lists of AnnExtras
+            # diff the bar extras (like _notes_set_distance, but with lists of AnnExtras
             # instead of lists of AnnNotes)
-            extras_op_list, extras_cost = Comparison._extras_diff_lin(
+            extras_op_list, extras_cost = Comparison._extras_set_distance(
                 original[0].extras_list, compare_to[0].extras_list
             )
 
@@ -469,64 +478,64 @@ class Comparison:
         out = op_list_dict[min_key], cost_dict[min_key]
         return out
 
-    @staticmethod
-    @_memoize_extras_diff_lin
-    def _extras_diff_lin(original, compare_to):
-        # original and compare to are two lists of AnnExtra
-        if len(original) == 0 and len(compare_to) == 0:
-            return [], 0
-
-        if len(original) == 0:
-            cost = 0
-            op_list, cost = Comparison._extras_diff_lin(original, compare_to[1:])
-            op_list.append(("extrains", None, compare_to[0], compare_to[0].notation_size()))
-            cost += compare_to[0].notation_size()
-            return op_list, cost
-
-        if len(compare_to) == 0:
-            cost = 0
-            op_list, cost = Comparison._extras_diff_lin(original[1:], compare_to)
-            op_list.append(("extradel", original[0], None, original[0].notation_size()))
-            cost += original[0].notation_size()
-            return op_list, cost
-
-        # compute the cost and the op_list for the many possibilities of recursion
-        cost = {}
-        op_list = {}
-        # extradel
-        op_list["extradel"], cost["extradel"] = Comparison._extras_diff_lin(
-            original[1:], compare_to
-        )
-        cost["extradel"] += original[0].notation_size()
-        op_list["extradel"].append(
-            ("extradel", original[0], None, original[0].notation_size())
-        )
-        # extrains
-        op_list["extrains"], cost["extrains"] = Comparison._extras_diff_lin(
-            original, compare_to[1:]
-        )
-        cost["extrains"] += compare_to[0].notation_size()
-        op_list["extrains"].append(
-            ("extrains", None, compare_to[0], compare_to[0].notation_size())
-        )
-        # extrasub
-        op_list["extrasub"], cost["extrasub"] = Comparison._extras_diff_lin(
-            original[1:], compare_to[1:]
-        )
-        if (
-            original[0] == compare_to[0]
-        ):  # avoid call another function if they are equal
-            extrasub_op, extrasub_cost = [], 0
-        else:
-            extrasub_op, extrasub_cost = (
-                Comparison._annotated_extra_diff(original[0], compare_to[0])
-            )
-        cost["extrasub"] += extrasub_cost
-        op_list["extrasub"].extend(extrasub_op)
-        # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
-        return out
+#     @staticmethod
+#     @_memoize_extras_diff_lin
+#     def _extras_diff_lin(original, compare_to):
+#         # original and compare to are two lists of AnnExtra
+#         if len(original) == 0 and len(compare_to) == 0:
+#             return [], 0
+#
+#         if len(original) == 0:
+#             cost = 0
+#             op_list, cost = Comparison._extras_diff_lin(original, compare_to[1:])
+#             op_list.append(("extrains", None, compare_to[0], compare_to[0].notation_size()))
+#             cost += compare_to[0].notation_size()
+#             return op_list, cost
+#
+#         if len(compare_to) == 0:
+#             cost = 0
+#             op_list, cost = Comparison._extras_diff_lin(original[1:], compare_to)
+#             op_list.append(("extradel", original[0], None, original[0].notation_size()))
+#             cost += original[0].notation_size()
+#             return op_list, cost
+#
+#         # compute the cost and the op_list for the many possibilities of recursion
+#         cost = {}
+#         op_list = {}
+#         # extradel
+#         op_list["extradel"], cost["extradel"] = Comparison._extras_diff_lin(
+#             original[1:], compare_to
+#         )
+#         cost["extradel"] += original[0].notation_size()
+#         op_list["extradel"].append(
+#             ("extradel", original[0], None, original[0].notation_size())
+#         )
+#         # extrains
+#         op_list["extrains"], cost["extrains"] = Comparison._extras_diff_lin(
+#             original, compare_to[1:]
+#         )
+#         cost["extrains"] += compare_to[0].notation_size()
+#         op_list["extrains"].append(
+#             ("extrains", None, compare_to[0], compare_to[0].notation_size())
+#         )
+#         # extrasub
+#         op_list["extrasub"], cost["extrasub"] = Comparison._extras_diff_lin(
+#             original[1:], compare_to[1:]
+#         )
+#         if (
+#             original[0] == compare_to[0]
+#         ):  # avoid call another function if they are equal
+#             extrasub_op, extrasub_cost = [], 0
+#         else:
+#             extrasub_op, extrasub_cost = (
+#                 Comparison._annotated_extra_diff(original[0], compare_to[0])
+#             )
+#         cost["extrasub"] += extrasub_cost
+#         op_list["extrasub"].extend(extrasub_op)
+#         # compute the minimum of the possibilities
+#         min_key = min(cost, key=cost.get)
+#         out = op_list[min_key], cost[min_key]
+#         return out
 
     @staticmethod
     @_memoize_lyrics_diff_lin
@@ -719,9 +728,17 @@ class Comparison:
         return distance
 
     @staticmethod
-    def _areDifferentEnough(off1: OffsetQL, off2: OffsetQL) -> bool:
+    def _areDifferentEnough(off1: OffsetQL | None, off2: OffsetQL | None) -> bool:
         if off1 == off2:
             return False
+
+        # this should never happen, but...
+        if off1 is None or off2 is None:
+            if off1 is None and off2 is not None:
+                return True
+            if off1 is not None and off2 is None:
+                return True
+            return False  # both are None, therefore not different at all
 
         diff: OffsetQL = off1 - off2
         if diff < 0:
@@ -743,10 +760,32 @@ class Comparison:
         # add for the content
         if annExtra1.content != annExtra2.content:
             content_cost: int = (
-                Comparison._strings_leveinshtein_distance(annExtra1.content, annExtra2.content)
+                Comparison._strings_leveinshtein_distance(
+                    annExtra1.content or '',
+                    annExtra2.content or ''
+                )
             )
             cost += content_cost
             op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
+
+        # add for the symbolic (cost 1)
+        if annExtra1.symbolic != annExtra2.symbolic:
+            cost += 1
+            op_list.append(("extrasymboledit", annExtra1, annExtra2, 1))
+
+        # add for the infodict
+        if annExtra1.infodict != annExtra2.infodict:
+            info_cost: int = 0
+            # handle everything in annExtra1 (whether or not it is in annExtra2)
+            for k, v in annExtra1.infodict.items():
+                if v != annExtra2.infodict.get(k, None):
+                    info_cost += 1
+            # handle everything in annExtra2 that is not in annExtra1
+            for k in annExtra2.infodict:
+                if k not in annExtra1.infodict:
+                    info_cost += 1
+            cost += info_cost
+            op_list.append(("extrainfoedit", annExtra1, annExtra2, info_cost))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
@@ -1279,7 +1318,7 @@ class Comparison:
             # we found nothing
             unpaired_orig_notes.append(orig_n)
 
-        # compute the cost and the op_list for the many possibilities of recursion
+        # compute the cost and the op_list
         cost: int = 0
         op_list: list = []
 
@@ -1307,6 +1346,110 @@ class Comparison:
                     )
                 cost += notesub_cost
                 op_list.extend(notesub_op)
+
+        return op_list, cost
+
+    @staticmethod
+    @_memoize_notes_set_distance
+    def _extras_set_distance(original: list[AnnExtra], compare_to: list[AnnExtra]):
+        """
+        Gather up pairs of matching extras (using kind, offset, and visual duration, in
+        that order of importance).  If you can't find an exactly matching extra, try again
+        without visual duration.
+        original [list] -- a list of AnnExtras
+        compare_to [list] -- a list of AnnExtras
+        """
+        paired_extras: list[tuple[AnnExtra, AnnExtra]] = []
+        unpaired_orig_extras: list[AnnExtra] = []
+        unpaired_comp_extras: list[AnnExtra] = copy.copy(compare_to)
+
+        for orig_x in original:
+            fallback: AnnExtra | None = None
+            fallback_i: int = -1
+            found_it: bool = False
+            for i, comp_x in enumerate(unpaired_comp_extras):
+                # kind and offset are required for pairing
+                if orig_x.kind != comp_x.kind:
+                    continue
+                if orig_x.offset != comp_x.offset:
+                    continue
+                if fallback is None:
+                    fallback = comp_x
+                    fallback_i = i
+
+                # duration is preferred for pairing
+                if orig_x.duration != comp_x.duration:
+                    continue
+
+                # there are a few kind-specific elements that are also preferred:
+                #   'direction'/'ending': content (visible text)
+                #   'keysig'/'timesig'/'clef': symbolic (there are sometimes two
+                #       simultaneous keysigs, timesigs, or clefs, and we don't
+                #       want to confuse which one is which, producing a diff where
+                #       there actually isn't one)
+                #   'slur': placements (because there are often two identical slurs
+                #       whose only difference is 'above' vs 'below', producing a diff
+                #       where there actually isn't one)
+                if orig_x.kind in ('direction', 'ending'):
+                    if orig_x.content != comp_x.content:
+                        continue
+                if orig_x.kind in ('keysig', 'timesig', 'clef'):
+                    if orig_x.symbolic != comp_x.symbolic:
+                        continue
+                if orig_x.kind == 'slur':
+                    orig_placement: str = orig_x.styledict.get('placement', '')
+                    comp_placement: str = comp_x.styledict.get('placement', '')
+                    if orig_placement != comp_placement:
+                        continue
+
+                # found a perfect match
+                paired_extras.append((orig_x, comp_x))
+
+                # remove comp_n from unpaired_comp_extras
+                unpaired_comp_extras.pop(i)  # remove(comp_n) would sometimes get the wrong one
+
+                found_it = True
+                break
+
+            if found_it:
+                # on to the next original extra
+                continue
+
+            # did we find a fallback (matched except for duration)?
+            if fallback is not None:
+                paired_extras.append((orig_x, fallback))
+                unpaired_comp_extras.pop(fallback_i)
+                continue
+
+            # we found nothing
+            unpaired_orig_extras.append(orig_x)
+
+        # compute the cost and the op_list
+        cost: int = 0
+        op_list: list = []
+
+        # extradel
+        for extra in unpaired_orig_extras:
+            cost += extra.notation_size()
+            op_list.append(("extradel", extra, None, extra.notation_size()))
+
+        # extrains
+        for extra in unpaired_comp_extras:
+            cost += extra.notation_size()
+            op_list.append(("extrains", None, extra, extra.notation_size()))
+
+        # extrasub
+        if paired_extras:
+            for extrao, extrac in paired_extras:
+                if extrao == extrac:
+                    # if equal, avoid _annotated_extra_diff call
+                    extrasub_op, extrasub_cost = [], 0
+                else:
+                    extrasub_op, extrasub_cost = (
+                        Comparison._annotated_extra_diff(extrao, extrac)
+                    )
+                cost += extrasub_cost
+                op_list.extend(extrasub_op)
 
         return op_list, cost
 
