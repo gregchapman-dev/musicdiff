@@ -3132,3 +3132,16 @@ class Visualization:
             'numSymbolsInGroundTruth': f'{num_syms_in_ground_truth}',
         }
         return output
+
+    @staticmethod
+    def get_ser(
+        cost: int,
+        annotated_ground_truth_score: AnnScore,
+    ) -> float:
+        num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
+        divisor: int = num_syms_in_ground_truth
+        if num_syms_in_ground_truth == 0:
+            # avoid divide by zero, return SER = float(cost)
+            divisor = 1
+        ser: float = float(cost) / float(divisor)
+        return ser

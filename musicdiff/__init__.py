@@ -229,3 +229,143 @@ def diff(
             print(text_output)
 
     return cost
+
+
+def diff_ser_metrics(
+    predpath: str | Path,
+    gtpath: str | Path,
+    detail: DetailLevel | int = DetailLevel.Default
+) -> tuple[int, int, int, float] | None:
+    # Returns (numsyms_gt, numsyms_pred, numsymerrs, SER).
+    # Returns None if pred or gt is not a music21-importable format.
+    # If import is possible (correct format), but actually fails (incorrect content),
+    # the resulting score will be empty (and SER will be very high).
+
+    # Convert input strings to Paths
+    if isinstance(predpath, str):
+        predpath = Path(predpath)
+    if isinstance(gtpath, str):
+        gtpath = Path(gtpath)
+
+    if predpath.suffix not in _getInputExtensionsList():
+        print(
+            f'predicted file extension ({predpath.suffix}) not supported by music21.',
+            file=sys.stderr
+        )
+        return None
+
+    try:
+        predscore = m21.converter.parse(
+            predpath,
+            forceSource=True,
+            acceptSyntaxErrors=True
+        )
+    except Exception:
+        predscore = m21.stream.Score()
+
+    if gtpath.suffix not in _getInputExtensionsList():
+        print(
+            f'ground truth file extension ({gtpath.suffix}) not supported by music21.',
+            file=sys.stderr
+        )
+        return None
+
+    try:
+        gtscore = m21.converter.parse(
+            gtpath,
+            forceSource=True,
+            acceptSyntaxErrors=False
+        )
+    except Exception:
+        gtscore = m21.stream.Score()
+
+    if t.TYPE_CHECKING:
+        assert isinstance(gtscore, m21.stream.Score)
+        assert isinstance(predscore, m21.stream.Score)
+
+    numParts: int = len(list(gtscore.parts))
+    if numParts == 0:
+        return None
+
+    # scan each score, producing an annotated wrapper
+    if t.TYPE_CHECKING:
+        assert isinstance(predscore, m21.stream.Score)
+        assert isinstance(gtscore, m21.stream.Score)
+    ann_predscore: AnnScore = AnnScore(predscore, detail)
+    ann_gtscore: AnnScore = AnnScore(gtscore, detail)
+
+    numsyms_gt: int = ann_gtscore.notation_size()
+    numsyms_pred: int = ann_predscore.notation_size()
+    _diff_list: list
+    numsymerrs: int
+    _diff_list, numsymerrs = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
+
+    ser: float = Visualization.get_ser(numsymerrs, ann_gtscore)
+    return numsyms_gt, numsyms_pred, numsymerrs, ser
+
+
+def diff_ml_training(
+    predicted_folder: str,
+    ground_truth_folder: str,
+    output_folder: str,
+    detail: DetailLevel | int = DetailLevel.Default,
+) -> tuple[float, str]:
+    converter21.register()
+    # returns overall_score, output_file_path
+    overall_score: float = 1.0
+    output_file_path: str = output_folder + '/output.csv'
+    metrics_list: list[tuple[int, int, int, float]] = []
+
+    # expand tildes
+    predicted_folder = os.path.expanduser(predicted_folder)
+    ground_truth_folder = os.path.expanduser(ground_truth_folder)
+    output_folder = os.path.expanduser(output_folder)
+
+    with open(output_file_path, 'wt', encoding='utf-8') as outf:
+        print(
+            'gtpath, predpath, gt numsyms, pred numsyms, num symerrs, SER',
+            file=outf
+        )
+        for name in os.listdir(predicted_folder):
+            predpath: str = os.path.join(predicted_folder, name)
+            # check if it is a file
+            if os.path.isfile(predpath):
+                # check if there is a same-named file in ground_truth_folder
+                gtpath: str = os.path.join(ground_truth_folder, name)
+                if os.path.isfile(gtpath):
+                    metrics: tuple[int, int, int, float] | None = diff_ser_metrics(
+                        predpath=predpath, gtpath=gtpath, detail=detail
+                    )
+                    if metrics is not None:
+                        # append metrics to metrics_list
+                        metrics_list.append(metrics)
+                        gt_numsyms, pred_numsyms, numsymerrs, ser = metrics
+                        # append CSV line to output file
+                        # (gt path, pred path, gt numsyms, pred numsyms, num sym errors, ser
+                        print(
+                            f'{gtpath}, {predpath},'
+                            f'{gt_numsyms}, {pred_numsyms}, {numsymerrs}, {ser}',
+                            file=outf
+                        )
+
+        # append overall score to output file (currently average SER)
+        total_gt_numsyms: int = 0
+        total_pred_numsyms: int = 0
+        total_numsymerrs: int = 0
+        if metrics_list:
+            for gt_numsyms, pred_numsyms, numsymerrs, _ in metrics_list:
+                total_gt_numsyms += gt_numsyms
+                total_pred_numsyms += pred_numsyms
+                total_numsymerrs += numsymerrs
+
+            divisor: int = total_gt_numsyms
+            if divisor == 0:
+                divisor = 1
+            overall_score = float(total_numsymerrs) / float(divisor)
+
+        print(
+            f', , {total_gt_numsyms}, {total_pred_numsyms}, {total_numsymerrs}, {overall_score}',
+            file=outf
+        )
+
+    return overall_score, output_file_path

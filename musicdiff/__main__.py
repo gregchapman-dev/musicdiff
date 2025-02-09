@@ -16,7 +16,7 @@ import sys
 import argparse
 
 from musicdiff import DetailLevel
-from musicdiff import diff
+from musicdiff import diff, diff_ml_training
 
 # ------------------------------------------------------------------------------
 
@@ -24,19 +24,24 @@ from musicdiff import diff
     main entry point (parse arguments and do conversion)
 '''
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         prog='python3 -m musicdiff',
         description='Music score notation diff (MusicXML, MEI, Humdrum, etc)'
     )
-    parser.add_argument(
-        "file1",
-        help="first music score file to compare (any format music21 can parse)"
-    )
-    parser.add_argument(
-        "file2",
-        help="second music score file to compare (any format music21 can parse)"
-    )
+
+    # arg parsing is quite different for training vs non-training
+    training_mode: bool = '--ml_training_evaluation' in sys.argv
+
+    if not training_mode:
+        parser.add_argument(
+            "file1",
+            help="first music score file to compare (any format music21 can parse)"
+        )
+        parser.add_argument(
+            "file2",
+            help="second music score file to compare (any format music21 can parse)"
+        )
+
     parser.add_argument(
         "-i",
         "--include",
@@ -101,29 +106,70 @@ if __name__ == "__main__":
             "lyrics"],
         help="excluded details (can exclude multiple details)"
     )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default=["visual"],
-        nargs="*",
-        choices=["visual", "v", "text", "t", "ser", "s"],
-        help="'visual'/'v' is marked up scores, rendered to PDFs;"
-        + " 'text'/'t' is diff-like, written to stdout;"
-        + " 'ser'/'s is the symbolic error rate (symbol errors/total symbols),"
-        + " written to stdout."
-        + " Any, all, or none of these can be requested."
-    )
+
+    if not training_mode:
+        parser.add_argument(
+            "-o",
+            "--output",
+            default=["visual"],
+            nargs="*",
+            choices=["visual", "v", "text", "t", "ser", "s"],
+            help="'visual'/'v' is marked up scores, rendered to PDFs;"
+            + " 'text'/'t' is diff-like, written to stdout;"
+            + " 'ser'/'s is the symbolic error rate (symbol errors/total symbols),"
+            + " written to stdout."
+            + " Any, all, or none of these can be requested."
+        )
+
+        parser.add_argument(
+            "--fix_first_file_syntax",
+            action='store_true',
+            help="If set, syntax errors in the first input file will be fixed"
+            + " (if possible) so the diff can continue. Any fixes will be"
+            + " added to the returned cost in symbol errors). Note that errors"
+            + " in the second file (assumed to be the ground truth) are never"
+            + " corrected.  Note also that this currently only works for Humdrum"
+            + " **kern files."
+        )
 
     parser.add_argument(
-        "--fix_first_file_syntax",
+        "--ml_training_evaluation",
         action='store_true',
-        help="If set, syntax errors in the first input file will be fixed"
-        + " (if possible) so the diff can continue. Any fixes will be"
-        + " added to the returned cost in symbol errors). Note that errors"
-        + " in the second file (assumed to be the ground truth) are never"
-        + " corrected.  Note also that this currently only works for Humdrum"
-        + " **kern files."
+        help="If set, ML training evaluation mode (evaluation of folders of"
+        + " scores) is triggered. Ground truth, predicted, and output folders"
+        + " must be specified, and the ground truth folder and predicted folders"
+        + " must contain files with the same names. Every score in the ground"
+        + " truth folder will be compared with the score of the same name in the"
+        + " predicted folder. Syntax errors in predicted scores will be fixed"
+        + " if possible, and SER metrics for each predicted score (as well as"
+        + " an overall metric for the prediction) will be produced in output.csv"
+        + " in the output folder. No files can be specified on the command line,"
+        + " nor can -o/--output or --fix_first_file_syntax.  -i/--include and"
+        + " -x/--exclude, of course, are valid options to specify."
     )
+
+    if training_mode:
+        parser.add_argument(
+            "--ground_truth_folder",
+            help="Must be set if (and only if) --ml_training_eval is set."
+            + " A folder full of ground truth scores.  The filenames in this"
+            + " folder must be identical to those in the predicted folder."
+        )
+
+        parser.add_argument(
+            "--predicted_folder",
+            help="Must be set if (and only if) --ml_training_eval is set."
+            + " A folder full of scores predicted by the model.  The filenames"
+            + " in this folder must be identical to those in the ground truth"
+            + " folder."
+        )
+
+        parser.add_argument(
+            "--output_folder",
+            help="Must be set if (and only if) --ml_training_eval is set."
+            + " A folder where the musicdiff results will be written in an"
+            + " output.csv file."
+        )
 
     args = parser.parse_args()
 
@@ -233,6 +279,45 @@ if __name__ == "__main__":
             elif det == "lyrics":
                 detail &= ~DetailLevel.Lyrics
 
+    bad_args: bool = False
+
+    ml_training_evaluation: bool = args.ml_training_evaluation
+    if ml_training_evaluation:
+        if not args.ground_truth_folder or not args.predicted_folder or not args.output_folder:
+            print(
+                "If --ml_training_evaluation is set, --ground_truth_folder, --predicted_folder,"
+                + " and --output_folder must also be set."
+            )
+            bad_args = True
+    else:
+        if args.ground_truth_folder or args.predicted_folder or args.output_folder:
+            print(
+                "If --ml_training_evaluation is not set, neither --ground_truth_folder,"
+                + " --predicted_folder, nor --output_folder can be set."
+            )
+            bad_args = True
+
+    if bad_args:
+        sys.exit(-1)
+
+    # The big mode switch: folders or files?
+    if ml_training_evaluation:
+        # folders
+        out_file_path: str
+        overall_score: float
+        overall_score, out_file_path = diff_ml_training(
+            detail=detail,
+            predicted_folder=args.predicted_folder,
+            ground_truth_folder=args.ground_truth_folder,
+            output_folder=args.output_folder
+        )
+        print(
+            f'ML training overall score is: {overall_score}, output file is: {out_file_path}',
+            file=sys.stderr
+        )
+        sys.exit(0)
+
+    # files
     visualize_diffs: bool = "visual" in args.output or "v" in args.output
     print_text_output: bool = "text" in args.output or "t" in args.output
     print_ser_output: bool = "ser" in args.output or "s" in args.output
