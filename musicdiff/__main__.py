@@ -289,13 +289,6 @@ if __name__ == "__main__":
                 + " and --output_folder must also be set."
             )
             bad_args = True
-    else:
-        if args.ground_truth_folder or args.predicted_folder or args.output_folder:
-            print(
-                "If --ml_training_evaluation is not set, neither --ground_truth_folder,"
-                + " --predicted_folder, nor --output_folder can be set."
-            )
-            bad_args = True
 
     if bad_args:
         sys.exit(-1)
