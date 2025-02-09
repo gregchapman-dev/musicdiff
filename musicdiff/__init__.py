@@ -344,7 +344,7 @@ def diff_ml_training(
                         # (gt path, pred path, gt numsyms, pred numsyms, num sym errors, ser
                         print(
                             f'{gtpath}, {predpath},'
-                            f'{gt_numsyms}, {pred_numsyms}, {numsymerrs}, {ser}',
+                            f' {gt_numsyms}, {pred_numsyms}, {numsymerrs}, {ser}',
                             file=outf
                         )
 
