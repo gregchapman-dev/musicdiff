@@ -3116,32 +3116,39 @@ class Visualization:
         return output
 
     @staticmethod
-    def get_ser_output(
+    def get_secr_output(
         cost: int,
+        annotated_predicted_score: AnnScore,
         annotated_ground_truth_score: AnnScore,
     ) -> dict[str, str]:
         num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
-        divisor: int = num_syms_in_ground_truth
-        if num_syms_in_ground_truth == 0:
-            # avoid divide by zero
-            divisor = 1
-        ser: float = float(cost) / float(divisor)
+        num_syms_in_predicted: int = annotated_predicted_score.notation_size()
+        num_syms_in_both: int = num_syms_in_ground_truth + num_syms_in_predicted
+        # instead of divide by zero, return secr == 1.0
+        secr: float = 1.0
+        if num_syms_in_both != 0:
+            secr = float(cost) / float(num_syms_in_both)
         output: dict[str, str] = {
-            'SER': f'{ser}',
-            'numSymbolErrors': f'{cost}',
+            'symbolEditCost': f'{cost}',
+            'numSymbolsInPredicted': f'{num_syms_in_predicted}',
             'numSymbolsInGroundTruth': f'{num_syms_in_ground_truth}',
+            'numSymbolsInBoth': f'{num_syms_in_both}',
+            'SECR': f'{secr}',
         }
         return output
 
     @staticmethod
-    def get_ser(
+    def get_secr(
         cost: int,
+        annotated_predicted_score: AnnScore,
         annotated_ground_truth_score: AnnScore,
     ) -> float:
         num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
-        divisor: int = num_syms_in_ground_truth
-        if num_syms_in_ground_truth == 0:
-            # avoid divide by zero, return SER = float(cost)
-            divisor = 1
-        ser: float = float(cost) / float(divisor)
-        return ser
+        num_syms_in_predicted: int = annotated_predicted_score.notation_size()
+        num_syms_in_both: int = num_syms_in_ground_truth + num_syms_in_predicted
+
+        # instead of divide by zero, return secr == 1.0
+        secr: float = 1.0
+        if num_syms_in_both != 0:
+            secr = float(cost) / float(num_syms_in_both)
+        return secr

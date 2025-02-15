@@ -113,10 +113,10 @@ if __name__ == "__main__":
             "--output",
             default=["visual"],
             nargs="*",
-            choices=["visual", "v", "text", "t", "ser", "s"],
+            choices=["visual", "v", "text", "t", "secr", "s"],
             help="'visual'/'v' is marked up scores, rendered to PDFs;"
             + " 'text'/'t' is diff-like, written to stdout;"
-            + " 'ser'/'s is the symbolic error rate (symbol errors/total symbols),"
+            + " 'secr'/'s is the symbolic edit cost ratio (symbolic edit cost/total symbols),"
             + " written to stdout."
             + " Any, all, or none of these can be requested."
         )
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         + " must contain files with the same names. Every score in the ground"
         + " truth folder will be compared with the score of the same name in the"
         + " predicted folder. Syntax errors in predicted scores will be fixed"
-        + " if possible, and SER metrics for each predicted score (as well as"
+        + " if possible, and SECR metrics for each predicted score (as well as"
         + " an overall metric for the prediction) will be produced in output.csv"
         + " in the output folder. No files can be specified on the command line,"
         + " nor can -o/--output or --fix_first_file_syntax.  -i/--include and"
@@ -313,7 +313,7 @@ if __name__ == "__main__":
     # files
     visualize_diffs: bool = "visual" in args.output or "v" in args.output
     print_text_output: bool = "text" in args.output or "t" in args.output
-    print_ser_output: bool = "ser" in args.output or "s" in args.output
+    print_secr_output: bool = "secr" in args.output or "s" in args.output
     fix_first_file_syntax: bool = args.fix_first_file_syntax is True
 
     cost: int | None = diff(
@@ -322,7 +322,7 @@ if __name__ == "__main__":
         detail=detail,
         visualize_diffs=visualize_diffs,
         print_text_output=print_text_output,
-        print_ser_output=print_ser_output,
+        print_secr_output=print_secr_output,
         fix_first_file_syntax=fix_first_file_syntax,
     )
 

@@ -53,7 +53,7 @@ def diff(
     force_parse: bool = True,
     visualize_diffs: bool = True,
     print_text_output: bool = False,
-    print_ser_output: bool = False,
+    print_secr_output: bool = False,
     fix_first_file_syntax: bool = False,
     detail: DetailLevel | int = DetailLevel.Default
 ) -> int | None:
@@ -82,9 +82,9 @@ def diff(
             (default is True)
         print_text_output (bool): Whether or not to print diffs in diff-like text to stdout.
             (default is False)
-        print_ser_output (bool): Whether or not to print the symbolic error rate (SER),
-            which is computed as number of symbolic errors divided by the max number of
-            symbols in the two scores.
+        print_secr_output (bool): Whether or not to print the symbolic edit cost ratio (SECR),
+            which is computed as symbolic edit cost divided by the total number of symbols
+            in the two scores.
             (default is False)
         fix_first_file_syntax (bool): Whether to attempt to fix syntax errors in the first
             file (and add the number of such fixes to the returned number of edits/cost in
@@ -211,11 +211,11 @@ def diff(
             # 'score1 ' and 'score2 ', respectively, so you can see which is which.
             Visualization.show_diffs(score1, score2, out_path1, out_path2)
 
-    if print_ser_output:
-        ser_output: dict = Visualization.get_ser_output(
-            cost, annotated_score2
+    if print_secr_output:
+        secr_output: dict = Visualization.get_secr_output(
+            cost, annotated_score1, annotated_score2
         )
-        jsonStr: str = json.dumps(ser_output, indent=4)
+        jsonStr: str = json.dumps(secr_output, indent=4)
         print(jsonStr)
 
     if print_text_output:
@@ -223,7 +223,7 @@ def diff(
             score1, score2, diff_list, score1Name=score1Name, score2Name=score2Name
         )
         if text_output:
-            if print_ser_output and print_text_output:
+            if print_secr_output and print_text_output:
                 # put a blank line between them
                 print('')
             print(text_output)
@@ -231,15 +231,15 @@ def diff(
     return cost
 
 
-def diff_ser_metrics(
+def diff_secr_metrics(
     predpath: str | Path,
     gtpath: str | Path,
     detail: DetailLevel | int = DetailLevel.Default
 ) -> tuple[int, int, int, float] | None:
-    # Returns (numsyms_gt, numsyms_pred, numsymerrs, SER).
+    # Returns (numsyms_gt, numsyms_pred, sym_edit_cost, SECR).
     # Returns None if pred or gt is not a music21-importable format.
     # If import is possible (correct format), but actually fails (incorrect content),
-    # the resulting score will be empty (and SER will be very high).
+    # the resulting score will be empty (and SECR will be 1.0).
 
     # Convert input strings to Paths
     if isinstance(predpath, str):
@@ -297,11 +297,11 @@ def diff_ser_metrics(
     numsyms_gt: int = ann_gtscore.notation_size()
     numsyms_pred: int = ann_predscore.notation_size()
     _diff_list: list
-    numsymerrs: int
-    _diff_list, numsymerrs = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
+    sym_edit_cost: int
+    _diff_list, sym_edit_cost = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
 
-    ser: float = Visualization.get_ser(numsymerrs, ann_gtscore)
-    return numsyms_gt, numsyms_pred, numsymerrs, ser
+    secr: float = Visualization.get_secr(sym_edit_cost, ann_predscore, ann_gtscore)
+    return numsyms_gt, numsyms_pred, sym_edit_cost, secr
 
 
 def diff_ml_training(
@@ -323,7 +323,8 @@ def diff_ml_training(
 
     with open(output_file_path, 'wt', encoding='utf-8') as outf:
         print(
-            'gtpath, predpath, gt numsyms, pred numsyms, num symerrs, SER',
+            'gtpath, predpath, gt numsyms, pred numsyms,'
+            ' SEC (symbol edit cost), SECR (SEC / total numsyms)',
             file=outf
         )
         for name in os.listdir(predicted_folder):
@@ -333,38 +334,38 @@ def diff_ml_training(
                 # check if there is a same-named file in ground_truth_folder
                 gtpath: str = os.path.join(ground_truth_folder, name)
                 if os.path.isfile(gtpath):
-                    metrics: tuple[int, int, int, float] | None = diff_ser_metrics(
+                    metrics: tuple[int, int, int, float] | None = diff_secr_metrics(
                         predpath=predpath, gtpath=gtpath, detail=detail
                     )
                     if metrics is not None:
                         # append metrics to metrics_list
                         metrics_list.append(metrics)
-                        gt_numsyms, pred_numsyms, numsymerrs, ser = metrics
+                        gt_numsyms, pred_numsyms, sym_edit_cost, secr = metrics
                         # append CSV line to output file
-                        # (gt path, pred path, gt numsyms, pred numsyms, num sym errors, ser
+                        # (gt path, pred path, gt numsyms, pred numsyms, sym edit cost, ser
                         print(
                             f'{gtpath}, {predpath},'
-                            f' {gt_numsyms}, {pred_numsyms}, {numsymerrs}, {ser}',
+                            f' {gt_numsyms}, {pred_numsyms}, {sym_edit_cost}, {secr}',
                             file=outf
                         )
 
         # append overall score to output file (currently average SER)
         total_gt_numsyms: int = 0
         total_pred_numsyms: int = 0
-        total_numsymerrs: int = 0
+        total_sym_edit_cost: int = 0
         if metrics_list:
-            for gt_numsyms, pred_numsyms, numsymerrs, _ in metrics_list:
+            for gt_numsyms, pred_numsyms, sym_edit_cost, _ in metrics_list:
                 total_gt_numsyms += gt_numsyms
                 total_pred_numsyms += pred_numsyms
-                total_numsymerrs += numsymerrs
+                total_sym_edit_cost += sym_edit_cost
 
-            divisor: int = total_gt_numsyms
-            if divisor == 0:
-                divisor = 1
-            overall_score = float(total_numsymerrs) / float(divisor)
+            numsyms: int = total_gt_numsyms + total_pred_numsyms
+            overall_score = 1.0
+            if numsyms != 0:
+                overall_score = float(total_sym_edit_cost) / float(numsyms)
 
         print(
-            f', , {total_gt_numsyms}, {total_pred_numsyms}, {total_numsymerrs}, {overall_score}',
+            f', , {total_gt_numsyms}, {total_pred_numsyms}, {total_sym_edit_cost}, {overall_score}',
             file=outf
         )
 
