@@ -2979,9 +2979,9 @@ class Visualization:
             # metadata
             if op[0] == "mditemins":
                 assert isinstance(op[2], AnnMetadataItem)
-                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
+                newLine = f"@@ {Visualization._location_of(score2.metadata, score2)} @@\n"
                 oneOutput = newLine
-                newLine = f"+(metadata) {op[1].readable_str()}"
+                newLine = f"+(metadata) {op[2].readable_str()}"
                 oneOutput += newLine
                 outputList.append(oneOutput)
                 continue
