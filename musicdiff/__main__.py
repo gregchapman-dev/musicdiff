@@ -24,8 +24,48 @@ from musicdiff import diff, diff_ml_training
     main entry point (parse arguments and do conversion)
 '''
 if __name__ == "__main__":
+    usage: str = """python3 -m musicdiff [-h]
+                            [-i [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+                            [-x [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+                            [-o [{visual,v,text,t,secr,s} ...]]
+                            [--fix_first_file_syntax]
+                            file1 file2
+
+Alternate usage (for ML training runs):
+usage: python3 -m musicdiff [-h]
+                            --ml_training_evaluation
+                            --ground_truth_folder gtfolderpath
+                            --predicted_folder predfolderpath
+                            --output_folder outputfolderpath
+                            [-i [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+                            [-x [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+
+"""
+    epilog: str = """\
+If --ml_training_evaluation is specified, the following options are
+required:
+  --ground_truth_folder gtfolderpath
+                        Must be set if (and only if) --ml_training_evaluation
+                        is set. A folder full of ground truth scores. The
+                        filenames in this folder must be identical to those
+                        in the predicted folder.
+  --predicted_folder predfolderpath
+                        Must be set if (and only if) --ml_training_evaluation
+                        is set. A folder full of scores predicted by the model.
+                        The filenames in this folder must be identical to those
+                        in the predicted folder.
+  --output_folder outputfolderpath
+                        Must be set if (and only if) --ml_training_evaluation
+                        is set. A folder where the musicdiff results (SECR
+                        metrics for each predicted score, as well as an overall
+                        SECR metric for the run) will be written into an
+                        output.csv file. This folder must already exist.
+"""
     parser = argparse.ArgumentParser(
         prog='python3 -m musicdiff',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        usage=usage,
+        epilog=epilog,
         description='Music score notation diff (MusicXML, MEI, Humdrum, etc)'
     )
 
@@ -35,11 +75,17 @@ if __name__ == "__main__":
     if not training_mode:
         parser.add_argument(
             "file1",
-            help="first music score file to compare (any format music21 can parse)"
+            help=(
+                "first music score file to compare"
+                + " (cannot be specified with --ml_training_evaluation)"
+            )
         )
         parser.add_argument(
             "file2",
-            help="second music score file to compare (any format music21 can parse)"
+            help=(
+                "second music score file to compare"
+                + " (cannot be specified with --ml_training_evaluation)"
+            )
         )
 
     parser.add_argument(
@@ -116,9 +162,11 @@ if __name__ == "__main__":
             choices=["visual", "v", "text", "t", "secr", "s"],
             help="'visual'/'v' is marked up scores, rendered to PDFs;"
             + " 'text'/'t' is diff-like, written to stdout;"
-            + " 'secr'/'s is the symbolic edit cost ratio (symbolic edit cost/total symbols),"
+            + " 'secr'/'s is the symbolic edit cost ratio"
+            + " (symbolic edit cost/total symbols),"
             + " written to stdout."
             + " Any, all, or none of these can be requested."
+            + " Cannot be specified with --ml_training_evaluation."
         )
 
         parser.add_argument(
@@ -130,6 +178,7 @@ if __name__ == "__main__":
             + " in the second file (assumed to be the ground truth) are never"
             + " corrected.  Note also that this currently only works for Humdrum"
             + " **kern files."
+            + " Cannot be specified with --ml_training_evaluation."
         )
 
     parser.add_argument(
@@ -138,14 +187,15 @@ if __name__ == "__main__":
         help="If set, ML training evaluation mode (evaluation of folders of"
         + " scores) is triggered. Ground truth, predicted, and output folders"
         + " must be specified, and the ground truth folder and predicted folders"
-        + " must contain files with the same names. Every score in the ground"
-        + " truth folder will be compared with the score of the same name in the"
-        + " predicted folder. Syntax errors in predicted scores will be fixed"
+        + " must contain files with the same names. Every score in the predicted"
+        + " folder will be compared with the score of the same name in the"
+        + " ground truth folder. Syntax errors in predicted scores will be fixed"
         + " if possible, and SECR metrics for each predicted score (as well as"
-        + " an overall metric for the prediction) will be produced in output.csv"
+        + " an overall metric for the run) will be produced in output.csv"
         + " in the output folder. No files can be specified on the command line,"
-        + " nor can -o/--output or --fix_first_file_syntax.  -i/--include and"
-        + " -x/--exclude, of course, are valid options to specify."
+        + " nor can -o/--output or --fix_first_file_syntax be specified."
+        + " -i/--include and -x/--exclude, of course, are valid options to"
+        + " specify."
     )
 
     if training_mode:

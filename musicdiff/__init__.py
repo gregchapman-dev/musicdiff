@@ -324,7 +324,8 @@ def diff_ml_training(
     with open(output_file_path, 'wt', encoding='utf-8') as outf:
         print(
             'gtpath, predpath, gt numsyms, pred numsyms,'
-            ' SEC (symbol edit cost), SECR (SEC / total numsyms)',
+            ' SEC (symbolic edit cost),'
+            ' SECR (SEC / numsyms in both scores)',
             file=outf
         )
         for name in os.listdir(predicted_folder):
