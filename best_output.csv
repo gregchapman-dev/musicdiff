@@ -1,4 +1,4 @@
-gtpath, predpath, gt numsyms, pred numsyms, SEC (symbol edit cost), SECR (SEC / total numsyms)
+gtpath, predpath, gt numsyms, pred numsyms, SEC (symbolic edit cost), SECR (SEC / numsyms in both scores)
 /Users/gregc/Documents/test/greg_results/gt/45_.kern, /Users/gregc/Documents/test/greg_results/pred/45_.kern, 277, 203, 338, 0.7041666666666667
 /Users/gregc/Documents/test/greg_results/gt/117_.kern, /Users/gregc/Documents/test/greg_results/pred/117_.kern, 362, 258, 498, 0.8032258064516129
 /Users/gregc/Documents/test/greg_results/gt/253_.kern, /Users/gregc/Documents/test/greg_results/pred/253_.kern, 251, 186, 346, 0.7917620137299771
