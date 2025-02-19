@@ -572,7 +572,7 @@ class AnnNote:
                 elif tup == "stop":
                     string += "sp" + ti
                 elif tup == "startStop":
-                    string += "ss"
+                    string += "ss" + ti
                 else:
                     raise ValueError(f"Incorrect tuplet type: {tup}")
 
