@@ -165,8 +165,8 @@ class TestScl:
         pitch2 = note2.pitches[0]
         # compare
         op_list, cost = Comparison._pitches_diff(pitch1, pitch2, note1, note2, (0, 0))
-        assert cost == 1
-        assert op_list == [("accidentedit", note1, note2, 1, (0, 0))]
+        assert cost == 2
+        assert op_list == [("accidentedit", note1, note2, 2, (0, 0))]
 
 
     def test_pitches_diff2(self):
