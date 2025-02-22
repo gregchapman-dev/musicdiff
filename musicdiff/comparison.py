@@ -1380,8 +1380,11 @@ class Comparison:
                 if orig_x.kind in ('direction', 'ending'):
                     if orig_x.content != comp_x.content:
                         continue
-                if orig_x.kind in ('keysig', 'timesig', 'clef'):
+                if orig_x.kind == 'clef':
                     if orig_x.symbolic != comp_x.symbolic:
+                        continue
+                if orig_x.kind in ('keysig', 'timesig'):
+                    if orig_x.infodict != comp_x.infodict:
                         continue
                 if orig_x.kind == 'slur':
                     orig_placement: str = orig_x.styledict.get('placement', '')

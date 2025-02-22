@@ -1265,18 +1265,7 @@ class M21Utils:
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
-        output: str = ''
-
-        if not timesig.symbol:
-            output = f'{timesig.numerator}/{timesig.denominator}'
-        elif timesig.symbol in ('common', 'cut'):
-            output = f'{timesig.symbol}'
-        elif timesig.symbol == 'single-number':
-            output = f'{timesig.numerator}'
-        else:
-            output = f'{timesig.numerator}/{timesig.denominator}'
-
-        return output
+        return None
 
     @staticmethod
     def timesig_to_infodict(
@@ -1284,7 +1273,20 @@ class M21Utils:
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
-        return {}
+        output: dict[str, str] = {}
+
+        if not timesig.symbol:
+            output['numerator'] = f'{timesig.numerator}'
+            output['denominator'] = f'{timesig.denominator}'
+        elif timesig.symbol in ('common', 'cut'):
+            output['symbol'] = f'{timesig.symbol}'
+        elif timesig.symbol == 'single-number':
+            output['numerator'] = f'{timesig.numerator}'
+        else:
+            output['numerator'] = f'{timesig.numerator}'
+            output['denominator'] = f'{timesig.denominator}'
+
+        return output
 
     @staticmethod
     def tempo_to_string(
@@ -1555,15 +1557,10 @@ class M21Utils:
         kind: str = 'keysig',
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
-        if keysig.sharps == 0:
-            return 'no sharps/flats'
-        if keysig.sharps < 0:
-            if keysig.sharps == -1:
-                return '1 flat'
-            return f'{-keysig.sharps} flats'
-        if keysig.sharps == 1:
-            return '1 sharp'
-        return f'{keysig.sharps} sharps'
+        return None
+
+    FLAT_NAMES: list[str] = ['B', 'E', 'A', 'D', 'G', 'C', 'F']
+    SHARP_NAMES: list[str] = ['F', 'C', 'G', 'D', 'A', 'E', 'B']
 
     @staticmethod
     def keysig_to_infodict(
@@ -1571,7 +1568,20 @@ class M21Utils:
         kind: str = 'keysig',
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
-        return {}
+        output: dict[str, str] = {}
+        if keysig.sharps == 0:
+            # can't ignore this, because it might be displayed
+            # with naturals, but music21 can't tell.  Give it one
+            # symbol.
+            output['flats/sharps'] = 'none'
+        elif keysig.sharps < 0:
+            for i in range(0, -keysig.sharps):
+                output[f'flat{i}'] = M21Utils.FLAT_NAMES[i % 7]
+        else:
+            for i in range(0, keysig.sharps):
+                output[f'sharp{i}'] = M21Utils.SHARP_NAMES[i % 7]
+
+        return output
 
     @staticmethod
     def textexp_to_string(
