@@ -1552,8 +1552,10 @@ class Comparison:
                     fallback = comp_sg
                     fallback_i = i
 
-                # end index is preferred for pairing
+                # end index and symbol (brace, bracket, etc) is preferred for pairing
                 if orig_sg.part_indices[-1] != comp_sg.part_indices[-1]:
+                    continue
+                if orig_sg.symbol != comp_sg.symbol:
                     continue
 
                 # found a perfect match
