@@ -1544,7 +1544,7 @@ class AnnStaffGroup:
         #   name, abbreviation, symbol shape, barline type, and which staves it encloses
         if self._cached_notation_size is None:
             size: int = len(self.name)
-            size += 1  # for abbreviation
+            size += len(self.abbreviation)
             size += 1  # for symbol shape
             size += 1  # for barline type
             size += 1  # for lowest staff index (vertical start)

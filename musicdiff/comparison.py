@@ -44,6 +44,24 @@ def _memoize_extras_set_distance(func):
 
     return memoizer
 
+def _memoize_staff_groups_set_distance(func):
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
+
+    return memoizer
+
+def _memoize_metadata_items_set_distance(func):
+    def memoizer(original, compare_to):
+        key = repr(original) + repr(compare_to)
+        if key not in Comparison._memoizer_mem:
+            Comparison._memoizer_mem[key] = func(original, compare_to)
+        return copy.deepcopy(Comparison._memoizer_mem[key])
+
+    return memoizer
+
 def _memoize_inside_bars_diff_lin(func):
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
@@ -53,34 +71,7 @@ def _memoize_inside_bars_diff_lin(func):
 
     return memoizer
 
-# def _memoize_extras_diff_lin(func):
-#     def memoizer(original, compare_to):
-#         key = repr(original) + repr(compare_to)
-#         if key not in Comparison._memoizer_mem:
-#             Comparison._memoizer_mem[key] = func(original, compare_to)
-#         return copy.deepcopy(Comparison._memoizer_mem[key])
-#
-#     return memoizer
-
 def _memoize_lyrics_diff_lin(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_staff_groups_diff_lin(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_metadata_items_diff_lin(func):
     def memoizer(original, compare_to):
         key = repr(original) + repr(compare_to)
         if key not in Comparison._memoizer_mem:
@@ -480,65 +471,6 @@ class Comparison:
         out = op_list_dict[min_key], cost_dict[min_key]
         return out
 
-#     @staticmethod
-#     @_memoize_extras_diff_lin
-#     def _extras_diff_lin(original, compare_to):
-#         # original and compare to are two lists of AnnExtra
-#         if len(original) == 0 and len(compare_to) == 0:
-#             return [], 0
-#
-#         if len(original) == 0:
-#             cost = 0
-#             op_list, cost = Comparison._extras_diff_lin(original, compare_to[1:])
-#             op_list.append(("extrains", None, compare_to[0], compare_to[0].notation_size()))
-#             cost += compare_to[0].notation_size()
-#             return op_list, cost
-#
-#         if len(compare_to) == 0:
-#             cost = 0
-#             op_list, cost = Comparison._extras_diff_lin(original[1:], compare_to)
-#             op_list.append(("extradel", original[0], None, original[0].notation_size()))
-#             cost += original[0].notation_size()
-#             return op_list, cost
-#
-#         # compute the cost and the op_list for the many possibilities of recursion
-#         cost = {}
-#         op_list = {}
-#         # extradel
-#         op_list["extradel"], cost["extradel"] = Comparison._extras_diff_lin(
-#             original[1:], compare_to
-#         )
-#         cost["extradel"] += original[0].notation_size()
-#         op_list["extradel"].append(
-#             ("extradel", original[0], None, original[0].notation_size())
-#         )
-#         # extrains
-#         op_list["extrains"], cost["extrains"] = Comparison._extras_diff_lin(
-#             original, compare_to[1:]
-#         )
-#         cost["extrains"] += compare_to[0].notation_size()
-#         op_list["extrains"].append(
-#             ("extrains", None, compare_to[0], compare_to[0].notation_size())
-#         )
-#         # extrasub
-#         op_list["extrasub"], cost["extrasub"] = Comparison._extras_diff_lin(
-#             original[1:], compare_to[1:]
-#         )
-#         if (
-#             original[0] == compare_to[0]
-#         ):  # avoid call another function if they are equal
-#             extrasub_op, extrasub_cost = [], 0
-#         else:
-#             extrasub_op, extrasub_cost = (
-#                 Comparison._annotated_extra_diff(original[0], compare_to[0])
-#             )
-#         cost["extrasub"] += extrasub_cost
-#         op_list["extrasub"].extend(extrasub_op)
-#         # compute the minimum of the possibilities
-#         min_key = min(cost, key=cost.get)
-#         out = op_list[min_key], cost[min_key]
-#         return out
-
     @staticmethod
     @_memoize_lyrics_diff_lin
     def _lyrics_diff_lin(original, compare_to):
@@ -598,123 +530,123 @@ class Comparison:
         out = op_list[min_key], cost[min_key]
         return out
 
-    @staticmethod
-    @_memoize_metadata_items_diff_lin
-    def _metadata_items_diff_lin(original, compare_to):
-        # original and compare to are two lists of tuple[str, t.Any]
-        if len(original) == 0 and len(compare_to) == 0:
-            return [], 0
-
-        if len(original) == 0:
-            cost = 0
-            op_list, cost = Comparison._metadata_items_diff_lin(original, compare_to[1:])
-            op_list.append(("mditemins", None, compare_to[0], compare_to[0].notation_size()))
-            cost += compare_to[0].notation_size()
-            return op_list, cost
-
-        if len(compare_to) == 0:
-            cost = 0
-            op_list, cost = Comparison._metadata_items_diff_lin(original[1:], compare_to)
-            op_list.append(("mditemdel", original[0], None, original[0].notation_size()))
-            cost += original[0].notation_size()
-            return op_list, cost
-
-        # compute the cost and the op_list for the many possibilities of recursion
-        cost = {}
-        op_list = {}
-        # mditemdel
-        op_list["mditemdel"], cost["mditemdel"] = Comparison._metadata_items_diff_lin(
-            original[1:], compare_to
-        )
-        cost["mditemdel"] += original[0].notation_size()
-        op_list["mditemdel"].append(
-            ("mditemdel", original[0], None, original[0].notation_size())
-        )
-        # mditemins
-        op_list["mditemins"], cost["mditemins"] = Comparison._metadata_items_diff_lin(
-            original, compare_to[1:]
-        )
-        cost["mditemins"] += compare_to[0].notation_size()
-        op_list["mditemins"].append(
-            ("mditemins", None, compare_to[0], compare_to[0].notation_size())
-        )
-        # mditemsub
-        op_list["mditemsub"], cost["mditemsub"] = Comparison._metadata_items_diff_lin(
-            original[1:], compare_to[1:]
-        )
-        if (
-            original[0] == compare_to[0]
-        ):  # avoid call another function if they are equal
-            mditemsub_op, mditemsub_cost = [], 0
-        else:
-            mditemsub_op, mditemsub_cost = (
-                Comparison._annotated_metadata_item_diff(original[0], compare_to[0])
-            )
-        cost["mditemsub"] += mditemsub_cost
-        op_list["mditemsub"].extend(mditemsub_op)
-        # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
-        return out
-
-    @staticmethod
-    @_memoize_staff_groups_diff_lin
-    def _staff_groups_diff_lin(original, compare_to):
-        # original and compare to are two lists of AnnStaffGroup
-        if len(original) == 0 and len(compare_to) == 0:
-            return [], 0
-
-        if len(original) == 0:
-            cost = 0
-            op_list, cost = Comparison._staff_groups_diff_lin(original, compare_to[1:])
-            op_list.append(("staffgrpins", None, compare_to[0], compare_to[0].notation_size()))
-            cost += compare_to[0].notation_size()
-            return op_list, cost
-
-        if len(compare_to) == 0:
-            cost = 0
-            op_list, cost = Comparison._staff_groups_diff_lin(original[1:], compare_to)
-            op_list.append(("staffgrpdel", original[0], None, original[0].notation_size()))
-            cost += original[0].notation_size()
-            return op_list, cost
-
-        # compute the cost and the op_list for the many possibilities of recursion
-        cost = {}
-        op_list = {}
-        # staffgrpdel
-        op_list["staffgrpdel"], cost["staffgrpdel"] = Comparison._staff_groups_diff_lin(
-            original[1:], compare_to
-        )
-        cost["staffgrpdel"] += original[0].notation_size()
-        op_list["staffgrpdel"].append(
-            ("staffgrpdel", original[0], None, original[0].notation_size())
-        )
-        # staffgrpins
-        op_list["staffgrpins"], cost["staffgrpins"] = Comparison._staff_groups_diff_lin(
-            original, compare_to[1:]
-        )
-        cost["staffgrpins"] += compare_to[0].notation_size()
-        op_list["staffgrpins"].append(
-            ("staffgrpins", None, compare_to[0], compare_to[0].notation_size())
-        )
-        # staffgrpsub
-        op_list["staffgrpsub"], cost["staffgrpsub"] = Comparison._staff_groups_diff_lin(
-            original[1:], compare_to[1:]
-        )
-        if (
-            original[0] == compare_to[0]
-        ):  # avoid call another function if they are equal
-            staffgrpsub_op, staffgrpsub_cost = [], 0
-        else:
-            staffgrpsub_op, staffgrpsub_cost = (
-                Comparison._annotated_staff_group_diff(original[0], compare_to[0])
-            )
-        cost["staffgrpsub"] += staffgrpsub_cost
-        op_list["staffgrpsub"].extend(staffgrpsub_op)
-        # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
-        return out
+#     @staticmethod
+#     @_memoize_metadata_items_diff_lin
+#     def _metadata_items_diff_lin(original, compare_to):
+#         # original and compare to are two lists of tuple[str, t.Any]
+#         if len(original) == 0 and len(compare_to) == 0:
+#             return [], 0
+#
+#         if len(original) == 0:
+#             cost = 0
+#             op_list, cost = Comparison._metadata_items_diff_lin(original, compare_to[1:])
+#             op_list.append(("mditemins", None, compare_to[0], compare_to[0].notation_size()))
+#             cost += compare_to[0].notation_size()
+#             return op_list, cost
+#
+#         if len(compare_to) == 0:
+#             cost = 0
+#             op_list, cost = Comparison._metadata_items_diff_lin(original[1:], compare_to)
+#             op_list.append(("mditemdel", original[0], None, original[0].notation_size()))
+#             cost += original[0].notation_size()
+#             return op_list, cost
+#
+#         # compute the cost and the op_list for the many possibilities of recursion
+#         cost = {}
+#         op_list = {}
+#         # mditemdel
+#         op_list["mditemdel"], cost["mditemdel"] = Comparison._metadata_items_diff_lin(
+#             original[1:], compare_to
+#         )
+#         cost["mditemdel"] += original[0].notation_size()
+#         op_list["mditemdel"].append(
+#             ("mditemdel", original[0], None, original[0].notation_size())
+#         )
+#         # mditemins
+#         op_list["mditemins"], cost["mditemins"] = Comparison._metadata_items_diff_lin(
+#             original, compare_to[1:]
+#         )
+#         cost["mditemins"] += compare_to[0].notation_size()
+#         op_list["mditemins"].append(
+#             ("mditemins", None, compare_to[0], compare_to[0].notation_size())
+#         )
+#         # mditemsub
+#         op_list["mditemsub"], cost["mditemsub"] = Comparison._metadata_items_diff_lin(
+#             original[1:], compare_to[1:]
+#         )
+#         if (
+#             original[0] == compare_to[0]
+#         ):  # avoid call another function if they are equal
+#             mditemsub_op, mditemsub_cost = [], 0
+#         else:
+#             mditemsub_op, mditemsub_cost = (
+#                 Comparison._annotated_metadata_item_diff(original[0], compare_to[0])
+#             )
+#         cost["mditemsub"] += mditemsub_cost
+#         op_list["mditemsub"].extend(mditemsub_op)
+#         # compute the minimum of the possibilities
+#         min_key = min(cost, key=cost.get)
+#         out = op_list[min_key], cost[min_key]
+#         return out
+#
+#     @staticmethod
+#     @_memoize_staff_groups_diff_lin
+#     def _staff_groups_diff_lin(original, compare_to):
+#         # original and compare to are two lists of AnnStaffGroup
+#         if len(original) == 0 and len(compare_to) == 0:
+#             return [], 0
+#
+#         if len(original) == 0:
+#             cost = 0
+#             op_list, cost = Comparison._staff_groups_diff_lin(original, compare_to[1:])
+#             op_list.append(("staffgrpins", None, compare_to[0], compare_to[0].notation_size()))
+#             cost += compare_to[0].notation_size()
+#             return op_list, cost
+#
+#         if len(compare_to) == 0:
+#             cost = 0
+#             op_list, cost = Comparison._staff_groups_diff_lin(original[1:], compare_to)
+#             op_list.append(("staffgrpdel", original[0], None, original[0].notation_size()))
+#             cost += original[0].notation_size()
+#             return op_list, cost
+#
+#         # compute the cost and the op_list for the many possibilities of recursion
+#         cost = {}
+#         op_list = {}
+#         # staffgrpdel
+#         op_list["staffgrpdel"], cost["staffgrpdel"] = Comparison._staff_groups_diff_lin(
+#             original[1:], compare_to
+#         )
+#         cost["staffgrpdel"] += original[0].notation_size()
+#         op_list["staffgrpdel"].append(
+#             ("staffgrpdel", original[0], None, original[0].notation_size())
+#         )
+#         # staffgrpins
+#         op_list["staffgrpins"], cost["staffgrpins"] = Comparison._staff_groups_diff_lin(
+#             original, compare_to[1:]
+#         )
+#         cost["staffgrpins"] += compare_to[0].notation_size()
+#         op_list["staffgrpins"].append(
+#             ("staffgrpins", None, compare_to[0], compare_to[0].notation_size())
+#         )
+#         # staffgrpsub
+#         op_list["staffgrpsub"], cost["staffgrpsub"] = Comparison._staff_groups_diff_lin(
+#             original[1:], compare_to[1:]
+#         )
+#         if (
+#             original[0] == compare_to[0]
+#         ):  # avoid call another function if they are equal
+#             staffgrpsub_op, staffgrpsub_cost = [], 0
+#         else:
+#             staffgrpsub_op, staffgrpsub_cost = (
+#                 Comparison._annotated_staff_group_diff(original[0], compare_to[0])
+#             )
+#         cost["staffgrpsub"] += staffgrpsub_cost
+#         op_list["staffgrpsub"].extend(staffgrpsub_op)
+#         # compute the minimum of the possibilities
+#         min_key = min(cost, key=cost.get)
+#         out = op_list[min_key], cost[min_key]
+#         return out
 
     @staticmethod
     def _strings_leveinshtein_distance(str1: str, str2: str):
@@ -1405,7 +1337,7 @@ class Comparison:
         return op_list, cost
 
     @staticmethod
-    @_memoize_notes_set_distance
+    @_memoize_extras_set_distance
     def _extras_set_distance(original: list[AnnExtra], compare_to: list[AnnExtra]):
         """
         Gather up pairs of matching extras (using kind, offset, and visual duration, in
@@ -1505,6 +1437,173 @@ class Comparison:
                     )
                 cost += extrasub_cost
                 op_list.extend(extrasub_op)
+
+        return op_list, cost
+
+    @staticmethod
+    @_memoize_metadata_items_set_distance
+    def _metadata_items_set_distance(
+        original: list[AnnMetadataItem],
+        compare_to: list[AnnMetadataItem]
+    ):
+        """
+        Gather up pairs of matching metadata_items (using key and value).  If you can't find
+        an exactly matching metadata_item, try again without value.
+        original [list] -- a list of AnnMetadataItems
+        compare_to [list] -- a list of AnnMetadataItems
+        """
+        paired_metadata_items: list[tuple[AnnMetadataItem, AnnMetadataItem]] = []
+        unpaired_orig_metadata_items: list[AnnMetadataItem] = []
+        unpaired_comp_metadata_items: list[AnnMetadataItem] = copy.copy(compare_to)
+
+        for orig_mdi in original:
+            fallback: AnnMetadataItem | None = None
+            fallback_i: int = -1
+            found_it: bool = False
+            for i, comp_mdi in enumerate(unpaired_comp_metadata_items):
+                # key is required for pairing
+                if orig_mdi.key != comp_mdi.key:
+                    continue
+                if fallback is None:
+                    fallback = comp_mdi
+                    fallback_i = i
+
+                # value is preferred for pairing
+                if orig_mdi.value != comp_mdi.value:
+                    continue
+
+                # found a perfect match
+                paired_metadata_items.append((orig_mdi, comp_mdi))
+
+                # remove comp_n from unpaired_comp_metadata_items
+                unpaired_comp_metadata_items.pop(i)
+
+                found_it = True
+                break
+
+            if found_it:
+                # on to the next original metadata_item
+                continue
+
+            # did we find a fallback (matched on key, not on value)?
+            if fallback is not None:
+                paired_metadata_items.append((orig_mdi, fallback))
+                unpaired_comp_metadata_items.pop(fallback_i)
+                continue
+
+            # we found nothing
+            unpaired_orig_metadata_items.append(orig_mdi)
+
+        # compute the cost and the op_list
+        cost: int = 0
+        op_list: list = []
+
+        # mditemdel
+        for metadata_item in unpaired_orig_metadata_items:
+            cost += metadata_item.notation_size()
+            op_list.append(("mditemdel", metadata_item, None, metadata_item.notation_size()))
+
+        # mditemins
+        for metadata_item in unpaired_comp_metadata_items:
+            cost += metadata_item.notation_size()
+            op_list.append(("mditemins", None, metadata_item, metadata_item.notation_size()))
+
+        # mditemsub
+        if paired_metadata_items:
+            for metadata_itemo, metadata_itemc in paired_metadata_items:
+                if metadata_itemo == metadata_itemc:
+                    # if equal, avoid _annotated_metadata_item_diff call
+                    metadata_itemsub_op, metadata_itemsub_cost = [], 0
+                else:
+                    metadata_itemsub_op, metadata_itemsub_cost = (
+                        Comparison._annotated_metadata_item_diff(metadata_itemo, metadata_itemc)
+                    )
+                cost += metadata_itemsub_cost
+                op_list.extend(metadata_itemsub_op)
+
+        return op_list, cost
+
+    @staticmethod
+    @_memoize_staff_groups_set_distance
+    def _staff_groups_set_distance(
+        original: list[AnnStaffGroup],
+        compare_to: list[AnnStaffGroup]
+    ):
+        """
+        Gather up pairs of matching staffgroups (using start_index and end_index, in
+        that order of importance).  If you can't find an exactly matching staffgroup,
+        try again without end_index.
+        original [list] -- a list of AnnStaffGroups
+        compare_to [list] -- a list of AnnStaffGroups
+        """
+        paired_staff_groups: list[tuple[AnnStaffGroup, AnnStaffGroup]] = []
+        unpaired_orig_staff_groups: list[AnnStaffGroup] = []
+        unpaired_comp_staff_groups: list[AnnStaffGroup] = copy.copy(compare_to)
+
+        for orig_sg in original:
+            fallback: AnnStaffGroup | None = None
+            fallback_i: int = -1
+            found_it: bool = False
+            for i, comp_sg in enumerate(unpaired_comp_staff_groups):
+                # start index is required for pairing
+                if orig_sg.part_indices[0] != comp_sg.part_indices[0]:
+                    continue
+                if fallback is None:
+                    fallback = comp_sg
+                    fallback_i = i
+
+                # end index is preferred for pairing
+                if orig_sg.part_indices[-1] != comp_sg.part_indices[-1]:
+                    continue
+
+                # found a perfect match
+                paired_staff_groups.append((orig_sg, comp_sg))
+
+                # remove comp_n from unpaired_comp_staff_groups
+                unpaired_comp_staff_groups.pop(i)
+
+                found_it = True
+                break
+
+            if found_it:
+                # on to the next original staff_group
+                continue
+
+            # did we find a fallback (matched except for duration)?
+            if fallback is not None:
+                paired_staff_groups.append((orig_sg, fallback))
+                unpaired_comp_staff_groups.pop(fallback_i)
+                continue
+
+            # we found nothing
+            unpaired_orig_staff_groups.append(orig_sg)
+
+        # compute the cost and the op_list
+        cost: int = 0
+        op_list: list = []
+
+        # staffgrpdel
+        for staff_group in unpaired_orig_staff_groups:
+            cost += staff_group.notation_size()
+            op_list.append(("staffgrpdel", staff_group, None, staff_group.notation_size()))
+
+        # staffgrpins
+        for staff_group in unpaired_comp_staff_groups:
+            cost += staff_group.notation_size()
+            op_list.append(("staffgrpins", None, staff_group, staff_group.notation_size()))
+
+        # staffgrpsub
+        if paired_staff_groups:
+            for staff_groupo, staff_groupc in paired_staff_groups:
+                if staff_groupo == staff_groupc:
+                    # if equal, avoid _annotated_staff_group_diff call
+                    staff_groupsub_op, staff_groupsub_cost = [], 0
+                else:
+                    staff_groupsub_op, staff_groupsub_cost = (
+                        Comparison._annotated_staff_group_diff(staff_groupo, staff_groupc)
+                    )
+                cost += staff_groupsub_cost
+                op_list.extend(staff_groupsub_op)
 
         return op_list, cost
 
@@ -1640,14 +1739,14 @@ class Comparison:
                 cost_total += cost_block
 
         # compare the staff groups
-        groups_op_list, groups_cost = Comparison._staff_groups_diff_lin(
+        groups_op_list, groups_cost = Comparison._staff_groups_set_distance(
             score1.staff_group_list, score2.staff_group_list
         )
         op_list_total.extend(groups_op_list)
         cost_total += groups_cost
 
         # compare the metadata items
-        mditems_op_list, mditems_cost = Comparison._metadata_items_diff_lin(
+        mditems_op_list, mditems_cost = Comparison._metadata_items_set_distance(
             score1.metadata_items_list, score2.metadata_items_list
         )
         op_list_total.extend(mditems_op_list)
