@@ -370,15 +370,17 @@ class Comparison:
 
         # add for the accidentals
         if pitch1[1] != pitch2[1]:  # if the accidental is different
-            cost += 1
             if pitch1[1] == "None":
                 assert pitch2[1] != "None"
+                cost += 1
                 op_list.append(("accidentins", noteNode1, noteNode2, 1, ids))
             elif pitch2[1] == "None":
                 assert pitch1[1] != "None"
+                cost += 1
                 op_list.append(("accidentdel", noteNode1, noteNode2, 1, ids))
-            else:  # a different tipe of alteration is present
-                op_list.append(("accidentedit", noteNode1, noteNode2, 1, ids))
+            else:  # a different type of alteration is present
+                cost += 2  # delete then add
+                op_list.append(("accidentedit", noteNode1, noteNode2, 2, ids))
         # add for the ties
         if pitch1[2] != pitch2[2]:
             # exclusive or. Add if one is tied and not the other.
@@ -768,21 +770,26 @@ class Comparison:
             cost += content_cost
             op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
 
-        # add for the symbolic (cost 1)
+        # add for the symbolic (cost 2: delete one symbol, add the other)
         if annExtra1.symbolic != annExtra2.symbolic:
-            cost += 1
-            op_list.append(("extrasymboledit", annExtra1, annExtra2, 1))
+            cost += 2
+            op_list.append(("extrasymboledit", annExtra1, annExtra2, 2))
 
         # add for the infodict
         if annExtra1.infodict != annExtra2.infodict:
             info_cost: int = 0
             # handle everything in annExtra1 (whether or not it is in annExtra2)
             for k, v in annExtra1.infodict.items():
-                if v != annExtra2.infodict.get(k, None):
+                if k not in annExtra2.infodict:
+                    # not in annExtra2: delete a symbol
                     info_cost += 1
+                elif v != annExtra2.infodict[k]:
+                    # different in annExtra2: delete a symbol, add a symbol
+                    info_cost += 2
             # handle everything in annExtra2 that is not in annExtra1
             for k in annExtra2.infodict:
                 if k not in annExtra1.infodict:
+                    # add a symbol
                     info_cost += 1
             cost += info_cost
             op_list.append(("extrainfoedit", annExtra1, annExtra2, info_cost))
@@ -828,13 +835,28 @@ class Comparison:
 
         # add for the number
         if annLyric1.number != annLyric2.number:
-            cost += 1
-            op_list.append(("lyricnumedit", annLyric1, annLyric2, 1))
+            number_cost: int
+            if annLyric1.number == 0 or annLyric2.number == 0:
+                # add or delete number
+                number_cost = 1
+            else:
+                # add and delete number
+                number_cost = 2
+            cost += number_cost
+            op_list.append(("lyricnumedit", annLyric1, annLyric2, number_cost))
 
         # add for the identifier
         if annLyric1.identifier != annLyric2.identifier:
-            cost += 1  # someday we might do a leveinshtein distance of the two ids
-            op_list.append(("lyricidedit", annLyric1, annLyric2, 1))
+            # someday we might do a leveinshtein distance of the two ids
+            id_cost: int
+            if not annLyric1.identifier or not annLyric1.identifier:
+                # add or delete identifier
+                id_cost = 1
+            else:
+                # add and delete identifier
+                id_cost = 2
+            cost += id_cost
+            op_list.append(("lyricidedit", annLyric1, annLyric2, id_cost))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
@@ -901,22 +923,39 @@ class Comparison:
         # add for the name
         if annStaffGroup1.name != annStaffGroup2.name:
             name_cost: int = (
-                Comparison._strings_leveinshtein_distance(annStaffGroup1.name, annStaffGroup2.name)
+                Comparison._strings_leveinshtein_distance(
+                    annStaffGroup1.name,
+                    annStaffGroup2.name
+                )
             )
             cost += name_cost
             op_list.append(("staffgrpnameedit", annStaffGroup1, annStaffGroup2, name_cost))
 
         # add for the abbreviation
         if annStaffGroup1.abbreviation != annStaffGroup2.abbreviation:
-            abbreviation_cost: int = 1
-            cost += abbreviation_cost
-            op_list.append(
-                ("staffgrpabbreviationedit", annStaffGroup1, annStaffGroup2, abbreviation_cost)
+            abbreviation_cost: int = (
+                Comparison._strings_leveinshtein_distance(
+                    annStaffGroup1.abbreviation,
+                    annStaffGroup2.abbreviation
+                )
             )
+            cost += abbreviation_cost
+            op_list.append((
+                "staffgrpabbreviationedit",
+                annStaffGroup1,
+                annStaffGroup2,
+                abbreviation_cost
+            ))
 
         # add for the symbol
         if annStaffGroup1.symbol != annStaffGroup2.symbol:
-            symbol_cost: int = 1
+            symbol_cost: int
+            if not annStaffGroup1.symbol or not annStaffGroup2.symbol:
+                # add or delete symbol
+                symbol_cost = 1
+            else:
+                # add and delete symbol
+                symbol_cost = 2
             cost += symbol_cost
             op_list.append(
                 ("staffgrpsymboledit", annStaffGroup1, annStaffGroup2, symbol_cost)
@@ -1029,20 +1068,25 @@ class Comparison:
         cost += cost_pitch
         # add for the notehead
         if annNote1.note_head != annNote2.note_head:
-            cost += 1
-            op_list.append(("headedit", annNote1, annNote2, 1))
+            # delete one note head, add the other (this isn't noteshape, this is
+            # just quarter-note note head vs half-note note head, etc)
+            cost += 2
+            op_list.append(("headedit", annNote1, annNote2, 2))
         # add for the dots
         if annNote1.dots != annNote2.dots:
-            dots_diff = abs(annNote1.dots - annNote2.dots)  # add one for each dot
+            # add one for each added (or deleted) dot
+            dots_diff = abs(annNote1.dots - annNote2.dots)
             cost += dots_diff
             if annNote1.dots > annNote2.dots:
                 op_list.append(("dotdel", annNote1, annNote2, dots_diff))
             else:
                 op_list.append(("dotins", annNote1, annNote2, dots_diff))
         if annNote1.graceType != annNote2.graceType:
-            cost += 1
-            op_list.append(("graceedit", annNote1, annNote2, 1))
+            # accented vs unaccented vs not a grace note (delete the wrong, add the right)
+            cost += 2
+            op_list.append(("graceedit", annNote1, annNote2, 2))
         if annNote1.graceSlash != annNote2.graceSlash:
+            # add or delete the slash
             cost += 1
             op_list.append(("graceslashedit", annNote1, annNote2, 1))
         # add for the beamings
@@ -1052,7 +1096,7 @@ class Comparison:
             )
             op_list.extend(beam_op_list)
             cost += beam_cost
-        # add for the tuplets
+        # add for the tuplet types
         if annNote1.tuplets != annNote2.tuplets:
             tuplet_op_list, tuplet_cost = Comparison._beamtuplet_leveinsthein_diff(
                 annNote1.tuplets, annNote2.tuplets, annNote1, annNote2, "tuplet"
@@ -1092,6 +1136,7 @@ class Comparison:
         # add for gap from previous note or start of measure if first note in measure
         # (i.e. horizontal position shift)
         if annNote1.gap_dur != annNote2.gap_dur:
+            # in all cases, the edit is a simple horizontal shift of the note
             cost += 1
             if annNote1.gap_dur == 0:
                 op_list.append(("insspace", annNote1, annNote2, 1))
@@ -1103,20 +1148,30 @@ class Comparison:
 
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:
-            cost += 1
-            op_list.append(("editnoteshape", annNote1, annNote2, 1))
+            # always delete existing note shape and add the new one
+            cost += 2
+            op_list.append(("editnoteshape", annNote1, annNote2, 2))
         # add for noteheadFill
         if annNote1.noteheadFill != annNote2.noteheadFill:
-            cost += 1
-            op_list.append(("editnoteheadfill", annNote1, annNote2, 1))
-        # add for noteheadParenthesis
+            # always delete existing note fill and add the new one
+            cost += 2
+            op_list.append(("editnoteheadfill", annNote1, annNote2, 2))
+        # add for noteheadParenthesis (True or False)
         if annNote1.noteheadParenthesis != annNote2.noteheadParenthesis:
+            # always either add or delete parentheses
             cost += 1
             op_list.append(("editnoteheadparenthesis", annNote1, annNote2, 1))
         # add for stemDirection
         if annNote1.stemDirection != annNote2.stemDirection:
-            cost += 1
-            op_list.append(("editstemdirection", annNote1, annNote2, 1))
+            stemdir_cost: int
+            if annNote1.stemDirection == 'noStem' or annNote2.stemDirection == 'noStem':
+                # gonna add a stem
+                stemdir_cost = 1
+            else:
+                # gonna change a stem (add then delete)
+                stemdir_cost = 2
+            cost += stemdir_cost
+            op_list.append(("editstemdirection", annNote1, annNote2, stemdir_cost))
         # add for the styledict
         if annNote1.styledict != annNote2.styledict:
             cost += 1
@@ -1161,19 +1216,19 @@ class Comparison:
         # compute the cost and the op_list for the many possibilities of recursion
         cost = {}
         op_list = {}
-        # del-pitch
+        # delwhich
         op_list["del" + which], cost["del" + which] = Comparison._beamtuplet_leveinsthein_diff(
             original[1:], compare_to, note1, note2, which
         )
         cost["del" + which] += 1
         op_list["del" + which].append(("del" + which, note1, note2, 1))
-        # ins-pitch
+        # inswhich
         op_list["ins" + which], cost["ins" + which] = Comparison._beamtuplet_leveinsthein_diff(
             original, compare_to[1:], note1, note2, which
         )
         cost["ins" + which] += 1
         op_list["ins" + which].append(("ins" + which, note1, note2, 1))
-        # edit-pitch
+        # editwhich
         op_list["edit" + which], cost["edit" + which] = Comparison._beamtuplet_leveinsthein_diff(
             original[1:], compare_to[1:], note1, note2, which
         )
@@ -1224,23 +1279,23 @@ class Comparison:
         # compute the cost and the op_list for the many possibilities of recursion
         cost = {}
         op_list = {}
-        # del-pitch
+        # delwhich
         op_list["del" + which], cost["del" + which] = Comparison._generic_leveinsthein_diff(
             original[1:], compare_to, note1, note2, which
         )
         cost["del" + which] += 1
         op_list["del" + which].append(("del" + which, note1, note2, 1))
-        # ins-pitch
+        # inswhich
         op_list["ins" + which], cost["ins" + which] = Comparison._generic_leveinsthein_diff(
             original, compare_to[1:], note1, note2, which
         )
         cost["ins" + which] += 1
         op_list["ins" + which].append(("ins" + which, note1, note2, 1))
-        # edit-pitch
+        # editwhich
         op_list["edit" + which], cost["edit" + which] = Comparison._generic_leveinsthein_diff(
             original[1:], compare_to[1:], note1, note2, which
         )
-        if original[0] == compare_to[0]:  # to avoid perform the pitch_diff
+        if original[0] == compare_to[0]:  # to avoid perform the diff
             generic_diff_op_list = []
             generic_diff_cost = 0
         else:
