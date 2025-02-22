@@ -1,5 +1,0 @@
-{
-    "SER": "0.0",
-    "numSymbolErrors": "0",
-    "numSymbolsInGroundTruth": "47"
-}

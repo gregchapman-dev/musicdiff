@@ -8,6 +8,8 @@ run_test() {
     python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > /tmp/results.txt >& /dev/null
     diff -q /tmp/results.txt tests/test_results/cmd_line_results_$name.txt >/dev/null 2>&1
     if [[ $? -ne 0 ]]; then
+        # bbdiff /tmp/results.txt tests/test_results/cmd_line_results_$name.txt
+        # exit(0)
         print "Test failure: musicdiff $@"
         ((fails+=1))
     else
@@ -30,7 +32,7 @@ run_test decoratednotesandrests_no_ties_beams_slurs --include notesandrests arti
 # test all the simple decorated notes includes (without excludes)
 run_test notesandrests --include notesandrests
 # repeat with ser
-run_test notesandrests_ser ser --include notesandrests
+run_test notesandrests_secr secr --include notesandrests
 
 # simple includes (notesandrests barlines) + combo include (otherobjects), then exclude
 # otherobjects (which removes barlines, too), leaving notesandrests
@@ -70,7 +72,7 @@ run_test allobjects_no_lyrics_barlines -i otherobjects decoratednotesandrests -x
 run_test metadata --include metadata
 
 run_test allobjects_style_metadata -i metadata style allobjects
-run_test allobjects_style_metadata_ser ser -i metadata style allobjects
+run_test allobjects_style_metadata_secr secr -i metadata style allobjects
 
 
 print Total failures: ${fails}

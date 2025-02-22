@@ -7,7 +7,7 @@
 @@ measure 1, staff 1, beat 1.0 @@
 -(voice) [B4 (quarter note),G4 (quarter note),D5 (quarter note),B4 (quarter note)]
 @@ measure 1, staff 1, beat 1.0 @@
-+(Slur) SLUR dur=7.5 numNotes=2
++(Slur) dur=7.5
 @@ measure 1, staff 1, beat 2.0 @@
 +(Note:pitch) [E4,G4] (quarter chord), pitch[1]=G4
 @@ measure 1, staff 1, beat 3.0 @@

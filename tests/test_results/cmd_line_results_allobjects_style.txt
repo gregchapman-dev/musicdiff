@@ -1,10 +1,10 @@
 --- tests/test_scores/test_all_details_1a.mei
 +++ tests/test_scores/test_all_details_1b.mei
 @@ measure 1, staff 1, beat 1.0 @@
-+(Slur) SLUR dur=7.5 numNotes=2
++(Slur) dur=7.5
 @@ measure 1, staff 1, beat 1.0 @@
--(Dynamic:placement) DY:p changedStyle={placement:below}
-+(Dynamic:placement) DY:p changedStyle={placement:above}
+-(Dynamic:placement) p changedStyle={placement:below}
++(Dynamic:placement) p changedStyle={placement:above}
 @@ measure 1, staff 1, beat 1.0 @@
 -(Lyric) "lyric2", num=2
 @@ measure 1, staff 1, beat 1.0 @@
@@ -25,7 +25,7 @@
 -(Note:stemdir) C4 (eighth note), stemDirection=down
 +(Note:stemdir) C4 (eighth note), stemDirection=up
 @@ measure 2, staff 1, beat 2.5 @@
--(Dynamic) DY:mp
+-(Dynamic) mp
 @@ measure 2, staff 1, beat 3.0 @@
 -(Note:flagsbeams) C4 (eighth note), 1 beam=start
 +(Note:flagsbeams) C4 (eighth note), 1 flag
@@ -42,5 +42,5 @@
 -(Note:stemdir) G3 (eighth note), stemDirection=down
 +(Note:stemdir) G3 (eighth note), stemDirection=up
 @@ measure 2, staff 1, beat 5.0 @@
--(Barline:content) BL:final
-+(Barline:content) BL:double
+-(Barline:symbolic) final
++(Barline:symbolic) double

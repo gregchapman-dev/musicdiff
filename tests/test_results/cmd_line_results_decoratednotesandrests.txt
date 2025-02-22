@@ -1,7 +1,7 @@
 --- tests/test_scores/test_all_details_1a.mei
 +++ tests/test_scores/test_all_details_1b.mei
 @@ measure 1, staff 1, beat 1.0 @@
-+(Slur) SLUR dur=7.5 numNotes=2
++(Slur) dur=7.5
 @@ measure 2, staff 1, beat 2.5 @@
 -(Note:tie) C4 (eighth note), tied
 +(Note:tie) C4 (eighth note), not tied

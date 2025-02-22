@@ -1,0 +1,7 @@
+{
+    "symbolEditCost": "0",
+    "numSymbolsInPredicted": "47",
+    "numSymbolsInGroundTruth": "47",
+    "numSymbolsInBoth": "94",
+    "SECR": "0.0"
+}
