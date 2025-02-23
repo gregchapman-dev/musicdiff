@@ -1,9 +1,9 @@
 {
     "symbolEditCost": "39",
-    "numSymbolsInPredicted": "142",
-    "numSymbolsInGroundTruth": "125",
-    "numSymbolsInBoth": "267",
-    "SECR": "0.14606741573033707"
+    "numSymbolsInPredicted": "143",
+    "numSymbolsInGroundTruth": "126",
+    "numSymbolsInBoth": "269",
+    "SECR": "0.1449814126394052"
 }
 
 --- tests/test_scores/test_all_details_1a.mei
