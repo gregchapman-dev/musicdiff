@@ -1,17 +1,22 @@
 First a glossary of terms:
-	AnnNote is a musicdiff-annotated note/rest/chord (by default, there are no chords, only the notes within them)
-	AnnVoice is a musicdiff-annotated voice (by default, there are no AnnVoices, only the AnnNotes within them)
-	AnnLyric is a musicidff-annotated lyric syllable
-	AnnExtra is a musicdiff-annotated musical object such as dynamic, text, clef, keysig, timesig, metronome mark, etc
+	AnnNote is a musicdiff-annotated note/rest/chord (by default, there are no
+	    chords, only the notes within them)
+	AnnVoice is a musicdiff-annotated voice (by default, there are no AnnVoices,
+	    only the AnnNotes within them)
+	AnnLyric is a musicdiff-annotated lyric syllable
+	AnnExtra is a musicdiff-annotated musical object such as dynamic, text, clef,
+	    keysig, timesig, metronome mark, etc
 	AnnMeasure is a musicdiff-annotated measure
 	AnnPart is a musicdiff-annotated staff
-	AnnStaffGroup is a musicdiff-annotated staff group (as denoted by braces/brackets/etc to the left of the score)
-	AnnMetadataItem is a musicdiff-annotated metadata item, such as composer, date of composition, etc
+	AnnStaffGroup is a musicdiff-annotated staff group (as denoted by
+	    braces/brackets/etc to the left of the score)
+	AnnMetadataItem is a musicdiff-annotated metadata item, such as composer,
+	    date of composition, etc
 	AnnScore is a musicdiff-annotated score
 
 AnnNote symbol count (rest, note, chord):
-    (If Voicing is not specified explicitly on the command line, there are no chords,
-    only the individual notes from the chords)
+    (If Voicing is not specified explicitly on the command line, there are no
+        chords, only the individual notes from the chords)
 
     For each note (1 rest, 1 note, or N notes in a chord):
         1 symbol for the pitch (even if unpitched)
@@ -23,9 +28,10 @@ AnnNote symbol count (rest, note, chord):
     1 symbol for each flag or beam
     1 symbol for each enclosing tuplet
     1 symbol for each enclosing tuplet's style (is it visible? bracketed?)
-    # note head type + dots + flags/beams + tuplets implies duration
+    # (note head type + dots + flags/beams + tuplets implies visual duration)
     1 symbol for each articulation (staccato, tenuto, etc)
-    1 symbol for each expression (mordent, trill, etc) (*** someday add 1 for ornament accidental? ***)
+    1 symbol for each expression (mordent, trill, etc) (in future add 1 for
+        ornament accidental?)
     1 symbol if a grace note
         1 symbol if that grace note has a slash
     1 symbol if there is abnormal note head shape (diamond, etc)
@@ -33,16 +39,23 @@ AnnNote symbol count (rest, note, chord):
     1 symbol if there are parentheses around note head
     1 symbol if stem direction is specified
     1 symbol if there is a space (hidden rest) before the note
-    1 symbol for all specified style info (e.g. color, size, etc) (in future might count entries)
+    1 symbol for all specified style info (e.g. color, size, etc) (in future
+        might compare individual style entries)
 
-AnnNote diff symbol error count:
+AnnNote diff symbolic edit count:
     for each note (1 rest, 1 note, or N notes in a chord):
-        pitch diff: 1
-        accidental diff: 1
-        tie start diff: 1
-    note head type (quarter/half/whole/breve/etc) diff: 1
+        pitch (line/space position) diff: If Voicing is not explicitly specified
+            on the command line, we only compare notes that have the
+            same line/space (vertical position) and offset (horizontal position).
+            Any notes with no same-position note to compare against are deleted
+            or added (with symbolic edit cost == note symbol count). If Voicing
+            _is_ explicitly specified on the command line, a pitch diff is 2
+            symbols (delete then add).
+        accidental diff: 1 per accidental added or deleted
+        tie start diff: 1 (add or delete the tie)
+    note head type (quarter/half/whole/breve/etc) diff: 2 (delete then add)
     dots diff: 1 for each dot added or deleted
-    grace type diff (acc vs unacc vs not grace): 1
+    grace type diff (acc vs unacc vs not grace): 2 (delete then add)
     grace slash diff: 1
     beams/flags diff: Levenshtein distance between lists of beams/flags
     tuplet diff: 1 for difference in tuplet actual count/normal count + 1 for difference in
@@ -51,11 +64,12 @@ AnnNote diff symbol error count:
         distance between lists of tuplets (visibility/bracket).
     articulation diff: Levenshtein distance between lists of articulations
     expression diff: Levenshtein distance between lists of expressions
-    note shape diff (diamond, etc): 1
-    note head fill diff (beyond the usual quarter vs half): 1
-    note head parentheses diff: 1
-    "space before" diff: 1
-    note stem direction diff: 1
+    note shape diff (diamond, etc): 2 (delete then add)
+    note head fill diff (beyond the usual quarter vs half): 1 (delete then add)
+    note head parentheses diff: 1 (delete or add)
+    "space before" diff: 1 (representing a horizontal shift of the note)
+    note stem direction diff: 1 if adding or deleting stem, 2 if changing stem
+        direction
     note style diff (e.g. color, size, etc): 1
 
 -------------------------------------------------------------------
@@ -66,24 +80,31 @@ clef symbol count:
     1 symbol for clef itself (e.g. G2, F4, C3, G2-8, etc)
     1 symbol if styled in any way
 
-clef diff symbol error count:
+clef diff symbolic edit count:
     clef diff: 1
     clef style diff: 1
 
 timesig symbol count:
-    1 symbol for timesig itself (e.g. 2/2, 4/4, 3/8, common, cut)
+    1 symbol for each number or symbol (e.g. 3/8 is two symbols, common time (C)
+        is one symbol)
     1 symbol if styled in any way
 
-timesig diff symbol error count:
-    timesig diff: 1
+timesig diff symbolic edit count:
+    timesig diff: 1 per delete and/or add of number or symbol (3/8 vs 6/8 is a
+        delete of the 3 and an add of the 6, so two symbols; 4/4 vs C is a
+        delete of both 4s and an add of the C, so three symbols)
     timesig style diff: 1
 
 keysig symbol count:
-    1 symbol for keysig itself (number of sharps/flats)
+    1 symbol for each accidental in signature (exception: no sharps/flats gets
+        1 symbol)
     1 symbol if styled in any way
 
-keysig diff symbol error count:
-    keysig diff: 1
+keysig diff symbolic edit count:
+    keysig diff: 1 per delete and or add of accidental (two flats vs no
+        flats/sharps is two symbols deleted; 3 sharps vs 4 flats is 3
+        symbols deleted + 4 symbols added; 5 flats vs 4 flats is one symbol
+        deleted)
     keysig style diff: 1
 
 tempo symbol count:
@@ -92,9 +113,9 @@ tempo symbol count:
         - both may be present (e.g. "Andante <note> = 80" is len(“Andante”)+1=8)
     1 symbol if styled in any way
 
-tempo diff symbol error count:
-    diff in "<note> = 80" portion: 1
-    diff in other string portion: Levenshtein distance between other string portions
+tempo diff symbolic edit count:
+    diff in "<note> = 80" portion: 2 (delete then add)
+    diff in other string portion: Levenshtein distance between other string portion
     tempo style diff: 1
 
 barline symbol count:
@@ -104,28 +125,30 @@ barline symbol count:
     1 symbol for barline fermata if present
     1 symbol for non-normal barline fermata shape (if barline fermata present)
 
-barline diff symbol error count:
-    barline type diff: 1
-    repeat direction diff: 1
-    repeat count diff: 1
-    barline fermata diff: 1
-    barline fermata shape diff: 1
+barline diff symbolic edit count:
+    barline type diff: 2 (delete then add)
+    repeat direction diff: 2 (delete then add)
+    repeat count diff: 2 (delete then add)
+    barline fermata diff: 1 if delete or add, 2 if change type of fermata
+        (inverted or not)
+    barline fermata shape diff: 1 if delete or add non-normal shape, 2 if
+        change non-normal shape
 
 ottava symbol count:
     1 symbol for ottava type (e.g. 8va, 8ba, 15ma)
     1 symbol for ottava duration
     1 symbol if styled in any way
 
-ottava diff symbol error count:
-    ottava type diff: 1
-    ottava duration diff: 1
+ottava diff symbolic edit count:
+    ottava type diff: 2 (delete then add)
+    ottava duration diff: 1 (horizontal shift of ottava end)
     style diff: 1
 
 direction symbol count:
     len(string) symbols for direction string
     1 symbol if styled in any way (italics, bold, color, placement, etc)
 
-direction diff symbol error count:
+direction diff symbolic edit count:
     string diff: Levenshtein distance between strings
     style diff: 1
 
@@ -133,8 +156,8 @@ dynamic (text, not wedge) symbol count:
     1 symbol for the name (e.g. fff)
     1 symbol if styled in any way (italics, bold, color, placement, etc)
 
-dynamic diff symbol error count:
-    string diff: 1
+dynamic diff symbolic edit count:
+    string diff: 2 (delete then add)
     style diff: 1
 
 dynamic wedge symbol count:
@@ -142,17 +165,17 @@ dynamic wedge symbol count:
     1 symbol for the wedge duration
     1 symbol if styled in any way (placement, etc)
 
-dynamic wedge diff symbol error count:
-    wedge type diff: 1
-    duration diff: 1
+dynamic wedge diff symbolic edit count:
+    wedge type diff: 2 (delete then add)
+    duration diff: 1 (horizontal shift of wedge end)
     style diff: 1
 
 slur symbol count:
     1 symbol for the slur duration
     1 symbol if styled in any way (placement, etc)
 
-slur diff symbol error count:
-    duration diff: 1
+slur diff symbolic edit count:
+    duration diff: 1 (horizontal shift of slur end)
     style diff: 1
 
 arpeggio symbol count:
@@ -160,40 +183,41 @@ arpeggio symbol count:
     1 symbol if span length > 1 (e.g. if arpeggio spans multiple chords)
     1 symbol if styled in any way
 
-arpeggio diff symbol error count:
-    arpeggio type diff: 1
-    span length diff: 1
+arpeggio diff symbolic edit count:
+    arpeggio type diff: 2 (delete then add)
+    span length diff: 1 if old or new span length is 1 (that's an add or delete),
+        2 if both are > 1 (delete then add)
     style diff: 1
 
 chordsym symbol count:
     1 symbol for chord name
     1 symbol if styled in any way
 
-chordsym diff symbol error count:
-    chord name diff: 1
+chordsym diff symbolic edit count:
+    chord name diff: 2 (delete then add)
     style diff: 1
 
 ending symbol count:
     len(string) symbols for ending name
     1 symbol for measure count
 
-ending diff symbol error count:
+ending diff symbolic edit count:
     name diff: Levenshtein distance between strings
-    measure count diff: 1
+    measure count diff: 2 (delete then add)
 
 system break/page break symbol count:
     1 symbol
 
-system break/page break diff symbol error count:
-    they are never different, just deleted/inserted
+system break/page break diff symbolic edit count:
+    they are never different, just deleted/inserted, with symbolic edit count == 1
 
 staffinfo symbol count:
     1 symbol if lines per staff specified
     1 symbol if staff size % specified
 
-staffinfo diff symbol error count:
-    lines/staff diff: 1
-    staff size diff: 1
+staffinfo diff symbolic edit count:
+    lines/staff diff: 2 (delete then add)
+    staff size diff: 2 (delete then add)
 
 -------------------------------------------------------------------
 
@@ -204,11 +228,12 @@ AnnLyric symbol count (a single word or syllable):
     1 symbol if there is a verse identifier (that is not the verse number)
     1 symbol if styled (text style, color, etc)
 
-AnnLyric diff symbol error count:
+AnnLyric diff symbolic edit count:
     text diff: Levenshtein distance between strings
-    verse number diff: 1
-    verse identifier diff: 1
-    offset diff: 1
+    verse number diff: 2 (delete then add)
+    verse identifier diff: 1 if delete or add, 2 if verse identifier changed
+        (delete then add)
+    offset diff: 1 (horizontal shift)
     style diff: 1
 
 -------------------------------------------------------------------
@@ -217,9 +242,10 @@ AnnVoice symbol count (if Voicing is not explicitly specified on the command lin
     there are no AnnVoices):
     Sum of the symbols in all the AnnNotes in the AnnVoice
 
-AnnVoice diff symbol error count:
-    Sum of the symbol errors due to the AnnNotes in the AnnVoice
-    If a voice is deleted or added, the symbol error count is the AnnVoice symbol count.
+AnnVoice diff symbolic edit count:
+    Sum of the symbolic edits due to the AnnNotes in the AnnVoice
+    If a voice is deleted or added, the symbolic edit count is the AnnVoice
+        symbol count.
 
 -------------------------------------------------------------------
 
@@ -229,46 +255,53 @@ AnnMeasure symbol count:
     Normally:
         Sum of symbol count for all AnnNotes, AnnExtras, and AnnLyrics in the AnnMeasure
 
-AnnMeasure diff symbol error count:
-    Sum of the symbol errors for all objects in the AnnMeasure.
+AnnMeasure diff symbolic edit count:
+    Sum of the symbolic edits for all objects in the AnnMeasure.
     If Voicing specified explicitly:
-        If an entire AnnVoice is deleted or added, the symbol error count is incremented
-            by that AnnVoice's symbol count.
+        If an entire AnnVoice is deleted or added, the symbolic edit count is
+            incremented by that AnnVoice's symbol count.
 
 -------------------------------------------------------------------
 
 AnnPart symbol count:
     Sum of symbol count for all AnnMeasures in the AnnPart
 
-AnnPart diff symbol error count:
-    Sum of the symbol errors for all AnnMeasures in the AnnPart.
-    If an entire AnnMeasure is deleted or added, the symbol error count is incremented
-        by the AnnMeasure symbol count.
+AnnPart diff symbolic edit count:
+    Sum of the symbolic edits for all AnnMeasures in the AnnPart.
+    If an entire AnnMeasure is deleted or added, the symbolic edit count is
+        incremented by that AnnMeasure's symbol count.
 
 -------------------------------------------------------------------
 
 AnnStaffGroup symbol count:
     len(name) symbols for staff group name (e.g. instrument name)
-    1 symbol for staff group abbreviation
+    len(abbrev) symbols for staff group abbreviation
     1 symbol for staff group symbol shape (curly brace, bracket, line, etc)
-    1 symbol for staff group barline type (bar together, don't bar together, Mensurstrich)
-    1 symbol for the lowest staff index the staff group encloses (i.e. vertical position)
-    1 symbol for the highest staff index the staff group encloses (i.e. vertical height)
+    1 symbol for staff group barline type (bar together, don't bar together,
+        Mensurstrich)
+    1 symbol for the lowest staff index the staff group encloses (i.e.
+        vertical position)
+    1 symbol for the highest staff index the staff group encloses (i.e.
+        vertical height)
 
-AnnStaffGroup diff symbol error count:
+AnnStaffGroup diff symbolic edit count:
     name diff: Levenshtein distance between names
-    abbreviation diff: 1
-    symbol diff: 1
+    abbreviation diff: Levenshtein distance between abbreviations
+    symbol diff: 1 if adding or deleting symbol, 2 if changing symbol (delete
+        then add)
     barline type diff: 1
-    staff list diff: 1 for lowest staff index diff, 1 for highest staff index diff
+    staff list diff: 1 for diff in lowest staff index (vertical shift of group
+        top), 1 for diff in highest staff index (vertical shift of group bottom)
 
 -------------------------------------------------------------------
 
 AnnMetadataItem symbol count (e.g. composer name, date composed, etc):
     len(key) + len(value) symbols for the item
 
-AnnMetadataItem diff symbol error count:
-    key difference: Levenshtein distance between key strings
+AnnMetadataItem diff symbolic edit count:
+    key difference: We only compare items that have the same key. Any items
+        with no same-keyed item to compare against are deleted or added (with
+        symbolic edit cost == item symbol count)
     value difference: Levenshtein distance between value strings
 
 -------------------------------------------------------------------
@@ -276,10 +309,11 @@ AnnMetadataItem diff symbol error count:
 AnnScore symbol count:
     Sum of symbol counts for all AnnParts, AnnStaffGroups, and AnnMetadataItems in the AnnScore.
 
-AnnScore diff symbol error count:
-    Sum of symbol errors in all AnnParts, AnnStaffGroups, and AnnMetadataItems in the AnnScore
-    If an entire AnnPart is added or deleted, the symbol error count is incremented
-        by the AnnPart symbol count.
+AnnScore diff symbolic edit count:
+    Sum of symbolic edits in all AnnParts, AnnStaffGroups, and AnnMetadataItems
+        in the AnnScore.
+    If an entire AnnPart is added or deleted, the symbolic edit count is incremented
+        by that AnnPart's symbol count.
 
 
 
