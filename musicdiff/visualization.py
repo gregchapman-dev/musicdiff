@@ -3159,6 +3159,11 @@ class Visualization:
         edit_costs_dict: dict[str, int] = {}
         for op in op_list:
             name: str = Visualization._HEADER_NAME_OF_EDIT_NAME[op[0]]
+            if op[0].startswith('extra'):
+                extra: AnnExtra | None = op[1] or op[2]
+                if extra is not None and extra.kind:
+                    name = re.sub('extra', extra.kind, op[0])
+                    name = Visualization._HEADER_NAME_OF_EDIT_NAME[name]
             cost: int = op[3]
             if name not in edit_costs_dict:
                 edit_costs_dict[name] = cost
@@ -3205,11 +3210,11 @@ class Visualization:
         'accidentedit': 'wrong accidental SEC',
         'editstemdirection': 'wrong note stem SEC',
         'graceedit': 'wrong graceness SEC',
-        'graceslashedit': 'wrong grace slash SEC',
-        'editnoteshape': 'wrong note shape SEC',
-        'editnoteheadfill': 'wrong note fill SEC',
-        'editnoteheadparenthesis': 'wrong note parenthesis SEC',
-        'editstyle': 'wrong note style SEC',
+        'graceslashedit': 'wrong graceness SEC',
+        'editnoteshape': 'wrong note head SEC',
+        'editnoteheadfill': 'wrong note head SEC',
+        'editnoteheadparenthesis': 'wrong note head SEC',
+        'editstyle': 'wrong note SEC',
         'tiedel': 'wrong tie SEC',
         'tieins': 'wrong tie SEC',
         'insarticulation': 'wrong articulation SEC',
@@ -3219,26 +3224,183 @@ class Visualization:
         'delexpression': 'wrong ornament SEC',
         'editexpression': 'wrong ornament SEC',
 
-        'insspace': 'wrong space SEC',
-        'delspace': 'wrong space SEC',
-        'editspace': 'wrong space SEC',
+        'insspace': 'wrong note SEC',
+        'delspace': 'wrong note SEC',
+        'editspace': 'wrong note SEC',
 
         'lyricins': 'wrong lyric SEC',
         'lyricdel': 'wrong lyric SEC',
         'lyricedit': 'wrong lyric SEC',
-        'lyricnumedit': 'wrong verse number SEC',
-        'lyricidedit': 'wrong verse number SEC',
-        'lyricoffsetedit': 'wrong lyric position SEC',
-        'lyricstyleedit': 'wrong lyric style SEC',
+        'lyricnumedit': 'wrong lyric SEC',
+        'lyricidedit': 'wrong lyric SEC',
+        'lyricoffsetedit': 'wrong lyric SEC',
+        'lyricstyleedit': 'wrong lyric SEC',
 
+        'clefins': 'wrong clef SEC',
+        'clefdel': 'wrong clef SEC',
+        'clefcontentedit': 'wrong clef SEC',  # shouldn't happen, clefs have a symbol
+        'clefsymboledit': 'wrong clef SEC',
+        'clefinfoedit': 'wrong clef SEC',  # shouldn't happen, clefs have a symbol
+        'clefoffsetedit': 'wrong clef SEC',  # shouldn't happen; we pair by offset
+        'clefdurationedit': 'wrong clef SEC',  # shouldn't happen; clefs have no dur
+        'clefstyleedit': 'wrong clef SEC',
+
+        'timesigins': 'wrong timesig SEC',
+        'timesigdel': 'wrong timesig SEC',
+        'timesigcontentedit': 'wrong timesig SEC',  # shouldn't happen, timesigs have info
+        'timesigsymboledit': 'wrong timesig SEC',  # shouldn't happen, ditto
+        'timesiginfoedit': 'wrong timesig SEC',
+        'timesigoffsetedit': 'wrong timesig SEC',  # shouldn't happen; we pair by offset
+        'timesigdurationedit': 'wrong timesig SEC',  # shouldn't happen; timesigs have no dur
+        'timesigstyleedit': 'wrong timesig SEC',
+
+        'keysigins': 'wrong keysig SEC',
+        'keysigdel': 'wrong keysig SEC',
+        'keysigcontentedit': 'wrong keysig SEC',  # shouldn't happen; keysigs have info
+        'keysigsymboledit': 'wrong keysig SEC',  # shouldn't happen; keysigs have info
+        'keysiginfoedit': 'wrong keysig SEC',
+        'keysigoffsetedit': 'wrong keysig SEC',  # shouldn't happen; we pair by offset
+        'keysigdurationedit': 'wrong keysig SEC',  # shouldn't happen; keysigs have no dur
+        'keysigstyleedit': 'wrong keysig SEC',
+
+        'tempoins': 'wrong tempo SEC',
+        'tempodel': 'wrong tempo SEC',
+        'tempocontentedit': 'wrong tempo SEC',
+        'temposymboledit': 'wrong tempo SEC',
+        'tempoinfoedit': 'wrong tempo SEC',  # shouldn't happen; tempos have no info
+        'tempooffsetedit': 'wrong tempo SEC',  # shouldn't happen; we pair by offset
+        'tempodurationedit': 'wrong tempo SEC',  # shouldn't happen; tempos have no dur
+        'tempostyleedit': 'wrong tempo SEC',
+
+        'barlineins': 'wrong barline SEC',
+        'barlinedel': 'wrong barline SEC',
+        'barlinecontentedit': 'wrong barline SEC',  # shouldn't happen; barlines have no content
+        'barlinesymboledit': 'wrong barline SEC',
+        'barlineinfoedit': 'wrong barline SEC',
+        'barlineoffsetedit': 'wrong barline SEC',  # shouldn't happen; we pair by offset
+        'barlinedurationedit': 'wrong barline SEC',  # shouldn't happen; barlines have no dur
+        'barlinestyleedit': 'wrong barline SEC',
+
+        # we combine barlines and repeats because repeats are just different types
+        # of barline
+        'repeatins': 'wrong barline SEC',
+        'repeatdel': 'wrong barline SEC',
+        'repeatcontentedit': 'wrong barline SEC',  # shouldn't happen; repeats have no content
+        'repeatsymboledit': 'wrong barline SEC',
+        'repeatinfoedit': 'wrong barline SEC',
+        'repeatoffsetedit': 'wrong barline SEC',  # shouldn't happen; we pair by offset
+        'repeatdurationedit': 'wrong barline SEC',  # shouldn't happen; repeats have no dur
+        'repeatstyleedit': 'wrong barline SEC',
+
+        'directionins': 'wrong direction SEC',
+        'directiondel': 'wrong direction SEC',
+        'directioncontentedit': 'wrong direction SEC',
+        'directionsymboledit': 'wrong direction SEC',  # shouldn't happen; directions have content
+        'directioninfoedit': 'wrong direction SEC',  # shouldn't happen; directions have content
+        'directionoffsetedit': 'wrong direction SEC',  # shouldn't happen; we pair by offset
+        'directiondurationedit': 'wrong direction SEC',  # shouldn't happen; directions have no dur
+        'directionstyleedit': 'wrong direction SEC',
+
+        'dynamicins': 'wrong dynamic SEC',
+        'dynamicdel': 'wrong dynamic SEC',
+        'dynamiccontentedit': 'wrong dynamic SEC',  # shouldn't happen; directions are symbolic
+        'dynamicsymboledit': 'wrong dynamic SEC',
+        'dynamicinfoedit': 'wrong dynamic SEC',  # shouldn't happen; directions are symbolic
+        'dynamicoffsetedit': 'wrong dynamic SEC',  # shouldn't happen; we pair by offset
+        'dynamicdurationedit': 'wrong dynamic SEC',
+        'dynamicstyleedit': 'wrong dynamic SEC',
+
+        'slurins': 'wrong slur SEC',
+        'slurdel': 'wrong slur SEC',
+        'slurcontentedit': 'wrong slur SEC',  # shouldn't happen
+        'slursymboledit': 'wrong slur SEC',  # shouldn't happen
+        'slurinfoedit': 'wrong slur SEC',  # shouldn't happen
+        'sluroffsetedit': 'wrong slur SEC',  # shouldn't happen; we pair by offset
+        'slurdurationedit': 'wrong slur SEC',
+        'slurstyleedit': 'wrong slur SEC',
+
+        'ottavains': 'wrong ottava SEC',
+        'ottavadel': 'wrong ottava SEC',
+        'ottavacontentedit': 'wrong ottava SEC',  # shouldn't happen; ottava is symbolic
+        'ottavasymboledit': 'wrong ottava SEC',
+        'ottavainfoedit': 'wrong ottava SEC',  # shouldn't happen; ottava is symbolic
+        'ottavaoffsetedit': 'wrong ottava SEC',  # shouldn't happen; we pair by offset
+        'ottavadurationedit': 'wrong ottava SEC',
+        'ottavastyleedit': 'wrong ottava SEC',
+
+        'arpeggioins': 'wrong multi-staff arpeggio SEC',
+        'arpeggiodel': 'wrong multi-staff arpeggio SEC',
+        'arpeggiocontentedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
+        'arpeggiosymboledit': 'wrong multi-staff arpeggio SEC',
+        'arpeggioinfoedit': 'wrong multi-staff arpeggio SEC',
+        'arpeggiooffsetedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
+        'arpeggiodurationedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
+        'arpeggiostyleedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
+
+        'tremoloins': 'wrong fingered tremolo SEC',
+        'tremolodel': 'wrong fingered tremolo SEC',
+        'tremolocontentedit': 'wrong fingered tremolo SEC',  # shouldn't happen
+        'tremolosymboledit': 'wrong fingered tremolo SEC',
+        'tremoloinfoedit': 'wrong fingered tremolo SEC',  # shouldn't happen
+        'tremolooffsetedit': 'wrong fingered tremolo SEC',  # shouldn't happen; we pair by offset
+        'tremolodurationedit': 'wrong fingered tremolo SEC',
+        'tremolostyleedit': 'wrong fingered tremolo SEC',  # shouldn't happen
+
+        'chordsymins': 'wrong chord symbol SEC',
+        'chordsymdel': 'wrong chord symbol SEC',
+        'chordsymcontentedit': 'wrong chord symbol SEC',  # shouldn't happen
+        'chordsymsymboledit': 'wrong chord symbol SEC',
+        'chordsyminfoedit': 'wrong chord symbol SEC',  # shouldn't happen
+        'chordsymoffsetedit': 'wrong chord symbol SEC',  # shouldn't happen; we pair by offset
+        'chordsymdurationedit': 'wrong chord symbol SEC',  # shouldn't happen
+        'chordsymstyleedit': 'wrong chord symbol SEC',
+
+        'endingins': 'wrong ending SEC',
+        'endingdel': 'wrong ending SEC',
+        'endingcontentedit': 'wrong ending SEC',
+        'endingsymboledit': 'wrong ending SEC',
+        'endinginfoedit': 'wrong ending SEC',
+        'endingoffsetedit': 'wrong ending SEC',  # shouldn't happen; we pair by offset
+        'endingdurationedit': 'wrong ending SEC',
+        'endingstyleedit': 'wrong ending SEC',  # shouldn't happen
+
+        'staffinfoins': 'wrong staff info SEC',
+        'staffinfodel': 'wrong staff info SEC',
+        'staffinfocontentedit': 'wrong staff info SEC',  # shouldn't happen
+        'staffinfosymboledit': 'wrong staff info SEC',  # shouldn't happen
+        'staffinfoinfoedit': 'wrong staff info SEC',
+        'staffinfooffsetedit': 'wrong staff info SEC',  # shouldn't happen; we pair by offset
+        'staffinfodurationedit': 'wrong staff info SEC',  # shouldn't happen
+        'staffinfostyleedit': 'wrong staff info SEC',  # shouldn't happen
+
+        'systembreakins': 'wrong system break SEC',
+        'systembreakdel': 'wrong system break SEC',
+        'systembreakcontentedit': 'wrong system break SEC',  # shouldn't happen
+        'systembreaksymboledit': 'wrong system break SEC',
+        'systembreakinfoedit': 'wrong system break SEC',  # shouldn't happen
+        'systembreakoffsetedit': 'wrong system break SEC',  # shouldn't happen; we pair by offset
+        'systembreakdurationedit': 'wrong system break SEC',  # shouldn't happen
+        'systembreakstyleedit': 'wrong system break SEC',  # shouldn't happen
+
+        'pagebreakins': 'wrong page break SEC',
+        'pagebreakdel': 'wrong page break SEC',
+        'pagebreakcontentedit': 'wrong page break SEC',  # shouldn't happen
+        'pagebreaksymboledit': 'wrong page break SEC',
+        'pagebreakinfoedit': 'wrong page break SEC',  # shouldn't happen
+        'pagebreakoffsetedit': 'wrong page break SEC',  # shouldn't happen; we pair by offset
+        'pagebreakdurationedit': 'wrong page break SEC',  # shouldn't happen
+        'pagebreakstyleedit': 'wrong page break SEC',  # shouldn't happen
+
+        # These 'extra*' are still here in case there is an AnnExtra (in future) we didn't
+        # cover above
         'extrains': 'wrong other object SEC',
         'extradel': 'wrong other object SEC',
-        'extracontentedit': 'wrong other object content SEC',
-        'extrasymboledit': 'wrong other object content SEC',
-        'extrainfoedit': 'wrong other object content SEC',
-        'extraoffsetedit': 'wrong other object SEC',  # should never happen; we pair by offset
-        'extradurationedit': 'wrong other object duration SEC',
-        'extrastyleedit': 'wrong other object style SEC',
+        'extracontentedit': 'wrong other object SEC',
+        'extrasymboledit': 'wrong other object SEC',
+        'extrainfoedit': 'wrong other object SEC',
+        'extraoffsetedit': 'wrong other object SEC',  # shouldn't happen; we pair by offset
+        'extradurationedit': 'wrong other object SEC',
+        'extrastyleedit': 'wrong other object SEC',
 
         'insbar': 'entire measure insert/delete SEC',
         'delbar': 'entire measure insert/delete SEC',
@@ -3248,16 +3410,16 @@ class Visualization:
 
         'mditemins': 'wrong metadata SEC',
         'mditemdel': 'wrong metadata SEC',
-        'mditemkeyedit': 'wrong metadata SEC',  # should never happen because we pair by key
+        'mditemkeyedit': 'wrong metadata SEC',  # shouldn't happen because we pair by key
         'mditemvalueedit': 'wrong metadata SEC',
 
         'staffgrpins': 'wrong staff group SEC',
         'staffgrpdel': 'wrong staff group SEC',
-        'staffgrpnameedit': 'wrong staff group name SEC',
-        'staffgrpabbreviationedit': 'wrong staff group abbrev SEC',
-        'staffgrpsymboledit': 'wrong staff group brace type SEC',
-        'staffgrpbartogetheredit': 'wrong staff group barline type SEC',
-        'staffgrppartindicesedit': 'wrong staff group staff list SEC',
+        'staffgrpnameedit': 'wrong staff group name/abbrev SEC',
+        'staffgrpabbreviationedit': 'wrong staff group name/abbrev SEC',
+        'staffgrpsymboledit': 'wrong staff group brace SEC',
+        'staffgrpbartogetheredit': 'wrong staff group barline SEC',
+        'staffgrppartindicesedit': 'wrong staff group SEC',
     }
 
     _VOICING_HEADER_NAME_OF_EDIT_NAME_EXTRAS: dict[str, str] = {
