@@ -25,7 +25,8 @@ from music21.common import OffsetQL, opFrac
 from musicdiff.annotation import AnnScore, AnnPart, AnnMeasure, AnnVoice, AnnNote
 from musicdiff.annotation import AnnExtra, AnnLyric, AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
-
+from musicdiff import DetailLevel
+from musicdiff import EvaluationMetrics
 
 class Visualization:
     # These can be set by the client to different colors
@@ -3123,11 +3124,10 @@ class Visualization:
     ) -> dict[str, str]:
         num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
         num_syms_in_predicted: int = annotated_predicted_score.notation_size()
+        secr: float = Visualization.get_secr(
+            cost, num_syms_in_predicted, num_syms_in_ground_truth
+        )
         num_syms_in_both: int = num_syms_in_ground_truth + num_syms_in_predicted
-        # instead of divide by zero, return secr == 1.0
-        secr: float = 1.0
-        if num_syms_in_both != 0:
-            secr = float(cost) / float(num_syms_in_both)
         output: dict[str, str] = {
             'symbolEditCost': f'{cost}',
             'numSymbolsInPredicted': f'{num_syms_in_predicted}',
@@ -3140,15 +3140,307 @@ class Visualization:
     @staticmethod
     def get_secr(
         cost: int,
-        annotated_predicted_score: AnnScore,
-        annotated_ground_truth_score: AnnScore,
+        num_syms_in_predicted: int,
+        num_syms_in_ground_truth: int,
     ) -> float:
-        num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
-        num_syms_in_predicted: int = annotated_predicted_score.notation_size()
         num_syms_in_both: int = num_syms_in_ground_truth + num_syms_in_predicted
 
-        # instead of divide by zero, return secr == 1.0
-        secr: float = 1.0
+        # Instead of divide by zero, return secr == 0.0 (because both scores being
+        # empty means they are exactly the same)
+        secr: float = 0.0
         if num_syms_in_both != 0:
             secr = float(cost) / float(num_syms_in_both)
         return secr
+
+    @staticmethod
+    def get_edit_costs_dict(op_list: list[tuple], detail: DetailLevel | int) -> dict[str, int]:
+        Visualization.create_header_names_once(detail)
+
+        edit_costs_dict: dict[str, int] = {}
+        for op in op_list:
+            name: str = Visualization._HEADER_NAME_OF_EDIT_NAME[op[0]]
+            cost: int = op[3]
+            if name not in edit_costs_dict:
+                edit_costs_dict[name] = cost
+            else:
+                edit_costs_dict[name] = edit_costs_dict[name] + cost
+        return edit_costs_dict
+
+    @staticmethod
+    def create_header_names_once(detail: DetailLevel | int):
+        if Visualization._ORDERED_HEADER_NAMES:
+            return
+
+        if DetailLevel.includesVoicing(detail):
+            Visualization._HEADER_NAME_OF_EDIT_NAME.update(
+                Visualization._VOICING_HEADER_NAME_OF_EDIT_NAME_EXTRAS
+            )
+
+        ordered_names: list[str] = []
+        for en in Visualization._HEADER_NAME_OF_EDIT_NAME:
+            hn: str = Visualization._HEADER_NAME_OF_EDIT_NAME[en]
+            if hn in ordered_names:
+                continue
+            ordered_names.append(hn)
+
+        Visualization._ORDERED_HEADER_NAMES = ordered_names
+
+
+    _ORDERED_HEADER_NAMES: list[str] = []
+
+    _HEADER_NAME_OF_EDIT_NAME: dict[str, str] = {
+        'noteins': 'note edits',
+        'notedel': 'note edits',
+        'headedit': 'note edits',
+        'editnoteshape': 'note edits',
+        'editnoteheadfill': 'note edits',
+        'editnoteheadparenthesis': 'note edits',
+        'graceedit': 'grace note edits',
+        'graceslashedit': 'grace note edits',
+        'editstemdirection': 'stem direction edits',
+        'editstyle': 'note style edits',
+        'dotdel': 'note dot edits',
+        'dotins': 'note dot edits',
+        'accidentins': 'accidental edits',
+        'accidentdel': 'accidental edits',
+        'accidentedit': 'accidental edits',
+        'tiedel': 'tie edits',
+        'tieins': 'tie edits',
+        'insarticulation': 'articulation edits',
+        'delarticulation': 'articulation edits',
+        'editarticulation': 'articulation edits',
+        'insexpression': 'ornament edits',
+        'delexpression': 'ornament edits',
+        'editexpression': 'ornament edits',
+        'insbeam': 'flag/beam edits',
+        'delbeam': 'flag/beam edits',
+        'editbeam': 'flag/beam edits',
+        'instuplet': 'tuplet edits',
+        'deltuplet': 'tuplet edits',
+        'edittuplet': 'tuplet edits',
+
+        'insspace': 'note horizontal shifts',
+        'delspace': 'note horizontal shifts',
+        'editspace': 'note horizontal shifts',
+
+        'lyricins': 'lyric edits',
+        'lyricdel': 'lyric edits',
+        'lyricedit': 'lyric edits',
+        'lyricnumedit': 'verse number edits',
+        'lyricidedit': 'verse number edits',
+        'lyricoffsetedit': 'lyric horizontal shifts',
+        'lyricstyleedit': 'lyric style edits',
+
+        'extrains': 'other object edits',
+        'extradel': 'other object edits',
+        'extracontentedit': 'other object edits',
+        'extrasymboledit': 'other object edits',
+        'extrainfoedit': 'other object edits',
+        'extraoffsetedit': 'other object edits',  # should never happen because we pair by offset
+        'extradurationedit': 'other object edits',
+        'extrastyleedit': 'other object style edits',
+
+        'insbar': 'measure insert/delete',
+        'delbar': 'measure insert/delete',
+
+        'inspart': 'entire staff insert/delete',
+        'delpart': 'entire staff insert/delete',
+
+        'mditemins': 'metadata edit',
+        'mditemdel': 'metadata edit',
+        'mditemkeyedit': 'metadata edit',  # should never happen because we pair by key
+        'mditemvalueedit': 'metadata edit',
+
+        'staffgrpins': 'staff group edit',
+        'staffgrpdel': 'staff group edit',
+        'staffgrpnameedit': 'staff group edit',
+        'staffgrpabbreviationedit': 'staff group edit',
+        'staffgrpsymboledit': 'staff group edit',
+        'staffgrpbartogetheredit': 'staff group edit',
+        'staffgrppartindicesedit': 'staff group edit',
+    }
+
+    _VOICING_HEADER_NAME_OF_EDIT_NAME_EXTRAS: dict[str, str] = {
+        # The following will only happen if Voicing is selected,
+        # because when Voicing is not selected, (1) chords are ignored,
+        # so we will never see chords with inserted or deleted pitches,
+        # (2) notes are paired by pitch, so instead of pitch edits we
+        # get note insertions and deletions, and (3) we ignore voices
+        # completely, so we certainly don't insert or delete them.
+        'inspitch': 'pitch insert/delete',
+        'delpitch': 'pitch insert/delete',
+        'pitchnameedit': 'pitch edit',
+        'pitchtypeedit': 'pitch edit',
+        'voiceins': 'voice insert/delete',
+        'voicedel': 'voice insert/delete',
+    }
+
+    _PRE_EDITS_HEADER_NAMES: list[str] = [
+        'gtpath',
+        'predpath',
+    ]
+    _POST_EDITS_HEADER_NAMES: list[str] = [
+        'gt numsyms',
+        'pred numsyms',
+        'total numsyms (in both scores)',
+        'SEC (symbolic edit cost)',
+        'SECR (SEC / total numsyms)',
+    ]
+
+#         print(
+#             'gtpath, predpath, gt numsyms, pred numsyms,'
+#             ' SEC (symbolic edit cost),'
+#             ' SECR (SEC / numsyms in both scores)',
+#             file=outf
+#         )
+    @staticmethod
+    def get_output_csv_header(detail: DetailLevel | int) -> str:
+        Visualization.create_header_names_once(detail)
+
+        header: str = ''
+        for name in Visualization._PRE_EDITS_HEADER_NAMES:
+            header += ', '  # even at start of header (empty column, for "Totals:" at the bottom)
+            header += name
+        for name in Visualization._ORDERED_HEADER_NAMES:
+            header += ', '
+            header += name
+        for name in Visualization._POST_EDITS_HEADER_NAMES:
+            header += ', '
+            header += name
+
+        return header
+
+    @staticmethod
+    def get_output_csv_trailer(
+        metrics_list: list[EvaluationMetrics],
+        detail: DetailLevel | int
+    ) -> str:
+        Visualization.create_header_names_once(detail)
+
+        # Compute all the totals
+        total_gt_numsyms: int = 0
+        total_pred_numsyms: int = 0
+        total_sym_edit_cost: int = 0
+        total_edit_costs_dict: dict[str, int] = {}
+
+        for metrics in metrics_list:
+            total_gt_numsyms += metrics.gt_numsyms
+            total_pred_numsyms += metrics.pred_numsyms
+            total_sym_edit_cost += metrics.sym_edit_cost
+            for name in metrics.edit_costs_dict:
+                if name not in total_edit_costs_dict:
+                    total_edit_costs_dict[name] = metrics.edit_costs_dict[name]
+                else:
+                    total_edit_costs_dict[name] += metrics.edit_costs_dict[name]
+
+        total_numsyms: int = total_gt_numsyms + total_pred_numsyms
+
+        overall_SECR: float = Visualization.get_secr(
+            total_sym_edit_cost, total_pred_numsyms, total_gt_numsyms
+        )
+
+        totals_line: str = 'Total:'  # the only thing in first column
+
+        # first the pre-edits fields
+        for name in Visualization._PRE_EDITS_HEADER_NAMES:
+            totals_line += ', '
+            if name in ('gtpath', 'predpath'):
+                pass  # leave empty
+            elif name == 'gt numsyms':
+                totals_line += f'{total_gt_numsyms}'
+            elif name == 'pred numsyms':
+                totals_line += f'{total_pred_numsyms}'
+            elif name == 'total numsyms (in both scores)':
+                totals_line += f'{total_numsyms}'
+            elif name == 'SEC (symbolic edit cost)':
+                totals_line += f'{total_sym_edit_cost}'
+            elif name == 'SECR (SEC / total numsyms)':
+                totals_line += f'{overall_SECR}'
+
+        # then the edit fields
+        for name in Visualization._ORDERED_HEADER_NAMES:
+            totals_line += ', '
+            if name in total_edit_costs_dict:
+                totals_line += f'{total_edit_costs_dict[name]}'
+            else:
+                totals_line += '0'
+
+        # then the post-edits fields
+        for name in Visualization._POST_EDITS_HEADER_NAMES:
+            totals_line += ', '
+            if name in ('gtpath', 'predpath'):
+                pass  # leave empty
+            elif name == 'gt numsyms':
+                totals_line += f'{total_gt_numsyms}'
+            elif name == 'pred numsyms':
+                totals_line += f'{total_pred_numsyms}'
+            elif name == 'total numsyms (in both scores)':
+                totals_line += f'{total_numsyms}'
+            elif name == 'SEC (symbolic edit cost)':
+                totals_line += f'{total_sym_edit_cost}'
+            elif name == 'SECR (SEC / total numsyms)':
+                totals_line += f'{overall_SECR}'
+
+        repeated_header_line: str = Visualization.get_output_csv_header(detail)
+
+        trailer_line: str = totals_line + '\n' + repeated_header_line
+        return trailer_line
+
+    @staticmethod
+    def get_output_csv_line(
+        metrics: EvaluationMetrics,
+        detail: DetailLevel | int
+    ) -> str:
+        Visualization.create_header_names_once(detail)
+
+        # 888 could validate metrics.sym_edit_cost here (make sure it is the sum of
+        # 888 everything in metrics.edit_costs_dict)
+        total_numsyms: int = metrics.pred_numsyms + metrics.gt_numsyms
+
+        line: str = ''
+
+        # first the pre-edits fields
+        for name in Visualization._PRE_EDITS_HEADER_NAMES:
+            line += ', '  # even at start of line (empty column, for "Totals:" at the bottom)
+            if name == 'gtpath':
+                line += str(metrics.gt_path)
+            elif name == 'predpath':
+                line += str(metrics.pred_path)
+            elif name == 'gt numsyms':
+                line += f'{metrics.gt_numsyms}'
+            elif name == 'pred numsyms':
+                line += f'{metrics.pred_numsyms}'
+            elif name == 'total numsyms (in both scores)':
+                line += f'{total_numsyms}'
+            elif name == 'SEC (symbolic edit cost)':
+                line += f'{metrics.sym_edit_cost}'
+            elif name == 'SECR (SEC / total numsyms)':
+                line += f'{metrics.sym_edit_cost_ratio}'
+
+        # then the edit fields
+        for name in Visualization._ORDERED_HEADER_NAMES:
+            line += ', '
+            if name in metrics.edit_costs_dict:
+                line += f'{metrics.edit_costs_dict[name]}'
+            else:
+                line += '0'
+
+        # then the post-edits fields
+        for name in Visualization._POST_EDITS_HEADER_NAMES:
+            line += ', '
+            if name == 'gtpath':
+                line += str(metrics.gt_path)
+            elif name == 'predpath':
+                line += str(metrics.pred_path)
+            elif name == 'gt numsyms':
+                line += f'{metrics.gt_numsyms}'
+            elif name == 'pred numsyms':
+                line += f'{metrics.pred_numsyms}'
+            elif name == 'total numsyms (in both scores)':
+                line += f'{total_numsyms}'
+            elif name == 'SEC (symbolic edit cost)':
+                line += f'{metrics.sym_edit_cost}'
+            elif name == 'SECR (SEC / total numsyms)':
+                line += f'{metrics.sym_edit_cost_ratio}'
+
+        return line

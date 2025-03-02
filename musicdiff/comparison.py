@@ -16,6 +16,7 @@ __docformat__ = "google"
 import copy
 from collections import namedtuple
 from difflib import ndiff
+from pathlib import Path
 
 # import typing as t
 import numpy as np
@@ -24,6 +25,25 @@ from music21.common import OffsetQL
 from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnLyric
 from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
+
+class EvaluationMetrics:
+    def __init__(
+        self,
+        gt_path: Path,
+        pred_path: Path,
+        gt_numsyms: int,
+        pred_numsyms: int,
+        sym_edit_cost: int,
+        edit_costs_dict: dict[str, int],
+        sym_edit_cost_ratio: float
+    ):
+        self.gt_path: Path = gt_path
+        self.pred_path: Path = pred_path
+        self.gt_numsyms: int = gt_numsyms
+        self.pred_numsyms: int = pred_numsyms
+        self.sym_edit_cost: int = sym_edit_cost
+        self.edit_costs_dict: dict[str, int] = edit_costs_dict
+        self.sym_edit_cost_ratio: float = sym_edit_cost_ratio
 
 # memoizers to speed up the recursive computation
 def _memoize_notes_set_distance(func):
@@ -275,7 +295,6 @@ class Comparison:
             return [], 0
 
         if len(original) == 0:
-            cost = M21Utils.pitch_size(compare_to[0])
             op_list, cost = Comparison._pitches_leveinsthein_diff(
                 original, compare_to[1:], noteNode1, noteNode2, (ids[0], ids[1] + 1)
             )
@@ -286,7 +305,6 @@ class Comparison:
             return op_list, cost
 
         if len(compare_to) == 0:
-            cost = M21Utils.pitch_size(original[0])
             op_list, cost = Comparison._pitches_leveinsthein_diff(
                 original[1:], compare_to, noteNode1, noteNode2, (ids[0] + 1, ids[1])
             )
@@ -529,124 +547,6 @@ class Comparison:
         min_key = min(cost, key=cost.get)
         out = op_list[min_key], cost[min_key]
         return out
-
-#     @staticmethod
-#     @_memoize_metadata_items_diff_lin
-#     def _metadata_items_diff_lin(original, compare_to):
-#         # original and compare to are two lists of tuple[str, t.Any]
-#         if len(original) == 0 and len(compare_to) == 0:
-#             return [], 0
-#
-#         if len(original) == 0:
-#             cost = 0
-#             op_list, cost = Comparison._metadata_items_diff_lin(original, compare_to[1:])
-#             op_list.append(("mditemins", None, compare_to[0], compare_to[0].notation_size()))
-#             cost += compare_to[0].notation_size()
-#             return op_list, cost
-#
-#         if len(compare_to) == 0:
-#             cost = 0
-#             op_list, cost = Comparison._metadata_items_diff_lin(original[1:], compare_to)
-#             op_list.append(("mditemdel", original[0], None, original[0].notation_size()))
-#             cost += original[0].notation_size()
-#             return op_list, cost
-#
-#         # compute the cost and the op_list for the many possibilities of recursion
-#         cost = {}
-#         op_list = {}
-#         # mditemdel
-#         op_list["mditemdel"], cost["mditemdel"] = Comparison._metadata_items_diff_lin(
-#             original[1:], compare_to
-#         )
-#         cost["mditemdel"] += original[0].notation_size()
-#         op_list["mditemdel"].append(
-#             ("mditemdel", original[0], None, original[0].notation_size())
-#         )
-#         # mditemins
-#         op_list["mditemins"], cost["mditemins"] = Comparison._metadata_items_diff_lin(
-#             original, compare_to[1:]
-#         )
-#         cost["mditemins"] += compare_to[0].notation_size()
-#         op_list["mditemins"].append(
-#             ("mditemins", None, compare_to[0], compare_to[0].notation_size())
-#         )
-#         # mditemsub
-#         op_list["mditemsub"], cost["mditemsub"] = Comparison._metadata_items_diff_lin(
-#             original[1:], compare_to[1:]
-#         )
-#         if (
-#             original[0] == compare_to[0]
-#         ):  # avoid call another function if they are equal
-#             mditemsub_op, mditemsub_cost = [], 0
-#         else:
-#             mditemsub_op, mditemsub_cost = (
-#                 Comparison._annotated_metadata_item_diff(original[0], compare_to[0])
-#             )
-#         cost["mditemsub"] += mditemsub_cost
-#         op_list["mditemsub"].extend(mditemsub_op)
-#         # compute the minimum of the possibilities
-#         min_key = min(cost, key=cost.get)
-#         out = op_list[min_key], cost[min_key]
-#         return out
-#
-#     @staticmethod
-#     @_memoize_staff_groups_diff_lin
-#     def _staff_groups_diff_lin(original, compare_to):
-#         # original and compare to are two lists of AnnStaffGroup
-#         if len(original) == 0 and len(compare_to) == 0:
-#             return [], 0
-#
-#         if len(original) == 0:
-#             cost = 0
-#             op_list, cost = Comparison._staff_groups_diff_lin(original, compare_to[1:])
-#             op_list.append(("staffgrpins", None, compare_to[0], compare_to[0].notation_size()))
-#             cost += compare_to[0].notation_size()
-#             return op_list, cost
-#
-#         if len(compare_to) == 0:
-#             cost = 0
-#             op_list, cost = Comparison._staff_groups_diff_lin(original[1:], compare_to)
-#             op_list.append(("staffgrpdel", original[0], None, original[0].notation_size()))
-#             cost += original[0].notation_size()
-#             return op_list, cost
-#
-#         # compute the cost and the op_list for the many possibilities of recursion
-#         cost = {}
-#         op_list = {}
-#         # staffgrpdel
-#         op_list["staffgrpdel"], cost["staffgrpdel"] = Comparison._staff_groups_diff_lin(
-#             original[1:], compare_to
-#         )
-#         cost["staffgrpdel"] += original[0].notation_size()
-#         op_list["staffgrpdel"].append(
-#             ("staffgrpdel", original[0], None, original[0].notation_size())
-#         )
-#         # staffgrpins
-#         op_list["staffgrpins"], cost["staffgrpins"] = Comparison._staff_groups_diff_lin(
-#             original, compare_to[1:]
-#         )
-#         cost["staffgrpins"] += compare_to[0].notation_size()
-#         op_list["staffgrpins"].append(
-#             ("staffgrpins", None, compare_to[0], compare_to[0].notation_size())
-#         )
-#         # staffgrpsub
-#         op_list["staffgrpsub"], cost["staffgrpsub"] = Comparison._staff_groups_diff_lin(
-#             original[1:], compare_to[1:]
-#         )
-#         if (
-#             original[0] == compare_to[0]
-#         ):  # avoid call another function if they are equal
-#             staffgrpsub_op, staffgrpsub_cost = [], 0
-#         else:
-#             staffgrpsub_op, staffgrpsub_cost = (
-#                 Comparison._annotated_staff_group_diff(original[0], compare_to[0])
-#             )
-#         cost["staffgrpsub"] += staffgrpsub_cost
-#         op_list["staffgrpsub"].extend(staffgrpsub_op)
-#         # compute the minimum of the possibilities
-#         min_key = min(cost, key=cost.get)
-#         out = op_list[min_key], cost[min_key]
-#         return out
 
     @staticmethod
     def _strings_leveinshtein_distance(str1: str, str2: str):
@@ -1270,7 +1170,7 @@ class Comparison:
                     # accidental change will show up as a pitch edit, not a
                     # note remove/insert.
                     continue
-                if orig_n.note_offset != comp_n.note_offset:
+                if Comparison._areDifferentEnough(orig_n.note_offset, comp_n.note_offset):
                     continue
                 if orig_n.note_is_grace != comp_n.note_is_grace:
                     continue
@@ -1358,14 +1258,14 @@ class Comparison:
                 # kind and offset are required for pairing
                 if orig_x.kind != comp_x.kind:
                     continue
-                if orig_x.offset != comp_x.offset:
+                if Comparison._areDifferentEnough(orig_x.offset, comp_x.offset):
                     continue
                 if fallback is None:
                     fallback = comp_x
                     fallback_i = i
 
                 # duration is preferred for pairing
-                if orig_x.duration != comp_x.duration:
+                if Comparison._areDifferentEnough(orig_x.duration, comp_x.duration):
                     continue
 
                 # there are a few kind-specific elements that are also preferred:

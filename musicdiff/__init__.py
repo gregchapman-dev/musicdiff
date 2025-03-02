@@ -15,6 +15,7 @@ __docformat__ = "google"
 import sys
 import os
 import json
+import re
 import typing as t
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from musicdiff.detaillevel import DetailLevel
 from musicdiff.m21utils import M21Utils
 from musicdiff.annotation import AnnScore
 from musicdiff.comparison import Comparison
+from musicdiff.comparison import EvaluationMetrics
 from musicdiff.visualization import Visualization
 
 def _getInputExtensionsList() -> list[str]:
@@ -235,8 +237,8 @@ def diff_secr_metrics(
     predpath: str | Path,
     gtpath: str | Path,
     detail: DetailLevel | int = DetailLevel.Default
-) -> tuple[int, int, int, float] | None:
-    # Returns (numsyms_gt, numsyms_pred, sym_edit_cost, SECR).
+) -> EvaluationMetrics | None:
+    # Returns (numsyms_gt, numsyms_pred, sym_edit_cost, edit_costs_dict, SECR).
     # Returns None if pred or gt is not a music21-importable format.
     # If import is possible (correct format), but actually fails (incorrect content),
     # the resulting score will be empty (and SECR will be 1.0).
@@ -296,12 +298,16 @@ def diff_secr_metrics(
 
     numsyms_gt: int = ann_gtscore.notation_size()
     numsyms_pred: int = ann_predscore.notation_size()
-    _diff_list: list
+    op_list: list
     sym_edit_cost: int
-    _diff_list, sym_edit_cost = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
+    op_list, sym_edit_cost = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
 
-    secr: float = Visualization.get_secr(sym_edit_cost, ann_predscore, ann_gtscore)
-    return numsyms_gt, numsyms_pred, sym_edit_cost, secr
+    secr: float = Visualization.get_secr(sym_edit_cost, numsyms_pred, numsyms_gt)
+    edit_costs_dict: dict[str, int] = Visualization.get_edit_costs_dict(op_list, detail)
+    metrics = EvaluationMetrics(
+        gtpath, predpath, numsyms_gt, numsyms_pred, sym_edit_cost, edit_costs_dict, secr
+    )
+    return metrics
 
 
 def diff_ml_training(
@@ -311,63 +317,75 @@ def diff_ml_training(
     detail: DetailLevel | int = DetailLevel.Default,
 ) -> tuple[float, str]:
     converter21.register()
-    # returns overall_score, output_file_path
-    overall_score: float = 1.0
+
     output_file_path: str = output_folder + '/output.csv'
-    metrics_list: list[tuple[int, int, int, float]] = []
 
     # expand tildes
     predicted_folder = os.path.expanduser(predicted_folder)
     ground_truth_folder = os.path.expanduser(ground_truth_folder)
     output_folder = os.path.expanduser(output_folder)
 
-    with open(output_file_path, 'wt', encoding='utf-8') as outf:
-        print(
-            'gtpath, predpath, gt numsyms, pred numsyms,'
-            ' SEC (symbolic edit cost),'
-            ' SECR (SEC / numsyms in both scores)',
-            file=outf
+    metrics_list: list[EvaluationMetrics] = []
+    for name in os.listdir(predicted_folder):
+        predpath: str = os.path.join(predicted_folder, name)
+
+        # check if it is a file
+        if not os.path.isfile(predpath):
+            continue
+
+        # check if there is a same-named file in ground_truth_folder
+        gtpath: str = os.path.join(ground_truth_folder, name)
+        if not os.path.isfile(gtpath):
+            continue
+
+        metrics: EvaluationMetrics | None = diff_secr_metrics(
+            predpath=predpath, gtpath=gtpath, detail=detail
         )
-        for name in os.listdir(predicted_folder):
-            predpath: str = os.path.join(predicted_folder, name)
-            # check if it is a file
-            if os.path.isfile(predpath):
-                # check if there is a same-named file in ground_truth_folder
-                gtpath: str = os.path.join(ground_truth_folder, name)
-                if os.path.isfile(gtpath):
-                    metrics: tuple[int, int, int, float] | None = diff_secr_metrics(
-                        predpath=predpath, gtpath=gtpath, detail=detail
-                    )
-                    if metrics is not None:
-                        # append metrics to metrics_list
-                        metrics_list.append(metrics)
-                        gt_numsyms, pred_numsyms, sym_edit_cost, secr = metrics
-                        # append CSV line to output file
-                        # (gt path, pred path, gt numsyms, pred numsyms, sym edit cost, ser
-                        print(
-                            f'{gtpath}, {predpath},'
-                            f' {gt_numsyms}, {pred_numsyms}, {sym_edit_cost}, {secr}',
-                            file=outf
-                        )
+        if metrics is None:
+            continue
+
+        # append metrics to metrics_list
+        metrics_list.append(metrics)
+
+    # sort metrics_list the way you want it to appear in the csv file.
+    # I like it sorted by SECR (ascending), so the SECR == 0.0 entries
+    # are together at the top, and the SECR == 1.0 entries are together
+    # at the bottom.  Within each group of "same SECR", sort by filename.
+    def natsortkey(path: str):
+        # splits path into chunks of digits and non-digits. Converts the digit
+        # chunks to integers for numerical comparison and the non-digit chunks
+        # to lowercase for case-insensitive comparison.
+        key: list[int | str] = []
+        for chunk in re.split(r'(\d+)', path):
+            if chunk.isdigit():
+                key.append(int(chunk))
+            else:
+                key.append(chunk.lower())
+        return key
+
+    metrics_list.sort(key=lambda m: (m.sym_edit_cost_ratio, natsortkey(str(m.gt_path))))
+    with open(output_file_path, 'wt', encoding='utf-8') as outf:
+        print(Visualization.get_output_csv_header(detail), file=outf)
+
+        for metrics in metrics_list:
+            # append CSV line to output file
+            # (gt path, pred path, gt numsyms, pred numsyms, sym edit cost, secr
+            print(Visualization.get_output_csv_line(metrics, detail), file=outf)
 
         # append overall score to output file (currently average SER)
         total_gt_numsyms: int = 0
         total_pred_numsyms: int = 0
         total_sym_edit_cost: int = 0
         if metrics_list:
-            for gt_numsyms, pred_numsyms, sym_edit_cost, _ in metrics_list:
-                total_gt_numsyms += gt_numsyms
-                total_pred_numsyms += pred_numsyms
-                total_sym_edit_cost += sym_edit_cost
+            for metrics in metrics_list:
+                total_gt_numsyms += metrics.gt_numsyms
+                total_pred_numsyms += metrics.pred_numsyms
+                total_sym_edit_cost += metrics.sym_edit_cost
 
-            numsyms: int = total_gt_numsyms + total_pred_numsyms
-            overall_score = 1.0
-            if numsyms != 0:
-                overall_score = float(total_sym_edit_cost) / float(numsyms)
-
-        print(
-            f', , {total_gt_numsyms}, {total_pred_numsyms}, {total_sym_edit_cost}, {overall_score}',
-            file=outf
+        overall_score: float = Visualization.get_secr(
+            total_sym_edit_cost, total_pred_numsyms, total_gt_numsyms
         )
+
+        print(Visualization.get_output_csv_trailer(metrics_list, detail), file=outf)
 
     return overall_score, output_file_path
