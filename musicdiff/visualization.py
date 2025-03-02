@@ -3189,75 +3189,75 @@ class Visualization:
     _ORDERED_HEADER_NAMES: list[str] = []
 
     _HEADER_NAME_OF_EDIT_NAME: dict[str, str] = {
-        'noteins': 'note edits',
-        'notedel': 'note edits',
-        'headedit': 'note edits',
-        'editnoteshape': 'note edits',
-        'editnoteheadfill': 'note edits',
-        'editnoteheadparenthesis': 'note edits',
-        'graceedit': 'grace note edits',
-        'graceslashedit': 'grace note edits',
-        'editstemdirection': 'stem direction edits',
-        'editstyle': 'note style edits',
-        'dotdel': 'note dot edits',
-        'dotins': 'note dot edits',
-        'accidentins': 'accidental edits',
-        'accidentdel': 'accidental edits',
-        'accidentedit': 'accidental edits',
-        'tiedel': 'tie edits',
-        'tieins': 'tie edits',
-        'insarticulation': 'articulation edits',
-        'delarticulation': 'articulation edits',
-        'editarticulation': 'articulation edits',
-        'insexpression': 'ornament edits',
-        'delexpression': 'ornament edits',
-        'editexpression': 'ornament edits',
-        'insbeam': 'flag/beam edits',
-        'delbeam': 'flag/beam edits',
-        'editbeam': 'flag/beam edits',
-        'instuplet': 'tuplet edits',
-        'deltuplet': 'tuplet edits',
-        'edittuplet': 'tuplet edits',
+        'noteins': 'wrong note SEC',
+        'notedel': 'wrong note SEC',
+        'headedit': 'wrong note head SEC',
+        'insbeam': 'wrong flag/beam SEC',
+        'delbeam': 'wrong flag/beam SEC',
+        'editbeam': 'wrong flag/beam SEC',
+        'dotdel': 'wrong dot SEC',
+        'dotins': 'wrong dot SEC',
+        'instuplet': 'wrong tuplet SEC',
+        'deltuplet': 'wrong tuplet SEC',
+        'edittuplet': 'wrong tuplet SEC',
+        'accidentins': 'wrong accidental SEC',
+        'accidentdel': 'wrong accidental SEC',
+        'accidentedit': 'wrong accidental SEC',
+        'editstemdirection': 'wrong note stem SEC',
+        'graceedit': 'wrong graceness SEC',
+        'graceslashedit': 'wrong grace slash SEC',
+        'editnoteshape': 'wrong note shape SEC',
+        'editnoteheadfill': 'wrong note fill SEC',
+        'editnoteheadparenthesis': 'wrong note parenthesis SEC',
+        'editstyle': 'wrong note style SEC',
+        'tiedel': 'wrong tie SEC',
+        'tieins': 'wrong tie SEC',
+        'insarticulation': 'wrong articulation SEC',
+        'delarticulation': 'wrong articulation SEC',
+        'editarticulation': 'wrong articulation SEC',
+        'insexpression': 'wrong ornament SEC',
+        'delexpression': 'wrong ornament SEC',
+        'editexpression': 'wrong ornament SEC',
 
-        'insspace': 'note horizontal shifts',
-        'delspace': 'note horizontal shifts',
-        'editspace': 'note horizontal shifts',
+        'insspace': 'wrong space SEC',
+        'delspace': 'wrong space SEC',
+        'editspace': 'wrong space SEC',
 
-        'lyricins': 'lyric edits',
-        'lyricdel': 'lyric edits',
-        'lyricedit': 'lyric edits',
-        'lyricnumedit': 'verse number edits',
-        'lyricidedit': 'verse number edits',
-        'lyricoffsetedit': 'lyric horizontal shifts',
-        'lyricstyleedit': 'lyric style edits',
+        'lyricins': 'wrong lyric SEC',
+        'lyricdel': 'wrong lyric SEC',
+        'lyricedit': 'wrong lyric SEC',
+        'lyricnumedit': 'wrong verse number SEC',
+        'lyricidedit': 'wrong verse number SEC',
+        'lyricoffsetedit': 'wrong lyric position SEC',
+        'lyricstyleedit': 'wrong lyric style SEC',
 
-        'extrains': 'other object edits',
-        'extradel': 'other object edits',
-        'extracontentedit': 'other object edits',
-        'extrasymboledit': 'other object edits',
-        'extrainfoedit': 'other object edits',
-        'extraoffsetedit': 'other object edits',  # should never happen because we pair by offset
-        'extradurationedit': 'other object edits',
-        'extrastyleedit': 'other object style edits',
+        'extrains': 'wrong other object SEC',
+        'extradel': 'wrong other object SEC',
+        'extracontentedit': 'wrong other object content SEC',
+        'extrasymboledit': 'wrong other object content SEC',
+        'extrainfoedit': 'wrong other object content SEC',
+        'extraoffsetedit': 'wrong other object SEC',  # should never happen; we pair by offset
+        'extradurationedit': 'wrong other object duration SEC',
+        'extrastyleedit': 'wrong other object style SEC',
 
-        'insbar': 'measure insert/delete',
-        'delbar': 'measure insert/delete',
+        'insbar': 'entire measure insert/delete SEC',
+        'delbar': 'entire measure insert/delete SEC',
 
-        'inspart': 'entire staff insert/delete',
-        'delpart': 'entire staff insert/delete',
+        'inspart': 'entire staff insert/delete SEC',
+        'delpart': 'entire staff insert/delete SEC',
 
-        'mditemins': 'metadata edit',
-        'mditemdel': 'metadata edit',
-        'mditemkeyedit': 'metadata edit',  # should never happen because we pair by key
-        'mditemvalueedit': 'metadata edit',
+        'mditemins': 'wrong metadata SEC',
+        'mditemdel': 'wrong metadata SEC',
+        'mditemkeyedit': 'wrong metadata SEC',  # should never happen because we pair by key
+        'mditemvalueedit': 'wrong metadata SEC',
 
-        'staffgrpins': 'staff group edit',
-        'staffgrpdel': 'staff group edit',
-        'staffgrpnameedit': 'staff group edit',
-        'staffgrpabbreviationedit': 'staff group edit',
-        'staffgrpsymboledit': 'staff group edit',
-        'staffgrpbartogetheredit': 'staff group edit',
-        'staffgrppartindicesedit': 'staff group edit',
+        'staffgrpins': 'wrong staff group SEC',
+        'staffgrpdel': 'wrong staff group SEC',
+        'staffgrpnameedit': 'wrong staff group name SEC',
+        'staffgrpabbreviationedit': 'wrong staff group abbrev SEC',
+        'staffgrpsymboledit': 'wrong staff group brace type SEC',
+        'staffgrpbartogetheredit': 'wrong staff group barline type SEC',
+        'staffgrppartindicesedit': 'wrong staff group staff list SEC',
     }
 
     _VOICING_HEADER_NAME_OF_EDIT_NAME_EXTRAS: dict[str, str] = {
@@ -3267,12 +3267,12 @@ class Visualization:
         # (2) notes are paired by pitch, so instead of pitch edits we
         # get note insertions and deletions, and (3) we ignore voices
         # completely, so we certainly don't insert or delete them.
-        'inspitch': 'pitch insert/delete',
-        'delpitch': 'pitch insert/delete',
-        'pitchnameedit': 'pitch edit',
-        'pitchtypeedit': 'pitch edit',
-        'voiceins': 'voice insert/delete',
-        'voicedel': 'voice insert/delete',
+        'inspitch': 'pitch insert/delete SEC',
+        'delpitch': 'pitch insert/delete SEC',
+        'pitchnameedit': 'wrong pitch SEC',
+        'pitchtypeedit': 'wrong pitch SEC',
+        'voiceins': 'voice insert/delete SEC',
+        'voicedel': 'voice insert/delete SEC',
     }
 
     _PRE_EDITS_HEADER_NAMES: list[str] = [
@@ -3287,12 +3287,6 @@ class Visualization:
         'SECR (SEC / total numsyms)',
     ]
 
-#         print(
-#             'gtpath, predpath, gt numsyms, pred numsyms,'
-#             ' SEC (symbolic edit cost),'
-#             ' SECR (SEC / numsyms in both scores)',
-#             file=outf
-#         )
     @staticmethod
     def get_output_csv_header(detail: DetailLevel | int) -> str:
         Visualization.create_header_names_once(detail)
