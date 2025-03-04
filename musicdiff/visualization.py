@@ -3153,7 +3153,11 @@ class Visualization:
         return secr
 
     @staticmethod
-    def get_edit_costs_dict(op_list: list[tuple], detail: DetailLevel | int) -> dict[str, int]:
+    def get_edit_costs_dict(
+        op_list: list[tuple],
+        num_syntax_errors_fixed: int,
+        detail: DetailLevel | int
+    ) -> dict[str, int]:
         Visualization.create_header_names_once(detail)
 
         edit_costs_dict: dict[str, int] = {}
@@ -3169,6 +3173,9 @@ class Visualization:
                 edit_costs_dict[name] = cost
             else:
                 edit_costs_dict[name] = edit_costs_dict[name] + cost
+
+        edit_costs_dict['bad kern syntax SEC'] = num_syntax_errors_fixed
+
         return edit_costs_dict
 
     @staticmethod
@@ -3194,6 +3201,7 @@ class Visualization:
     _ORDERED_HEADER_NAMES: list[str] = []
 
     _HEADER_NAME_OF_EDIT_NAME: dict[str, str] = {
+        'syntax_errors_fixed': 'bad kern syntax SEC',
         'noteins': 'wrong note SEC',
         'notedel': 'wrong note SEC',
         'headedit': 'wrong note head SEC',

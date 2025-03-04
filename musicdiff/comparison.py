@@ -1657,7 +1657,14 @@ class Comparison:
         op_list_total.extend(mditems_op_list)
         cost_total += mditems_cost
 
-        # add the cost of any syntax errors in score1 that were fixed during parsing
+        # Add the cost of any syntax errors in score1 that were fixed during parsing.
+        # Ignore enough syntax errors to keep SECR <= 1.0, for consistency.
+        total_syms: int = score1.notation_size() + score2.notation_size()
+        cost_plus_errors: int = cost_total + score1.num_syntax_errors_fixed
+        if cost_plus_errors > total_syms:
+            adjustment: int = cost_plus_errors - total_syms
+            score1.num_syntax_errors_fixed -= adjustment
+
         cost_total += score1.num_syntax_errors_fixed
 
         return op_list_total, cost_total

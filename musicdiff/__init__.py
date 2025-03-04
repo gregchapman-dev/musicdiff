@@ -301,9 +301,12 @@ def diff_secr_metrics(
     op_list: list
     sym_edit_cost: int
     op_list, sym_edit_cost = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
-
-    secr: float = Visualization.get_secr(sym_edit_cost, numsyms_pred, numsyms_gt)
-    edit_costs_dict: dict[str, int] = Visualization.get_edit_costs_dict(op_list, detail)
+    edit_costs_dict: dict[str, int] = Visualization.get_edit_costs_dict(
+        op_list,
+        ann_predscore.num_syntax_errors_fixed,
+        detail
+    )
+    secr = Visualization.get_secr(sym_edit_cost, numsyms_pred, numsyms_gt)
     metrics = EvaluationMetrics(
         gtpath, predpath, numsyms_gt, numsyms_pred, sym_edit_cost, edit_costs_dict, secr
     )
@@ -387,5 +390,6 @@ def diff_ml_training(
         )
 
         print(Visualization.get_output_csv_trailer(metrics_list, detail), file=outf)
+        outf.flush()
 
     return overall_score, output_file_path

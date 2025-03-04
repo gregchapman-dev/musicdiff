@@ -1687,7 +1687,7 @@ class AnnScore:
         self.num_syntax_errors_fixed: int = 0
 
         if hasattr(score, "c21_syntax_errors_fixed"):
-            self.num_syntax_errors = score.c21_syntax_errors_fixed  # type: ignore
+            self.num_syntax_errors_fixed = score.c21_syntax_errors_fixed  # type: ignore
 
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
         part_to_index: dict[m21.stream.Part, int] = {}
