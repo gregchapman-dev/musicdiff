@@ -38,7 +38,7 @@ class DetailLevel(IntEnum):
     # Note that if NotesAndRests are not also requested, no expression differences will be found.
     Ornaments = 1 << 3
 
-    # staccato, tenuto, spiccato, etc
+    # staccato, tenuto, spiccato, fingering etc
     # Note that if NotesAndRests are not also requested, no articulation differences will be found.
     Articulations = 1 << 4
 
@@ -218,10 +218,11 @@ class DetailLevel(IntEnum):
                     m21.tempo.TempoIndication,
                     m21.dynamics.Dynamic,
                     m21.dynamics.DynamicWedge,
-                    m21.spanner.RepeatBracket  # e.g. first and second endings
-                    # TODO: here is where one might add some currently unsupported directions
-                    # TODO: like m21.repeat.RepeatExpression (Coda, Segno, Fine, DaCapo,
-                    # TODO: DaCapoAlFine, etc)
+                    m21.spanner.RepeatBracket,  # e.g. first and second endings
+                    m21.expressions.RehearsalMark,
+                    m21.repeat.RepeatExpressionMarker,
+                    m21.repeat.RepeatExpressionCommand,
+                    # m21.somewhere.PedalMark,  # no PedalMark in music21 (yet)
                 ])
 
             if cls.includesBarlines(val):

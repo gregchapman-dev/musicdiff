@@ -1019,6 +1019,8 @@ class M21Utils:
             return 'pagebreak'
         if isinstance(extra, (m21.expressions.Tremolo, m21.expressions.TremoloSpanner)):
             return 'tremolo'
+        if isinstance(extra, m21.expressions.RehearsalMark):
+            return 'rehearsalmark'
         return ''
 
     @staticmethod
@@ -1094,6 +1096,10 @@ class M21Utils:
             if t.TYPE_CHECKING:
                 assert isinstance(extra, (m21.expressions.Tremolo, m21.expressions.TremoloSpanner))
             return M21Utils.tremolo_to_symbolic(extra, kind, detail)
+        if kind == 'rehearsalmark':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.expressions.RehearsalMark)
+            return M21Utils.rehearsalmark_to_symbolic(extra, kind, detail)
         return None
 
     @staticmethod
@@ -1169,6 +1175,10 @@ class M21Utils:
             if t.TYPE_CHECKING:
                 assert isinstance(extra, (m21.expressions.Tremolo, m21.expressions.TremoloSpanner))
             return M21Utils.tremolo_to_infodict(extra, kind, detail)
+        if kind == 'rehearsalmark':
+            if t.TYPE_CHECKING:
+                assert isinstance(extra, m21.expressions.RehearsalMark)
+            return M21Utils.rehearsalmark_to_infodict(extra, kind, detail)
         return {}
 
     @staticmethod
@@ -1208,7 +1218,8 @@ class M21Utils:
             pass
         elif kind in ('chordsym', 'ending', 'direction',
                 'clef', 'keysig', 'timesig', 'tempo',
-                'staffinfo', 'systembreak', 'pagebreak'):
+                'staffinfo', 'systembreak', 'pagebreak',
+                'rehearsalmark'):
             # we ignore duration for ChordSymbols, it is often 0.0 or 1.0, and meaningless.
             # we also ignore duration for endings (RepeatBrackets).  We count how many measures
             # instead.
@@ -1637,6 +1648,32 @@ class M21Utils:
     @staticmethod
     def dynamic_to_infodict(
         dynamic: m21.dynamics.Dynamic | m21.dynamics.DynamicWedge,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> dict[str, str]:
+        return {}
+
+    @staticmethod
+    def rehearsalmark_to_string(
+        expr: m21.expressions.RehearsalMark,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str | None:
+        if expr.content is None:
+            return None
+        return expr.content.strip()
+
+    @staticmethod
+    def rehearsalmark_to_symbolic(
+        expr: m21.expressions.RehearsalMark,
+        kind: str,
+        detail: DetailLevel | int = DetailLevel.Default
+    ) -> str:
+        return ''
+
+    @staticmethod
+    def rehearsalmark_to_infodict(
+        expr: m21.expressions.RehearsalMark,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
@@ -2082,6 +2119,8 @@ class M21Utils:
             return M21Utils.repeatbracket_to_string(extra, kind, detail)
         if isinstance(extra, m21.expressions.TremoloSpanner):
             return M21Utils.tremolo_to_string(extra, kind, detail)
+        if isinstance(extra, m21.expressions.RehearsalMark):
+            return M21Utils.rehearsalmark_to_string(extra, kind, detail)
         if isinstance(extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
             return M21Utils.arpeggio_to_string(extra, kind, detail)
