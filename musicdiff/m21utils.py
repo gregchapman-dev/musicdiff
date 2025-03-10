@@ -1713,10 +1713,10 @@ class M21Utils:
 
         if isinstance(style, m21.style.TextStylePlacement) and style.placement:
             output['placement'] = style.placement
-        if style.fontFamily and not smuflTextSuppressed:
-            output['fontFamily'] = style.fontFamily
 
-        # ignore fontSize, Humdrum can't represent it.
+        # ignore fontSize and fontFamily, Humdrum can't represent it.
+        # if style.fontFamily and not smuflTextSuppressed:
+        #     output['fontFamily'] = style.fontFamily
         # if style.fontSize is not None:
             # output['fontSize'] = style.fontSize
 
