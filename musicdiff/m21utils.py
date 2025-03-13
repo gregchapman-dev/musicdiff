@@ -24,6 +24,8 @@ from music21.common import OffsetQL, opFrac
 
 from musicdiff import DetailLevel
 
+PEDAL_MARKS_EXIST: bool = hasattr(m21.expressions, 'PedalMark')
+
 class M21Utils:
     @staticmethod
     def get_beamings(
@@ -703,9 +705,7 @@ class M21Utils:
     @staticmethod
     def getPrimarySpannerElement(
         sp: m21.spanner.Spanner
-    ) -> (m21.note.GeneralNote
-            | m21.spanner.SpannerAnchor
-            | m21.expressions.PedalObject):
+    ) -> m21.base.Music21Object:
         # returns sp.getFirst() except if the spanner is ArpeggioMarkSpanner, in
         # which case it returns the element that contains the highest diatonic
         # pitch.
@@ -867,17 +867,25 @@ class M21Utils:
             spanner_types.append(m21.expressions.ArpeggioMarkSpanner)
         if DetailLevel.includesDirections(detail):
             spanner_types.append(m21.dynamics.DynamicWedge)
-            spanner_types.append(m21.expressions.PedalMark)
+            if PEDAL_MARKS_EXIST:
+                spanner_types.append(m21.expressions.PedalMark)  # type: ignore
         if DetailLevel.includesOttavas(detail):
             spanner_types.append(m21.spanner.Ottava)
         if DetailLevel.includesTremolos(detail):
             spanner_types.append(m21.expressions.TremoloSpanner)
 
-        spannerElementClasses = (
-            m21.note.GeneralNote,
-            m21.spanner.SpannerAnchor,
-            m21.expressions.PedalObject
-        )
+        spannerElementClasses: tuple[type, ...]
+        if PEDAL_MARKS_EXIST:
+            spannerElementClasses = (
+                m21.note.GeneralNote,
+                m21.spanner.SpannerAnchor,
+                m21.expressions.PedalObject  # type: ignore
+            )
+        else:
+            spannerElementClasses = (
+                m21.note.GeneralNote,
+                m21.spanner.SpannerAnchor
+            )
 
         for gn in measure.recurse().getElementsByClass(spannerElementClasses):
             spannerList: list[m21.spanner.Spanner] = gn.getSpannerSites(spanner_types)
@@ -1028,33 +1036,54 @@ class M21Utils:
             return 'tremolo'
         if isinstance(extra, m21.expressions.RehearsalMark):
             return 'rehearsalmark'
-        if isinstance(extra, m21.expressions.PedalMark):
+
+        if not PEDAL_MARKS_EXIST:
+            return ''
+
+        # pylint: disable=no-member
+        if isinstance(extra, m21.expressions.PedalMark):  # type: ignore
             return 'pedalmark'
         # the following pedal objects will be ignored if they are not contained in a
         # PedalMark spanner.
-        if isinstance(extra, m21.expressions.PedalBounce) and M21Utils.is_in_pedalmark(extra):
+        if (isinstance(extra, m21.expressions.PedalBounce)  # type: ignore
+                and M21Utils.is_in_pedalmark(extra)):
             return 'pedalbounce'
-        if isinstance(extra, m21.expressions.PedalGapStart) and M21Utils.is_in_pedalmark(extra):
+        if (isinstance(extra, m21.expressions.PedalGapStart)  # type: ignore
+                and M21Utils.is_in_pedalmark(extra)):
             return 'pedalgapstart'
-        if isinstance(extra, m21.expressions.PedalGapEnd) and M21Utils.is_in_pedalmark(extra):
+        if (isinstance(extra, m21.expressions.PedalGapEnd)  # type: ignore
+                and M21Utils.is_in_pedalmark(extra)):
             return 'pedalgapend'
+        # pylint: enable=no-member
+
         return ''
 
-    @staticmethod
-    def get_enclosing_pedalmark(
-        po: m21.expressions.PedalObject
-    ) -> m21.expressions.PedalMark | None:
-        pm: m21.expressions.PedalMark | None = None
-        ss: list[m21.spanner.Spanner] = po.getSpannerSites((m21.expressions.PedalMark,))
-        if ss:
-            if t.TYPE_CHECKING:
-                assert isinstance(ss[0], m21.expressions.PedalMark)
-            pm = ss[0]
-        return pm
+    if PEDAL_MARKS_EXIST:
+        # pylint: disable=no-member
+        @staticmethod
+        def get_enclosing_pedalmark(
+            po: m21.expressions.PedalObject  # type: ignore
+        ) -> m21.expressions.PedalMark | None:  # type: ignore
+            if not PEDAL_MARKS_EXIST:
+                return None
 
-    @staticmethod
-    def is_in_pedalmark(po: m21.expressions.PedalObject) -> bool:
-        return M21Utils.get_enclosing_pedalmark(po) is not None
+            pm: m21.expressions.PedalMark | None = None  # type: ignore
+            ss: list[m21.spanner.Spanner] = (
+                po.getSpannerSites((m21.expressions.PedalMark,))  # type: ignore
+            )
+            if ss:
+                if t.TYPE_CHECKING:
+                    assert isinstance(ss[0], m21.expressions.PedalMark)  # type: ignore
+                pm = ss[0]
+            return pm
+
+        @staticmethod
+        def is_in_pedalmark(po: m21.expressions.PedalObject) -> bool:  # type: ignore
+            if not PEDAL_MARKS_EXIST:
+                return False
+
+            return M21Utils.get_enclosing_pedalmark(po) is not None
+        # pylint: enable=no-member
 
     @staticmethod
     def extra_to_symbolic(
@@ -1133,22 +1162,26 @@ class M21Utils:
             if t.TYPE_CHECKING:
                 assert isinstance(extra, m21.expressions.RehearsalMark)
             return M21Utils.rehearsalmark_to_symbolic(extra, kind, detail)
+        if not PEDAL_MARKS_EXIST:
+            return None
+
         if kind == 'pedalmark':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalMark)
+                assert isinstance(extra, m21.expressions.PedalMark)  # type: ignore
             return M21Utils.pedalmark_to_symbolic(extra, kind, detail)
         if kind == 'pedalbounce':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalBounce)
+                assert isinstance(extra, m21.expressions.PedalBounce)  # type: ignore
             return M21Utils.pedalbounce_to_symbolic(extra, kind, detail)
         if kind == 'pedalgapstart':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalGapStart)
+                assert isinstance(extra, m21.expressions.PedalGapStart)  # type: ignore
             return M21Utils.pedalgapstart_to_symbolic(extra, kind, detail)
         if kind == 'pedalgapend':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalGapEnd)
+                assert isinstance(extra, m21.expressions.PedalGapEnd)  # type: ignore
             return M21Utils.pedalgapend_to_symbolic(extra, kind, detail)
+
         return None
 
     @staticmethod
@@ -1228,22 +1261,27 @@ class M21Utils:
             if t.TYPE_CHECKING:
                 assert isinstance(extra, m21.expressions.RehearsalMark)
             return M21Utils.rehearsalmark_to_infodict(extra, kind, detail)
+
+        if not PEDAL_MARKS_EXIST:
+            return {}
+
         if kind == 'pedalmark':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalMark)
+                assert isinstance(extra, m21.expressions.PedalMark)  # type: ignore
             return M21Utils.pedalmark_to_infodict(extra, kind, detail)
         if kind == 'pedalbounce':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalBounce)
+                assert isinstance(extra, m21.expressions.PedalBounce)  # type: ignore
             return M21Utils.pedalbounce_to_infodict(extra, kind, detail)
         if kind == 'pedalgapstart':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalGapStart)
+                assert isinstance(extra, m21.expressions.PedalGapStart)  # type: ignore
             return M21Utils.pedalgapstart_to_infodict(extra, kind, detail)
         if kind == 'pedalgapend':
             if t.TYPE_CHECKING:
-                assert isinstance(extra, m21.expressions.PedalGapEnd)
+                assert isinstance(extra, m21.expressions.PedalGapEnd)  # type: ignore
             return M21Utils.pedalgapend_to_infodict(extra, kind, detail)
+
         return {}
 
     @staticmethod
@@ -1258,12 +1296,8 @@ class M21Utils:
         duration: OffsetQL | None = None
 
         if isinstance(extra, m21.spanner.Spanner):
-            firstNote: (m21.note.GeneralNote
-                | m21.spanner.SpannerAnchor
-                | m21.expressions.PedalObject) = M21Utils.getPrimarySpannerElement(extra)
-            lastNote: (m21.note.GeneralNote
-                | m21.spanner.SpannerAnchor
-                | m21.expressions.PedalObject) = extra.getLast()
+            firstNote: m21.base.Music21Object = M21Utils.getPrimarySpannerElement(extra)
+            lastNote: m21.base.Music21Object = extra.getLast()
 
             offset = firstNote.getOffsetInHierarchy(measure)
             # to compute duration we need to use offset-in-score, since the end note might
@@ -1746,118 +1780,121 @@ class M21Utils:
     ) -> dict[str, str]:
         return {}
 
-    @staticmethod
-    def pedalmark_to_string(
-        expr: m21.expressions.PedalMark,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str | None:
-        return ''
+    if PEDAL_MARKS_EXIST:
+        # pylint: disable=no-member
+        @staticmethod
+        def pedalmark_to_string(
+            expr: m21.expressions.PedalMark,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str | None:
+            return ''
 
-    @staticmethod
-    def pedalmark_to_symbolic(
-        expr: m21.expressions.PedalMark,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str:
-        return ''
+        @staticmethod
+        def pedalmark_to_symbolic(
+            expr: m21.expressions.PedalMark,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str:
+            return ''
 
-    @staticmethod
-    def pedalmark_to_infodict(
-        expr: m21.expressions.PedalMark,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> dict[str, str]:
-        output: dict[str, str] = {}
-        output['pedalType'] = expr.pedalType
-        output['pedalForm'] = expr.pedalForm
-        if expr.abbreviated:
-            output['abbreviated'] = 'yes'
-        return output
+        @staticmethod
+        def pedalmark_to_infodict(
+            expr: m21.expressions.PedalMark,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> dict[str, str]:
+            output: dict[str, str] = {}
+            output['pedalType'] = expr.pedalType  # type: ignore
+            output['pedalForm'] = expr.pedalForm  # type: ignore
+            if expr.abbreviated:  # type: ignore
+                output['abbreviated'] = 'yes'
+            return output
 
-    @staticmethod
-    def pedalbounce_to_string(
-        expr: m21.expressions.PedalBounce,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str | None:
-        return ''
+        @staticmethod
+        def pedalbounce_to_string(
+            expr: m21.expressions.PedalBounce,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str | None:
+            return ''
 
-    @staticmethod
-    def pedalbounce_to_symbolic(
-        expr: m21.expressions.PedalBounce,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str:
-        output: str = ''
-        pm = M21Utils.get_enclosing_pedalmark(expr)
-        if pm is not None:
-            output = pm.pedalForm
-        return output
+        @staticmethod
+        def pedalbounce_to_symbolic(
+            expr: m21.expressions.PedalBounce,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str:
+            output: str = ''
+            pm = M21Utils.get_enclosing_pedalmark(expr)
+            if pm is not None:
+                output = pm.pedalForm  # type: ignore
+            return output
 
-    @staticmethod
-    def pedalbounce_to_infodict(
-        expr: m21.expressions.PedalBounce,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> dict[str, str]:
-        return {}
+        @staticmethod
+        def pedalbounce_to_infodict(
+            expr: m21.expressions.PedalBounce,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> dict[str, str]:
+            return {}
 
-    @staticmethod
-    def pedalgapstart_to_string(
-        expr: m21.expressions.PedalGapStart,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str | None:
-        return ''
+        @staticmethod
+        def pedalgapstart_to_string(
+            expr: m21.expressions.PedalGapStart,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str | None:
+            return ''
 
-    @staticmethod
-    def pedalgapstart_to_symbolic(
-        expr: m21.expressions.PedalGapStart,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str:
-        output: str = ''
-        pm = M21Utils.get_enclosing_pedalmark(expr)
-        if pm is not None:
-            output = pm.pedalForm
-        return output
+        @staticmethod
+        def pedalgapstart_to_symbolic(
+            expr: m21.expressions.PedalGapStart,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str:
+            output: str = ''
+            pm = M21Utils.get_enclosing_pedalmark(expr)
+            if pm is not None:
+                output = pm.pedalForm  # type: ignore
+            return output
 
-    @staticmethod
-    def pedalgapstart_to_infodict(
-        expr: m21.expressions.PedalGapStart,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> dict[str, str]:
-        return {}
+        @staticmethod
+        def pedalgapstart_to_infodict(
+            expr: m21.expressions.PedalGapStart,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> dict[str, str]:
+            return {}
 
-    @staticmethod
-    def pedalgapend_to_string(
-        expr: m21.expressions.PedalGapEnd,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str | None:
-        return ''
+        @staticmethod
+        def pedalgapend_to_string(
+            expr: m21.expressions.PedalGapEnd,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str | None:
+            return ''
 
-    @staticmethod
-    def pedalgapend_to_symbolic(
-        expr: m21.expressions.PedalGapEnd,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> str:
-        output: str = ''
-        pm = M21Utils.get_enclosing_pedalmark(expr)
-        if pm is not None:
-            output = pm.pedalForm
-        return output
+        @staticmethod
+        def pedalgapend_to_symbolic(
+            expr: m21.expressions.PedalGapEnd,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> str:
+            output: str = ''
+            pm = M21Utils.get_enclosing_pedalmark(expr)
+            if pm is not None:
+                output = pm.pedalForm  # type: ignore
+            return output
 
-    @staticmethod
-    def pedalgapend_to_infodict(
-        expr: m21.expressions.PedalGapEnd,
-        kind: str,
-        detail: DetailLevel | int = DetailLevel.Default
-    ) -> dict[str, str]:
-        return {}
+        @staticmethod
+        def pedalgapend_to_infodict(
+            expr: m21.expressions.PedalGapEnd,  # type: ignore
+            kind: str,
+            detail: DetailLevel | int = DetailLevel.Default
+        ) -> dict[str, str]:
+            return {}
+        # pylint: enable=no-member
 
     @staticmethod
     def notestyle_to_dict(
@@ -2304,14 +2341,6 @@ class M21Utils:
         if isinstance(extra,
                 (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
             return M21Utils.arpeggio_to_string(extra, kind, detail)
-        if isinstance(extra, m21.expressions.PedalMark):
-            return M21Utils.pedalmark_to_string(extra, kind, detail)
-        if isinstance(extra, m21.expressions.PedalBounce):
-            return M21Utils.pedalbounce_to_string(extra, kind, detail)
-        if isinstance(extra, m21.expressions.PedalGapStart):
-            return M21Utils.pedalgapstart_to_string(extra, kind, detail)
-        if isinstance(extra, m21.expressions.PedalGapEnd):
-            return M21Utils.pedalgapend_to_string(extra, kind, detail)
         if isinstance(extra, m21.harmony.ChordSymbol):
             return M21Utils.chordsym_to_string(extra, kind, detail)
         if isinstance(extra, m21.layout.StaffLayout):
@@ -2320,6 +2349,21 @@ class M21Utils:
             return M21Utils.systembreak_to_string(extra, kind, detail)
         if isinstance(extra, m21.layout.PageLayout):
             return M21Utils.pagebreak_to_string(extra, kind, detail)
+
+        if not PEDAL_MARKS_EXIST:
+            # print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
+            return ''
+
+        # pylint: disable=no-member
+        if isinstance(extra, m21.expressions.PedalMark):  # type: ignore
+            return M21Utils.pedalmark_to_string(extra, kind, detail)
+        if isinstance(extra, m21.expressions.PedalBounce):  # type: ignore
+            return M21Utils.pedalbounce_to_string(extra, kind, detail)
+        if isinstance(extra, m21.expressions.PedalGapStart):  # type: ignore
+            return M21Utils.pedalgapstart_to_string(extra, kind, detail)
+        if isinstance(extra, m21.expressions.PedalGapEnd):  # type: ignore
+            return M21Utils.pedalgapend_to_string(extra, kind, detail)
+        # pylint: enable=no-member
 
         # print(f'Unexpected extra: {extra.classes[0]}', file=sys.stderr)
         return ''
