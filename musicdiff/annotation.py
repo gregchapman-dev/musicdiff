@@ -693,7 +693,6 @@ class AnnExtra:
                         smuflTextSuppressed=smuflTextSuppressed
                     )
 
-
         # precomputed/cached representations for faster comparison
         self.precomputed_str: str = self.__str__()
         self._cached_notation_size: int | None = None
@@ -823,14 +822,25 @@ class AnnExtra:
         Returns:
             str: the compared representation of the AnnExtra. Does not consider music21 id.
         """
-        string = f'{self.kind},content={self.content},symbol={self.symbolic}'
-        string += f',off={self.offset},dur={self.duration}'
+        string = f'{self.kind}'
+        if self.content:
+            string += f',content={self.content}'
+        if self.symbolic:
+            string += f',symbol={self.symbolic}'
+        if self.offset is not None:
+            string += f',off={self.offset}'
+        if self.duration is not None:
+            string += f',dur={self.duration}'
         # then any info fields
+        if self.infodict:
+            string += ',info:'
         for k, v in self.infodict.items():
-            string += f",{k}={v}"
+            string += f',{k}={v}'
         # and then any style fields
+        if self.styledict:
+            string += ',style:'
         for k, v in self.styledict.items():
-            string += f",{k}={v}"
+            string += f',{k}={v}'
         return string
 
     def __eq__(self, other) -> bool:
