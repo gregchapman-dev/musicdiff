@@ -275,7 +275,7 @@ class Comparison:
 
     @staticmethod
     @_memoize_pitches_lev_diff
-    def _pitches_leveinsthein_diff(
+    def _pitches_levenshtein_diff(
         original: list[tuple[str, str, bool]],
         compare_to: list[tuple[str, str, bool]],
         noteNode1: AnnNote,
@@ -283,7 +283,7 @@ class Comparison:
         ids: tuple[int, int]
     ):
         """
-        Compute the leveinsthein distance between two sequences of pitches.
+        Compute the levenshtein distance between two sequences of pitches.
         Arguments:
             original {list} -- list of pitches
             compare_to {list} -- list of pitches
@@ -295,7 +295,7 @@ class Comparison:
             return [], 0
 
         if len(original) == 0:
-            op_list, cost = Comparison._pitches_leveinsthein_diff(
+            op_list, cost = Comparison._pitches_levenshtein_diff(
                 original, compare_to[1:], noteNode1, noteNode2, (ids[0], ids[1] + 1)
             )
             op_list.append(
@@ -305,7 +305,7 @@ class Comparison:
             return op_list, cost
 
         if len(compare_to) == 0:
-            op_list, cost = Comparison._pitches_leveinsthein_diff(
+            op_list, cost = Comparison._pitches_levenshtein_diff(
                 original[1:], compare_to, noteNode1, noteNode2, (ids[0] + 1, ids[1])
             )
             op_list.append(
@@ -318,7 +318,7 @@ class Comparison:
         cost_dict = {}
         op_list_dict = {}
         # del-pitch
-        op_list_dict["delpitch"], cost_dict["delpitch"] = Comparison._pitches_leveinsthein_diff(
+        op_list_dict["delpitch"], cost_dict["delpitch"] = Comparison._pitches_levenshtein_diff(
             original[1:], compare_to, noteNode1, noteNode2, (ids[0] + 1, ids[1])
         )
         cost_dict["delpitch"] += M21Utils.pitch_size(original[0])
@@ -326,7 +326,7 @@ class Comparison:
             ("delpitch", noteNode1, noteNode2, M21Utils.pitch_size(original[0]), ids)
         )
         # ins-pitch
-        op_list_dict["inspitch"], cost_dict["inspitch"] = Comparison._pitches_leveinsthein_diff(
+        op_list_dict["inspitch"], cost_dict["inspitch"] = Comparison._pitches_levenshtein_diff(
             original, compare_to[1:], noteNode1, noteNode2, (ids[0], ids[1] + 1)
         )
         cost_dict["inspitch"] += M21Utils.pitch_size(compare_to[0])
@@ -334,7 +334,7 @@ class Comparison:
             ("inspitch", noteNode1, noteNode2, M21Utils.pitch_size(compare_to[0]), ids)
         )
         # edit-pitch
-        op_list_dict["editpitch"], cost_dict["editpitch"] = Comparison._pitches_leveinsthein_diff(
+        op_list_dict["editpitch"], cost_dict["editpitch"] = Comparison._pitches_levenshtein_diff(
             original[1:], compare_to[1:], noteNode1, noteNode2, (ids[0] + 1, ids[1] + 1)
         )
         if original[0] == compare_to[0]:  # to avoid perform the pitch_diff
@@ -549,7 +549,7 @@ class Comparison:
         return out
 
     @staticmethod
-    def _strings_leveinshtein_distance(str1: str, str2: str):
+    def _strings_levenshtein_distance(str1: str, str2: str):
         counter: dict = {"+": 0, "-": 0}
         distance: int = 0
         for edit_code in ndiff(str1, str2):
@@ -594,7 +594,7 @@ class Comparison:
         # add for the content
         if annExtra1.content != annExtra2.content:
             content_cost: int = (
-                Comparison._strings_leveinshtein_distance(
+                Comparison._strings_levenshtein_distance(
                     annExtra1.content or '',
                     annExtra2.content or ''
                 )
@@ -660,7 +660,7 @@ class Comparison:
         # add for the content
         if annLyric1.lyric != annLyric2.lyric:
             content_cost: int = (
-                Comparison._strings_leveinshtein_distance(annLyric1.lyric, annLyric2.lyric)
+                Comparison._strings_levenshtein_distance(annLyric1.lyric, annLyric2.lyric)
             )
             cost += content_cost
             op_list.append(("lyricedit", annLyric1, annLyric2, content_cost))
@@ -679,7 +679,7 @@ class Comparison:
 
         # add for the identifier
         if annLyric1.identifier != annLyric2.identifier:
-            # someday we might do a leveinshtein distance of the two ids
+            # someday we might do a Levenshtein distance of the two ids
             id_cost: int
             if not annLyric1.identifier or not annLyric1.identifier:
                 # add or delete identifier
@@ -719,7 +719,7 @@ class Comparison:
         # add for the key
         if annMetadataItem1.key != annMetadataItem2.key:
             key_cost: int = (
-                Comparison._strings_leveinshtein_distance(
+                Comparison._strings_levenshtein_distance(
                     annMetadataItem1.key,
                     annMetadataItem2.key
                 )
@@ -730,7 +730,7 @@ class Comparison:
         # add for the value
         if annMetadataItem1.value != annMetadataItem2.value:
             value_cost: int = (
-                Comparison._strings_leveinshtein_distance(
+                Comparison._strings_levenshtein_distance(
                     str(annMetadataItem1.value),
                     str(annMetadataItem2.value)
                 )
@@ -755,7 +755,7 @@ class Comparison:
         # add for the name
         if annStaffGroup1.name != annStaffGroup2.name:
             name_cost: int = (
-                Comparison._strings_leveinshtein_distance(
+                Comparison._strings_levenshtein_distance(
                     annStaffGroup1.name,
                     annStaffGroup2.name
                 )
@@ -766,7 +766,7 @@ class Comparison:
         # add for the abbreviation
         if annStaffGroup1.abbreviation != annStaffGroup2.abbreviation:
             abbreviation_cost: int = (
-                Comparison._strings_leveinshtein_distance(
+                Comparison._strings_levenshtein_distance(
                     annStaffGroup1.abbreviation,
                     annStaffGroup2.abbreviation
                 )
@@ -892,8 +892,8 @@ class Comparison:
         if annNote1.pitches == annNote2.pitches:
             op_list_pitch, cost_pitch = [], 0
         else:
-            # pitches diff is computed using leveinshtein differences (they are already ordered)
-            op_list_pitch, cost_pitch = Comparison._pitches_leveinsthein_diff(
+            # pitches diff is computed using Levenshtein distances (they are already ordered)
+            op_list_pitch, cost_pitch = Comparison._pitches_levenshtein_diff(
                 annNote1.pitches, annNote2.pitches, annNote1, annNote2, (0, 0)
             )
         op_list.extend(op_list_pitch)
@@ -923,28 +923,28 @@ class Comparison:
             op_list.append(("graceslashedit", annNote1, annNote2, 1))
         # add for the beamings
         if annNote1.beamings != annNote2.beamings:
-            beam_op_list, beam_cost = Comparison._beamtuplet_leveinsthein_diff(
+            beam_op_list, beam_cost = Comparison._beamtuplet_levenshtein_diff(
                 annNote1.beamings, annNote2.beamings, annNote1, annNote2, "beam"
             )
             op_list.extend(beam_op_list)
             cost += beam_cost
         # add for the tuplet types
         if annNote1.tuplets != annNote2.tuplets:
-            tuplet_op_list, tuplet_cost = Comparison._beamtuplet_leveinsthein_diff(
+            tuplet_op_list, tuplet_cost = Comparison._beamtuplet_levenshtein_diff(
                 annNote1.tuplets, annNote2.tuplets, annNote1, annNote2, "tuplet"
             )
             op_list.extend(tuplet_op_list)
             cost += tuplet_cost
         # add for the tuplet info
         if annNote1.tuplet_info != annNote2.tuplet_info:
-            tuplet_info_op_list, tuplet_info_cost = Comparison._beamtuplet_leveinsthein_diff(
+            tuplet_info_op_list, tuplet_info_cost = Comparison._beamtuplet_levenshtein_diff(
                 annNote1.tuplet_info, annNote2.tuplet_info, annNote1, annNote2, "tuplet"
             )
             op_list.extend(tuplet_info_op_list)
             cost += tuplet_info_cost
         # add for the articulations
         if annNote1.articulations != annNote2.articulations:
-            artic_op_list, artic_cost = Comparison._generic_leveinsthein_diff(
+            artic_op_list, artic_cost = Comparison._generic_levenshtein_diff(
                 annNote1.articulations,
                 annNote2.articulations,
                 annNote1,
@@ -955,7 +955,7 @@ class Comparison:
             cost += artic_cost
         # add for the expressions
         if annNote1.expressions != annNote2.expressions:
-            expr_op_list, expr_cost = Comparison._generic_leveinsthein_diff(
+            expr_op_list, expr_cost = Comparison._generic_levenshtein_diff(
                 annNote1.expressions,
                 annNote2.expressions,
                 annNote1,
@@ -1013,9 +1013,9 @@ class Comparison:
 
     @staticmethod
     @_memoize_beamtuplet_lev_diff
-    def _beamtuplet_leveinsthein_diff(original, compare_to, note1, note2, which):
+    def _beamtuplet_levenshtein_diff(original, compare_to, note1, note2, which):
         """
-        Compute the leveinsthein distance between two sequences of beaming or tuples.
+        Compute the levenshtein distance between two sequences of beaming or tuples.
         Arguments:
             original {list} -- list of strings (start, stop, continue or partial)
             compare_to {list} -- list of strings (start, stop, continue or partial)
@@ -1030,7 +1030,7 @@ class Comparison:
             return [], 0
 
         if len(original) == 0:
-            op_list, cost = Comparison._beamtuplet_leveinsthein_diff(
+            op_list, cost = Comparison._beamtuplet_levenshtein_diff(
                 original, compare_to[1:], note1, note2, which
             )
             op_list.append(("ins" + which, note1, note2, 1))
@@ -1038,7 +1038,7 @@ class Comparison:
             return op_list, cost
 
         if len(compare_to) == 0:
-            op_list, cost = Comparison._beamtuplet_leveinsthein_diff(
+            op_list, cost = Comparison._beamtuplet_levenshtein_diff(
                 original[1:], compare_to, note1, note2, which
             )
             op_list.append(("del" + which, note1, note2, 1))
@@ -1049,19 +1049,19 @@ class Comparison:
         cost = {}
         op_list = {}
         # delwhich
-        op_list["del" + which], cost["del" + which] = Comparison._beamtuplet_leveinsthein_diff(
+        op_list["del" + which], cost["del" + which] = Comparison._beamtuplet_levenshtein_diff(
             original[1:], compare_to, note1, note2, which
         )
         cost["del" + which] += 1
         op_list["del" + which].append(("del" + which, note1, note2, 1))
         # inswhich
-        op_list["ins" + which], cost["ins" + which] = Comparison._beamtuplet_leveinsthein_diff(
+        op_list["ins" + which], cost["ins" + which] = Comparison._beamtuplet_levenshtein_diff(
             original, compare_to[1:], note1, note2, which
         )
         cost["ins" + which] += 1
         op_list["ins" + which].append(("ins" + which, note1, note2, 1))
         # editwhich
-        op_list["edit" + which], cost["edit" + which] = Comparison._beamtuplet_leveinsthein_diff(
+        op_list["edit" + which], cost["edit" + which] = Comparison._beamtuplet_levenshtein_diff(
             original[1:], compare_to[1:], note1, note2, which
         )
         if original[0] == compare_to[0]:
@@ -1078,9 +1078,9 @@ class Comparison:
 
     @staticmethod
     @_memoize_generic_lev_diff
-    def _generic_leveinsthein_diff(original, compare_to, note1, note2, which):
+    def _generic_levenshtein_diff(original, compare_to, note1, note2, which):
         """
-        Compute the leveinsthein distance between two generic sequences of symbols
+        Compute the Levenshtein distance between two generic sequences of symbols
         (e.g., articulations).
         Arguments:
             original {list} -- list of strings
@@ -1093,7 +1093,7 @@ class Comparison:
             return [], 0
 
         if len(original) == 0:
-            op_list, cost = Comparison._generic_leveinsthein_diff(
+            op_list, cost = Comparison._generic_levenshtein_diff(
                 original, compare_to[1:], note1, note2, which
             )
             op_list.append(("ins" + which, note1, note2, 1))
@@ -1101,7 +1101,7 @@ class Comparison:
             return op_list, cost
 
         if len(compare_to) == 0:
-            op_list, cost = Comparison._generic_leveinsthein_diff(
+            op_list, cost = Comparison._generic_levenshtein_diff(
                 original[1:], compare_to, note1, note2, which
             )
             op_list.append(("del" + which, note1, note2, 1))
@@ -1112,19 +1112,19 @@ class Comparison:
         cost = {}
         op_list = {}
         # delwhich
-        op_list["del" + which], cost["del" + which] = Comparison._generic_leveinsthein_diff(
+        op_list["del" + which], cost["del" + which] = Comparison._generic_levenshtein_diff(
             original[1:], compare_to, note1, note2, which
         )
         cost["del" + which] += 1
         op_list["del" + which].append(("del" + which, note1, note2, 1))
         # inswhich
-        op_list["ins" + which], cost["ins" + which] = Comparison._generic_leveinsthein_diff(
+        op_list["ins" + which], cost["ins" + which] = Comparison._generic_levenshtein_diff(
             original, compare_to[1:], note1, note2, which
         )
         cost["ins" + which] += 1
         op_list["ins" + which].append(("ins" + which, note1, note2, 1))
         # editwhich
-        op_list["edit" + which], cost["edit" + which] = Comparison._generic_leveinsthein_diff(
+        op_list["edit" + which], cost["edit" + which] = Comparison._generic_levenshtein_diff(
             original[1:], compare_to[1:], note1, note2, which
         )
         if original[0] == compare_to[0]:  # to avoid perform the diff
