@@ -1921,7 +1921,8 @@ class M21Utils:
     def textstyle_to_dict(
         style: m21.style.TextStyle,
         detail: DetailLevel | int = DetailLevel.Default,
-        smuflTextSuppressed: bool = False
+        smuflTextSuppressed: bool = False,
+        fontSizeSuppressed: bool = True
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -1934,8 +1935,11 @@ class M21Utils:
         # ignore fontSize and fontFamily, Humdrum can't represent it.
         # if style.fontFamily and not smuflTextSuppressed:
         #     output['fontFamily'] = style.fontFamily
-        # if style.fontSize is not None:
-            # output['fontSize'] = style.fontSize
+        if not fontSizeSuppressed:
+            # actually Humdrum has fontSize for rehearsal marks now, and maybe
+            # text expressions someday.
+            if style.fontSize is not None:
+                output['fontSize'] = style.fontSize
 
         # normalize 'bold', since sometimes it's fontStyle='bold'/'bolditalic',
         # and sometimes it's fontWeight='bold' + fontStyle='italic' or 'normal'
@@ -2008,7 +2012,8 @@ class M21Utils:
     def specificstyle_to_dict(
         style: m21.style.Style,
         detail: DetailLevel | int = DetailLevel.Default,
-        smuflTextSuppressed: bool = False
+        smuflTextSuppressed: bool = False,
+        fontSizeSuppressed: bool = True
     ) -> dict:
         if not DetailLevel.includesStyle(detail):
             return {}
@@ -2020,7 +2025,8 @@ class M21Utils:
             return M21Utils.textstyle_to_dict(
                 style,
                 detail,
-                smuflTextSuppressed=smuflTextSuppressed
+                smuflTextSuppressed=smuflTextSuppressed,
+                fontSizeSuppressed=fontSizeSuppressed
             )
         if isinstance(style, m21.style.BezierStyle):
             return {}  # M21Utils.bezierstyle_to_dict(style, detail)
@@ -2045,7 +2051,11 @@ class M21Utils:
             specific = M21Utils.specificstyle_to_dict(
                 obj.style,
                 detail,
-                smuflTextSuppressed=smuflTextSuppressed
+                smuflTextSuppressed=smuflTextSuppressed,
+                fontSizeSuppressed=(
+                    smuflTextSuppressed
+                    or not isinstance(obj, m21.expressions.RehearsalMark)
+                )
             )
             for k, v in specific.items():
                 output[k] = v
