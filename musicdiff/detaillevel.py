@@ -17,6 +17,8 @@ import typing as t
 
 import music21 as m21
 
+from converter21 import M21Utilities
+
 _typesCache: dict[int, tuple[t.Type, ...]] = {}
 
 
@@ -222,8 +224,14 @@ class DetailLevel(IntEnum):
                     m21.expressions.RehearsalMark,
                     m21.repeat.RepeatExpressionMarker,
                     m21.repeat.RepeatExpressionCommand,
-                    # m21.somewhere.PedalMark,  # no PedalMark in music21 (yet)
                 ])
+                if M21Utilities.m21PedalMarksSupported():
+                    typesList.extend([
+                        m21.expressions.PedalMark,  # type: ignore
+                        m21.expressions.PedalBounce,  # type: ignore
+                        m21.expressions.PedalGapStart,  # type: ignore
+                        m21.expressions.PedalGapEnd,  # type: ignore
+                    ])
 
             if cls.includesBarlines(val):
                 typesList.extend([
