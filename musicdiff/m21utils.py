@@ -879,7 +879,9 @@ class M21Utils:
             spannerElementClasses = (
                 m21.note.GeneralNote,
                 m21.spanner.SpannerAnchor,
-                m21.expressions.PedalObject  # type: ignore
+                m21.expressions.PedalBounce,  # type: ignore
+                m21.expressions.PedalGapStart,  # type: ignore
+                m21.expressions.PedalGapEnd,  # type: ignore
             )
         else:
             spannerElementClasses = (
