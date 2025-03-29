@@ -55,7 +55,7 @@ def diff(
     force_parse: bool = True,
     visualize_diffs: bool = True,
     print_text_output: bool = False,
-    print_secr_output: bool = False,
+    print_omr_ned_output: bool = False,
     fix_first_file_syntax: bool = False,
     detail: DetailLevel | int = DetailLevel.Default
 ) -> int | None:
@@ -84,13 +84,12 @@ def diff(
             (default is True)
         print_text_output (bool): Whether or not to print diffs in diff-like text to stdout.
             (default is False)
-        print_secr_output (bool): Whether or not to print the symbolic edit cost ratio (SECR),
-            which is computed as symbolic edit cost divided by the total number of symbols
-            in the two scores.
+        print_omr_ned_output (bool): Whether or not to print the OMR normalized edit distance
+            (OMR-NED), which is computed as OMR edit distance divided by the total number of
+            symbols in the two scores.
             (default is False)
         fix_first_file_syntax (bool): Whether to attempt to fix syntax errors in the first
-            file (and add the number of such fixes to the returned number of edits/cost in
-            symbol errors).
+            file (and add the number of such fixes to the returned OMR edit distance).
             (default is False)
         detail (DetailLevel | int): What level of detail to use during the diff.
             Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
@@ -100,7 +99,7 @@ def diff(
             Style, Metadata, or Voicing.
 
     Returns:
-        int | None: The total cost of the edits, i.e. the number of individual symbols
+        int | None: The total OMR Edit Distance, i.e. the number of individual symbols
             that must be added or deleted. (0 means that the scores were identical, and
             None means that one or more of the input files failed to parse.)
     '''
@@ -213,11 +212,11 @@ def diff(
             # 'score1 ' and 'score2 ', respectively, so you can see which is which.
             Visualization.show_diffs(score1, score2, out_path1, out_path2)
 
-    if print_secr_output:
-        secr_output: dict = Visualization.get_secr_output(
+    if print_omr_ned_output:
+        omr_ned_output: dict = Visualization.get_omr_ned_output(
             cost, annotated_score1, annotated_score2
         )
-        jsonStr: str = json.dumps(secr_output, indent=4)
+        jsonStr: str = json.dumps(omr_ned_output, indent=4)
         print(jsonStr)
 
     if print_text_output:
@@ -225,7 +224,7 @@ def diff(
             score1, score2, diff_list, score1Name=score1Name, score2Name=score2Name
         )
         if text_output:
-            if print_secr_output and print_text_output:
+            if print_omr_ned_output and print_text_output:
                 # put a blank line between them
                 print('')
             print(text_output)
@@ -233,15 +232,15 @@ def diff(
     return cost
 
 
-def diff_secr_metrics(
+def diff_omr_ned_metrics(
     predpath: str | Path,
     gtpath: str | Path,
     detail: DetailLevel | int = DetailLevel.Default
 ) -> EvaluationMetrics | None:
-    # Returns (numsyms_gt, numsyms_pred, sym_edit_cost, edit_costs_dict, SECR).
+    # Returns (numsyms_gt, numsyms_pred, omr_edit_distance, edit_distances_dict, omr_ned).
     # Returns None if pred or gt is not a music21-importable format.
     # If import is possible (correct format), but actually fails (incorrect content),
-    # the resulting score will be empty (and SECR will be 1.0).
+    # the resulting score will be empty (and omr_ned will be 1.0).
 
     # Convert input strings to Paths
     if isinstance(predpath, str):
@@ -299,16 +298,16 @@ def diff_secr_metrics(
     numsyms_gt: int = ann_gtscore.notation_size()
     numsyms_pred: int = ann_predscore.notation_size()
     op_list: list
-    sym_edit_cost: int
-    op_list, sym_edit_cost = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
-    edit_costs_dict: dict[str, int] = Visualization.get_edit_costs_dict(
+    omr_edit_distance: int
+    op_list, omr_edit_distance = Comparison.annotated_scores_diff(ann_predscore, ann_gtscore)
+    edit_distances_dict: dict[str, int] = Visualization.get_edit_distances_dict(
         op_list,
         ann_predscore.num_syntax_errors_fixed,
         detail
     )
-    secr = Visualization.get_secr(sym_edit_cost, numsyms_pred, numsyms_gt)
+    omr_ned = Visualization.get_omr_ned(omr_edit_distance, numsyms_pred, numsyms_gt)
     metrics = EvaluationMetrics(
-        gtpath, predpath, numsyms_gt, numsyms_pred, sym_edit_cost, edit_costs_dict, secr
+        gtpath, predpath, numsyms_gt, numsyms_pred, omr_edit_distance, edit_distances_dict, omr_ned
     )
     return metrics
 
@@ -341,7 +340,7 @@ def diff_ml_training(
         if not os.path.isfile(gtpath):
             continue
 
-        metrics: EvaluationMetrics | None = diff_secr_metrics(
+        metrics: EvaluationMetrics | None = diff_omr_ned_metrics(
             predpath=predpath, gtpath=gtpath, detail=detail
         )
         if metrics is None:
@@ -351,9 +350,9 @@ def diff_ml_training(
         metrics_list.append(metrics)
 
     # sort metrics_list the way you want it to appear in the csv file.
-    # I like it sorted by SECR (ascending), so the SECR == 0.0 entries
-    # are together at the top, and the SECR == 1.0 entries are together
-    # at the bottom.  Within each group of "same SECR", sort by filename.
+    # I like it sorted by omr_ned (ascending), so the omr_ned == 0.0 entries
+    # are together at the top, and the omr_ned == 1.0 entries are together
+    # at the bottom.  Within each group of "same omr_ned", sort by filename.
     def natsortkey(path: str):
         # splits path into chunks of digits and non-digits. Converts the digit
         # chunks to integers for numerical comparison and the non-digit chunks
@@ -366,27 +365,27 @@ def diff_ml_training(
                 key.append(chunk.lower())
         return key
 
-    metrics_list.sort(key=lambda m: (m.sym_edit_cost_ratio, natsortkey(str(m.gt_path))))
+    metrics_list.sort(key=lambda m: (m.omr_ned, natsortkey(str(m.gt_path))))
     with open(output_file_path, 'wt', encoding='utf-8') as outf:
         print(Visualization.get_output_csv_header(detail), file=outf)
 
         for metrics in metrics_list:
             # append CSV line to output file
-            # (gt path, pred path, gt numsyms, pred numsyms, sym edit cost, secr
+            # (gt path, pred path, gt numsyms, pred numsyms, sym edit cost, omr_ned
             print(Visualization.get_output_csv_line(metrics, detail), file=outf)
 
         # append overall score to output file (currently average SER)
         total_gt_numsyms: int = 0
         total_pred_numsyms: int = 0
-        total_sym_edit_cost: int = 0
+        total_omr_edit_distance: int = 0
         if metrics_list:
             for metrics in metrics_list:
                 total_gt_numsyms += metrics.gt_numsyms
                 total_pred_numsyms += metrics.pred_numsyms
-                total_sym_edit_cost += metrics.sym_edit_cost
+                total_omr_edit_distance += metrics.omr_edit_distance
 
-        overall_score: float = Visualization.get_secr(
-            total_sym_edit_cost, total_pred_numsyms, total_gt_numsyms
+        overall_score: float = Visualization.get_omr_ned(
+            total_omr_edit_distance, total_pred_numsyms, total_gt_numsyms
         )
 
         print(Visualization.get_output_csv_trailer(metrics_list, detail), file=outf)

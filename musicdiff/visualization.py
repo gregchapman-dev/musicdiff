@@ -3117,50 +3117,50 @@ class Visualization:
         return output
 
     @staticmethod
-    def get_secr_output(
-        cost: int,
+    def get_omr_ned_output(
+        omr_ed: int,
         annotated_predicted_score: AnnScore,
         annotated_ground_truth_score: AnnScore,
     ) -> dict[str, str]:
         num_syms_in_ground_truth: int = annotated_ground_truth_score.notation_size()
         num_syms_in_predicted: int = annotated_predicted_score.notation_size()
-        secr: float = Visualization.get_secr(
-            cost, num_syms_in_predicted, num_syms_in_ground_truth
+        omr_ned: float = Visualization.get_omr_ned(
+            omr_ed, num_syms_in_predicted, num_syms_in_ground_truth
         )
         num_syms_in_both: int = num_syms_in_ground_truth + num_syms_in_predicted
         output: dict[str, str] = {
-            'symbolEditCost': f'{cost}',
+            'OMR-ED': f'{omr_ed}',
             'numSymbolsInPredicted': f'{num_syms_in_predicted}',
             'numSymbolsInGroundTruth': f'{num_syms_in_ground_truth}',
             'numSymbolsInBoth': f'{num_syms_in_both}',
-            'SECR': f'{secr}',
+            'OMR-NED': f'{omr_ned}',
         }
         return output
 
     @staticmethod
-    def get_secr(
-        cost: int,
+    def get_omr_ned(
+        omr_ed: int,
         num_syms_in_predicted: int,
         num_syms_in_ground_truth: int,
     ) -> float:
         num_syms_in_both: int = num_syms_in_ground_truth + num_syms_in_predicted
 
-        # Instead of divide by zero, return secr == 0.0 (because both scores being
+        # Instead of divide by zero, return omr_ned == 0.0 (because both scores being
         # empty means they are exactly the same)
-        secr: float = 0.0
+        omr_ned: float = 0.0
         if num_syms_in_both != 0:
-            secr = float(cost) / float(num_syms_in_both)
-        return secr
+            omr_ned = float(omr_ed) / float(num_syms_in_both)
+        return omr_ned
 
     @staticmethod
-    def get_edit_costs_dict(
+    def get_edit_distances_dict(
         op_list: list[tuple],
         num_syntax_errors_fixed: int,
         detail: DetailLevel | int
     ) -> dict[str, int]:
         Visualization.create_header_names_once(detail)
 
-        edit_costs_dict: dict[str, int] = {}
+        edit_distances_dict: dict[str, int] = {}
         for op in op_list:
             name: str = Visualization._HEADER_NAME_OF_EDIT_NAME[op[0]]
             if op[0].startswith('extra'):
@@ -3168,15 +3168,15 @@ class Visualization:
                 if extra is not None and extra.kind:
                     name = re.sub('extra', extra.kind, op[0])
                     name = Visualization._HEADER_NAME_OF_EDIT_NAME[name]
-            cost: int = op[3]
-            if name not in edit_costs_dict:
-                edit_costs_dict[name] = cost
+            omr_ed: int = op[3]
+            if name not in edit_distances_dict:
+                edit_distances_dict[name] = omr_ed
             else:
-                edit_costs_dict[name] = edit_costs_dict[name] + cost
+                edit_distances_dict[name] = edit_distances_dict[name] + omr_ed
 
-        edit_costs_dict['bad kern syntax SEC'] = num_syntax_errors_fixed
+        edit_distances_dict['bad kern syntax OMR-ED'] = num_syntax_errors_fixed
 
-        return edit_costs_dict
+        return edit_distances_dict
 
     @staticmethod
     def create_header_names_once(detail: DetailLevel | int):
@@ -3194,6 +3194,7 @@ class Visualization:
             if hn in ordered_names:
                 continue
             ordered_names.append(hn)
+            ordered_names.append(re.sub('OMR-ED', '% contribution to OMR-NED', hn))
 
         Visualization._ORDERED_HEADER_NAMES = ordered_names
 
@@ -3201,233 +3202,233 @@ class Visualization:
     _ORDERED_HEADER_NAMES: list[str] = []
 
     _HEADER_NAME_OF_EDIT_NAME: dict[str, str] = {
-        'syntax_errors_fixed': 'bad kern syntax SEC',
-        'noteins': 'wrong note SEC',
-        'notedel': 'wrong note SEC',
-        'headedit': 'wrong note head SEC',
-        'insbeam': 'wrong flag/beam SEC',
-        'delbeam': 'wrong flag/beam SEC',
-        'editbeam': 'wrong flag/beam SEC',
-        'dotdel': 'wrong dot SEC',
-        'dotins': 'wrong dot SEC',
-        'instuplet': 'wrong tuplet SEC',
-        'deltuplet': 'wrong tuplet SEC',
-        'edittuplet': 'wrong tuplet SEC',
-        'accidentins': 'wrong accidental SEC',
-        'accidentdel': 'wrong accidental SEC',
-        'accidentedit': 'wrong accidental SEC',
-        'editstemdirection': 'wrong note stem SEC',
-        'graceedit': 'wrong graceness SEC',
-        'graceslashedit': 'wrong graceness SEC',
-        'editnoteshape': 'wrong note head SEC',
-        'editnoteheadfill': 'wrong note head SEC',
-        'editnoteheadparenthesis': 'wrong note head SEC',
-        'editstyle': 'wrong note SEC',
-        'tiedel': 'wrong tie SEC',
-        'tieins': 'wrong tie SEC',
-        'insarticulation': 'wrong articulation SEC',
-        'delarticulation': 'wrong articulation SEC',
-        'editarticulation': 'wrong articulation SEC',
-        'insexpression': 'wrong ornament SEC',
-        'delexpression': 'wrong ornament SEC',
-        'editexpression': 'wrong ornament SEC',
+        'syntax_errors_fixed': 'bad kern syntax OMR-ED',
+        'noteins': 'wrong note OMR-ED',
+        'notedel': 'wrong note OMR-ED',
+        'headedit': 'wrong note head OMR-ED',
+        'insbeam': 'wrong flag/beam OMR-ED',
+        'delbeam': 'wrong flag/beam OMR-ED',
+        'editbeam': 'wrong flag/beam OMR-ED',
+        'dotdel': 'wrong dot OMR-ED',
+        'dotins': 'wrong dot OMR-ED',
+        'instuplet': 'wrong tuplet OMR-ED',
+        'deltuplet': 'wrong tuplet OMR-ED',
+        'edittuplet': 'wrong tuplet OMR-ED',
+        'accidentins': 'wrong accidental OMR-ED',
+        'accidentdel': 'wrong accidental OMR-ED',
+        'accidentedit': 'wrong accidental OMR-ED',
+        'editstemdirection': 'wrong note stem OMR-ED',
+        'graceedit': 'wrong graceness OMR-ED',
+        'graceslashedit': 'wrong graceness OMR-ED',
+        'editnoteshape': 'wrong note head OMR-ED',
+        'editnoteheadfill': 'wrong note head OMR-ED',
+        'editnoteheadparenthesis': 'wrong note head OMR-ED',
+        'editstyle': 'wrong note OMR-ED',
+        'tiedel': 'wrong tie OMR-ED',
+        'tieins': 'wrong tie OMR-ED',
+        'insarticulation': 'wrong articulation OMR-ED',
+        'delarticulation': 'wrong articulation OMR-ED',
+        'editarticulation': 'wrong articulation OMR-ED',
+        'insexpression': 'wrong ornament OMR-ED',
+        'delexpression': 'wrong ornament OMR-ED',
+        'editexpression': 'wrong ornament OMR-ED',
 
-        'insspace': 'wrong note SEC',
-        'delspace': 'wrong note SEC',
-        'editspace': 'wrong note SEC',
+        'insspace': 'wrong note OMR-ED',
+        'delspace': 'wrong note OMR-ED',
+        'editspace': 'wrong note OMR-ED',
 
-        'lyricins': 'wrong lyric SEC',
-        'lyricdel': 'wrong lyric SEC',
-        'lyricedit': 'wrong lyric SEC',
-        'lyricnumedit': 'wrong lyric SEC',
-        'lyricidedit': 'wrong lyric SEC',
-        'lyricoffsetedit': 'wrong lyric SEC',
-        'lyricstyleedit': 'wrong lyric SEC',
+        'lyricins': 'wrong lyric OMR-ED',
+        'lyricdel': 'wrong lyric OMR-ED',
+        'lyricedit': 'wrong lyric OMR-ED',
+        'lyricnumedit': 'wrong lyric OMR-ED',
+        'lyricidedit': 'wrong lyric OMR-ED',
+        'lyricoffsetedit': 'wrong lyric OMR-ED',
+        'lyricstyleedit': 'wrong lyric OMR-ED',
 
-        'clefins': 'wrong clef SEC',
-        'clefdel': 'wrong clef SEC',
-        'clefcontentedit': 'wrong clef SEC',  # shouldn't happen, clefs have a symbol
-        'clefsymboledit': 'wrong clef SEC',
-        'clefinfoedit': 'wrong clef SEC',  # shouldn't happen, clefs have a symbol
-        'clefoffsetedit': 'wrong clef SEC',  # shouldn't happen; we pair by offset
-        'clefdurationedit': 'wrong clef SEC',  # shouldn't happen; clefs have no dur
-        'clefstyleedit': 'wrong clef SEC',
+        'clefins': 'wrong clef OMR-ED',
+        'clefdel': 'wrong clef OMR-ED',
+        'clefcontentedit': 'wrong clef OMR-ED',  # shouldn't happen, clefs have a symbol
+        'clefsymboledit': 'wrong clef OMR-ED',
+        'clefinfoedit': 'wrong clef OMR-ED',  # shouldn't happen, clefs have a symbol
+        'clefoffsetedit': 'wrong clef OMR-ED',  # shouldn't happen; we pair by offset
+        'clefdurationedit': 'wrong clef OMR-ED',  # shouldn't happen; clefs have no dur
+        'clefstyleedit': 'wrong clef OMR-ED',
 
-        'timesigins': 'wrong timesig SEC',
-        'timesigdel': 'wrong timesig SEC',
-        'timesigcontentedit': 'wrong timesig SEC',  # shouldn't happen, timesigs have info
-        'timesigsymboledit': 'wrong timesig SEC',  # shouldn't happen, ditto
-        'timesiginfoedit': 'wrong timesig SEC',
-        'timesigoffsetedit': 'wrong timesig SEC',  # shouldn't happen; we pair by offset
-        'timesigdurationedit': 'wrong timesig SEC',  # shouldn't happen; timesigs have no dur
-        'timesigstyleedit': 'wrong timesig SEC',
+        'timesigins': 'wrong timesig OMR-ED',
+        'timesigdel': 'wrong timesig OMR-ED',
+        'timesigcontentedit': 'wrong timesig OMR-ED',  # shouldn't happen, timesigs have info
+        'timesigsymboledit': 'wrong timesig OMR-ED',  # shouldn't happen, ditto
+        'timesiginfoedit': 'wrong timesig OMR-ED',
+        'timesigoffsetedit': 'wrong timesig OMR-ED',  # shouldn't happen; we pair by offset
+        'timesigdurationedit': 'wrong timesig OMR-ED',  # shouldn't happen; timesigs have no dur
+        'timesigstyleedit': 'wrong timesig OMR-ED',
 
-        'keysigins': 'wrong keysig SEC',
-        'keysigdel': 'wrong keysig SEC',
-        'keysigcontentedit': 'wrong keysig SEC',  # shouldn't happen; keysigs have info
-        'keysigsymboledit': 'wrong keysig SEC',  # shouldn't happen; keysigs have info
-        'keysiginfoedit': 'wrong keysig SEC',
-        'keysigoffsetedit': 'wrong keysig SEC',  # shouldn't happen; we pair by offset
-        'keysigdurationedit': 'wrong keysig SEC',  # shouldn't happen; keysigs have no dur
-        'keysigstyleedit': 'wrong keysig SEC',
+        'keysigins': 'wrong keysig OMR-ED',
+        'keysigdel': 'wrong keysig OMR-ED',
+        'keysigcontentedit': 'wrong keysig OMR-ED',  # shouldn't happen; keysigs have info
+        'keysigsymboledit': 'wrong keysig OMR-ED',  # shouldn't happen; keysigs have info
+        'keysiginfoedit': 'wrong keysig OMR-ED',
+        'keysigoffsetedit': 'wrong keysig OMR-ED',  # shouldn't happen; we pair by offset
+        'keysigdurationedit': 'wrong keysig OMR-ED',  # shouldn't happen; keysigs have no dur
+        'keysigstyleedit': 'wrong keysig OMR-ED',
 
-        'tempoins': 'wrong tempo SEC',
-        'tempodel': 'wrong tempo SEC',
-        'tempocontentedit': 'wrong tempo SEC',
-        'temposymboledit': 'wrong tempo SEC',
-        'tempoinfoedit': 'wrong tempo SEC',  # shouldn't happen; tempos have no info
-        'tempooffsetedit': 'wrong tempo SEC',  # shouldn't happen; we pair by offset
-        'tempodurationedit': 'wrong tempo SEC',  # shouldn't happen; tempos have no dur
-        'tempostyleedit': 'wrong tempo SEC',
+        'tempoins': 'wrong tempo OMR-ED',
+        'tempodel': 'wrong tempo OMR-ED',
+        'tempocontentedit': 'wrong tempo OMR-ED',
+        'temposymboledit': 'wrong tempo OMR-ED',
+        'tempoinfoedit': 'wrong tempo OMR-ED',  # shouldn't happen; tempos have no info
+        'tempooffsetedit': 'wrong tempo OMR-ED',  # shouldn't happen; we pair by offset
+        'tempodurationedit': 'wrong tempo OMR-ED',  # shouldn't happen; tempos have no dur
+        'tempostyleedit': 'wrong tempo OMR-ED',
 
-        'barlineins': 'wrong barline SEC',
-        'barlinedel': 'wrong barline SEC',
-        'barlinecontentedit': 'wrong barline SEC',  # shouldn't happen; barlines have no content
-        'barlinesymboledit': 'wrong barline SEC',
-        'barlineinfoedit': 'wrong barline SEC',
-        'barlineoffsetedit': 'wrong barline SEC',  # shouldn't happen; we pair by offset
-        'barlinedurationedit': 'wrong barline SEC',  # shouldn't happen; barlines have no dur
-        'barlinestyleedit': 'wrong barline SEC',
+        'barlineins': 'wrong barline OMR-ED',
+        'barlinedel': 'wrong barline OMR-ED',
+        'barlinecontentedit': 'wrong barline OMR-ED',  # shouldn't happen; barlines have no content
+        'barlinesymboledit': 'wrong barline OMR-ED',
+        'barlineinfoedit': 'wrong barline OMR-ED',
+        'barlineoffsetedit': 'wrong barline OMR-ED',  # shouldn't happen; we pair by offset
+        'barlinedurationedit': 'wrong barline OMR-ED',  # shouldn't happen; barlines have no dur
+        'barlinestyleedit': 'wrong barline OMR-ED',
 
         # we combine barlines and repeats because repeats are just different types
         # of barline
-        'repeatins': 'wrong barline SEC',
-        'repeatdel': 'wrong barline SEC',
-        'repeatcontentedit': 'wrong barline SEC',  # shouldn't happen; repeats have no content
-        'repeatsymboledit': 'wrong barline SEC',
-        'repeatinfoedit': 'wrong barline SEC',
-        'repeatoffsetedit': 'wrong barline SEC',  # shouldn't happen; we pair by offset
-        'repeatdurationedit': 'wrong barline SEC',  # shouldn't happen; repeats have no dur
-        'repeatstyleedit': 'wrong barline SEC',
+        'repeatins': 'wrong barline OMR-ED',
+        'repeatdel': 'wrong barline OMR-ED',
+        'repeatcontentedit': 'wrong barline OMR-ED',  # shouldn't happen; repeats have no content
+        'repeatsymboledit': 'wrong barline OMR-ED',
+        'repeatinfoedit': 'wrong barline OMR-ED',
+        'repeatoffsetedit': 'wrong barline OMR-ED',  # shouldn't happen; we pair by offset
+        'repeatdurationedit': 'wrong barline OMR-ED',  # shouldn't happen; repeats have no dur
+        'repeatstyleedit': 'wrong barline OMR-ED',
 
-        'directionins': 'wrong direction SEC',
-        'directiondel': 'wrong direction SEC',
-        'directioncontentedit': 'wrong direction SEC',
-        'directionsymboledit': 'wrong direction SEC',  # shouldn't happen; directions have content
-        'directioninfoedit': 'wrong direction SEC',  # shouldn't happen; directions have content
-        'directionoffsetedit': 'wrong direction SEC',  # shouldn't happen; we pair by offset
-        'directiondurationedit': 'wrong direction SEC',  # shouldn't happen; directions have no dur
-        'directionstyleedit': 'wrong direction SEC',
+        'directionins': 'wrong direction OMR-ED',
+        'directiondel': 'wrong direction OMR-ED',
+        'directioncontentedit': 'wrong direction OMR-ED',
+        'directionsymboledit': 'wrong direction OMR-ED',  # shouldn't happen; dirs have content
+        'directioninfoedit': 'wrong direction OMR-ED',  # shouldn't happen; dirs have content
+        'directionoffsetedit': 'wrong direction OMR-ED',  # shouldn't happen; we pair by offset
+        'directiondurationedit': 'wrong direction OMR-ED',  # shouldn't happen; no dur
+        'directionstyleedit': 'wrong direction OMR-ED',
 
-        'dynamicins': 'wrong dynamic SEC',
-        'dynamicdel': 'wrong dynamic SEC',
-        'dynamiccontentedit': 'wrong dynamic SEC',  # shouldn't happen; directions are symbolic
-        'dynamicsymboledit': 'wrong dynamic SEC',
-        'dynamicinfoedit': 'wrong dynamic SEC',  # shouldn't happen; directions are symbolic
-        'dynamicoffsetedit': 'wrong dynamic SEC',  # shouldn't happen; we pair by offset
-        'dynamicdurationedit': 'wrong dynamic SEC',
-        'dynamicstyleedit': 'wrong dynamic SEC',
+        'dynamicins': 'wrong dynamic OMR-ED',
+        'dynamicdel': 'wrong dynamic OMR-ED',
+        'dynamiccontentedit': 'wrong dynamic OMR-ED',  # shouldn't happen; directions are symbolic
+        'dynamicsymboledit': 'wrong dynamic OMR-ED',
+        'dynamicinfoedit': 'wrong dynamic OMR-ED',  # shouldn't happen; directions are symbolic
+        'dynamicoffsetedit': 'wrong dynamic OMR-ED',  # shouldn't happen; we pair by offset
+        'dynamicdurationedit': 'wrong dynamic OMR-ED',
+        'dynamicstyleedit': 'wrong dynamic OMR-ED',
 
-        'slurins': 'wrong slur SEC',
-        'slurdel': 'wrong slur SEC',
-        'slurcontentedit': 'wrong slur SEC',  # shouldn't happen
-        'slursymboledit': 'wrong slur SEC',  # shouldn't happen
-        'slurinfoedit': 'wrong slur SEC',  # shouldn't happen
-        'sluroffsetedit': 'wrong slur SEC',  # shouldn't happen; we pair by offset
-        'slurdurationedit': 'wrong slur SEC',
-        'slurstyleedit': 'wrong slur SEC',
+        'slurins': 'wrong slur OMR-ED',
+        'slurdel': 'wrong slur OMR-ED',
+        'slurcontentedit': 'wrong slur OMR-ED',  # shouldn't happen
+        'slursymboledit': 'wrong slur OMR-ED',  # shouldn't happen
+        'slurinfoedit': 'wrong slur OMR-ED',  # shouldn't happen
+        'sluroffsetedit': 'wrong slur OMR-ED',  # shouldn't happen; we pair by offset
+        'slurdurationedit': 'wrong slur OMR-ED',
+        'slurstyleedit': 'wrong slur OMR-ED',
 
-        'ottavains': 'wrong ottava SEC',
-        'ottavadel': 'wrong ottava SEC',
-        'ottavacontentedit': 'wrong ottava SEC',  # shouldn't happen; ottava is symbolic
-        'ottavasymboledit': 'wrong ottava SEC',
-        'ottavainfoedit': 'wrong ottava SEC',  # shouldn't happen; ottava is symbolic
-        'ottavaoffsetedit': 'wrong ottava SEC',  # shouldn't happen; we pair by offset
-        'ottavadurationedit': 'wrong ottava SEC',
-        'ottavastyleedit': 'wrong ottava SEC',
+        'ottavains': 'wrong ottava OMR-ED',
+        'ottavadel': 'wrong ottava OMR-ED',
+        'ottavacontentedit': 'wrong ottava OMR-ED',  # shouldn't happen; ottava is symbolic
+        'ottavasymboledit': 'wrong ottava OMR-ED',
+        'ottavainfoedit': 'wrong ottava OMR-ED',  # shouldn't happen; ottava is symbolic
+        'ottavaoffsetedit': 'wrong ottava OMR-ED',  # shouldn't happen; we pair by offset
+        'ottavadurationedit': 'wrong ottava OMR-ED',
+        'ottavastyleedit': 'wrong ottava OMR-ED',
 
-        'arpeggioins': 'wrong multi-staff arpeggio SEC',
-        'arpeggiodel': 'wrong multi-staff arpeggio SEC',
-        'arpeggiocontentedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
-        'arpeggiosymboledit': 'wrong multi-staff arpeggio SEC',
-        'arpeggioinfoedit': 'wrong multi-staff arpeggio SEC',
-        'arpeggiooffsetedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
-        'arpeggiodurationedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
-        'arpeggiostyleedit': 'wrong multi-staff arpeggio SEC',  # shouldn't happen
+        'arpeggioins': 'wrong multi-staff arpeggio OMR-ED',
+        'arpeggiodel': 'wrong multi-staff arpeggio OMR-ED',
+        'arpeggiocontentedit': 'wrong multi-staff arpeggio OMR-ED',  # shouldn't happen
+        'arpeggiosymboledit': 'wrong multi-staff arpeggio OMR-ED',
+        'arpeggioinfoedit': 'wrong multi-staff arpeggio OMR-ED',
+        'arpeggiooffsetedit': 'wrong multi-staff arpeggio OMR-ED',  # shouldn't happen
+        'arpeggiodurationedit': 'wrong multi-staff arpeggio OMR-ED',  # shouldn't happen
+        'arpeggiostyleedit': 'wrong multi-staff arpeggio OMR-ED',  # shouldn't happen
 
-        'tremoloins': 'wrong fingered tremolo SEC',
-        'tremolodel': 'wrong fingered tremolo SEC',
-        'tremolocontentedit': 'wrong fingered tremolo SEC',  # shouldn't happen
-        'tremolosymboledit': 'wrong fingered tremolo SEC',
-        'tremoloinfoedit': 'wrong fingered tremolo SEC',  # shouldn't happen
-        'tremolooffsetedit': 'wrong fingered tremolo SEC',  # shouldn't happen; we pair by offset
-        'tremolodurationedit': 'wrong fingered tremolo SEC',
-        'tremolostyleedit': 'wrong fingered tremolo SEC',  # shouldn't happen
+        'tremoloins': 'wrong fingered tremolo OMR-ED',
+        'tremolodel': 'wrong fingered tremolo OMR-ED',
+        'tremolocontentedit': 'wrong fingered tremolo OMR-ED',  # shouldn't happen
+        'tremolosymboledit': 'wrong fingered tremolo OMR-ED',
+        'tremoloinfoedit': 'wrong fingered tremolo OMR-ED',  # shouldn't happen
+        'tremolooffsetedit': 'wrong fingered tremolo OMR-ED',  # shouldn't happen; we pair by offset
+        'tremolodurationedit': 'wrong fingered tremolo OMR-ED',
+        'tremolostyleedit': 'wrong fingered tremolo OMR-ED',  # shouldn't happen
 
-        'chordsymins': 'wrong chord symbol SEC',
-        'chordsymdel': 'wrong chord symbol SEC',
-        'chordsymcontentedit': 'wrong chord symbol SEC',  # shouldn't happen
-        'chordsymsymboledit': 'wrong chord symbol SEC',
-        'chordsyminfoedit': 'wrong chord symbol SEC',  # shouldn't happen
-        'chordsymoffsetedit': 'wrong chord symbol SEC',  # shouldn't happen; we pair by offset
-        'chordsymdurationedit': 'wrong chord symbol SEC',  # shouldn't happen
-        'chordsymstyleedit': 'wrong chord symbol SEC',
+        'chordsymins': 'wrong chord symbol OMR-ED',
+        'chordsymdel': 'wrong chord symbol OMR-ED',
+        'chordsymcontentedit': 'wrong chord symbol OMR-ED',  # shouldn't happen
+        'chordsymsymboledit': 'wrong chord symbol OMR-ED',
+        'chordsyminfoedit': 'wrong chord symbol OMR-ED',  # shouldn't happen
+        'chordsymoffsetedit': 'wrong chord symbol OMR-ED',  # shouldn't happen; we pair by offset
+        'chordsymdurationedit': 'wrong chord symbol OMR-ED',  # shouldn't happen
+        'chordsymstyleedit': 'wrong chord symbol OMR-ED',
 
-        'endingins': 'wrong ending SEC',
-        'endingdel': 'wrong ending SEC',
-        'endingcontentedit': 'wrong ending SEC',
-        'endingsymboledit': 'wrong ending SEC',
-        'endinginfoedit': 'wrong ending SEC',
-        'endingoffsetedit': 'wrong ending SEC',  # shouldn't happen; we pair by offset
-        'endingdurationedit': 'wrong ending SEC',
-        'endingstyleedit': 'wrong ending SEC',  # shouldn't happen
+        'endingins': 'wrong ending OMR-ED',
+        'endingdel': 'wrong ending OMR-ED',
+        'endingcontentedit': 'wrong ending OMR-ED',
+        'endingsymboledit': 'wrong ending OMR-ED',
+        'endinginfoedit': 'wrong ending OMR-ED',
+        'endingoffsetedit': 'wrong ending OMR-ED',  # shouldn't happen; we pair by offset
+        'endingdurationedit': 'wrong ending OMR-ED',
+        'endingstyleedit': 'wrong ending OMR-ED',  # shouldn't happen
 
-        'staffinfoins': 'wrong staff info SEC',
-        'staffinfodel': 'wrong staff info SEC',
-        'staffinfocontentedit': 'wrong staff info SEC',  # shouldn't happen
-        'staffinfosymboledit': 'wrong staff info SEC',  # shouldn't happen
-        'staffinfoinfoedit': 'wrong staff info SEC',
-        'staffinfooffsetedit': 'wrong staff info SEC',  # shouldn't happen; we pair by offset
-        'staffinfodurationedit': 'wrong staff info SEC',  # shouldn't happen
-        'staffinfostyleedit': 'wrong staff info SEC',  # shouldn't happen
+        'staffinfoins': 'wrong staff info OMR-ED',
+        'staffinfodel': 'wrong staff info OMR-ED',
+        'staffinfocontentedit': 'wrong staff info OMR-ED',  # shouldn't happen
+        'staffinfosymboledit': 'wrong staff info OMR-ED',  # shouldn't happen
+        'staffinfoinfoedit': 'wrong staff info OMR-ED',
+        'staffinfooffsetedit': 'wrong staff info OMR-ED',  # shouldn't happen; we pair by offset
+        'staffinfodurationedit': 'wrong staff info OMR-ED',  # shouldn't happen
+        'staffinfostyleedit': 'wrong staff info OMR-ED',  # shouldn't happen
 
-        'systembreakins': 'wrong system break SEC',
-        'systembreakdel': 'wrong system break SEC',
-        'systembreakcontentedit': 'wrong system break SEC',  # shouldn't happen
-        'systembreaksymboledit': 'wrong system break SEC',
-        'systembreakinfoedit': 'wrong system break SEC',  # shouldn't happen
-        'systembreakoffsetedit': 'wrong system break SEC',  # shouldn't happen; we pair by offset
-        'systembreakdurationedit': 'wrong system break SEC',  # shouldn't happen
-        'systembreakstyleedit': 'wrong system break SEC',  # shouldn't happen
+        'systembreakins': 'wrong system break OMR-ED',
+        'systembreakdel': 'wrong system break OMR-ED',
+        'systembreakcontentedit': 'wrong system break OMR-ED',  # shouldn't happen
+        'systembreaksymboledit': 'wrong system break OMR-ED',
+        'systembreakinfoedit': 'wrong system break OMR-ED',  # shouldn't happen
+        'systembreakoffsetedit': 'wrong system break OMR-ED',  # shouldn't happen; we pair by offset
+        'systembreakdurationedit': 'wrong system break OMR-ED',  # shouldn't happen
+        'systembreakstyleedit': 'wrong system break OMR-ED',  # shouldn't happen
 
-        'pagebreakins': 'wrong page break SEC',
-        'pagebreakdel': 'wrong page break SEC',
-        'pagebreakcontentedit': 'wrong page break SEC',  # shouldn't happen
-        'pagebreaksymboledit': 'wrong page break SEC',
-        'pagebreakinfoedit': 'wrong page break SEC',  # shouldn't happen
-        'pagebreakoffsetedit': 'wrong page break SEC',  # shouldn't happen; we pair by offset
-        'pagebreakdurationedit': 'wrong page break SEC',  # shouldn't happen
-        'pagebreakstyleedit': 'wrong page break SEC',  # shouldn't happen
+        'pagebreakins': 'wrong page break OMR-ED',
+        'pagebreakdel': 'wrong page break OMR-ED',
+        'pagebreakcontentedit': 'wrong page break OMR-ED',  # shouldn't happen
+        'pagebreaksymboledit': 'wrong page break OMR-ED',
+        'pagebreakinfoedit': 'wrong page break OMR-ED',  # shouldn't happen
+        'pagebreakoffsetedit': 'wrong page break OMR-ED',  # shouldn't happen; we pair by offset
+        'pagebreakdurationedit': 'wrong page break OMR-ED',  # shouldn't happen
+        'pagebreakstyleedit': 'wrong page break OMR-ED',  # shouldn't happen
 
         # These 'extra*' are still here in case there is an AnnExtra (in future) we didn't
         # cover above
-        'extrains': 'wrong other object SEC',
-        'extradel': 'wrong other object SEC',
-        'extracontentedit': 'wrong other object SEC',
-        'extrasymboledit': 'wrong other object SEC',
-        'extrainfoedit': 'wrong other object SEC',
-        'extraoffsetedit': 'wrong other object SEC',  # shouldn't happen; we pair by offset
-        'extradurationedit': 'wrong other object SEC',
-        'extrastyleedit': 'wrong other object SEC',
+        'extrains': 'wrong other object OMR-ED',
+        'extradel': 'wrong other object OMR-ED',
+        'extracontentedit': 'wrong other object OMR-ED',
+        'extrasymboledit': 'wrong other object OMR-ED',
+        'extrainfoedit': 'wrong other object OMR-ED',
+        'extraoffsetedit': 'wrong other object OMR-ED',  # shouldn't happen; we pair by offset
+        'extradurationedit': 'wrong other object OMR-ED',
+        'extrastyleedit': 'wrong other object OMR-ED',
 
-        'insbar': 'entire measure insert/delete SEC',
-        'delbar': 'entire measure insert/delete SEC',
+        'insbar': 'entire measure insert/delete OMR-ED',
+        'delbar': 'entire measure insert/delete OMR-ED',
 
-        'inspart': 'entire staff insert/delete SEC',
-        'delpart': 'entire staff insert/delete SEC',
+        'inspart': 'entire staff insert/delete OMR-ED',
+        'delpart': 'entire staff insert/delete OMR-ED',
 
-        'mditemins': 'wrong metadata SEC',
-        'mditemdel': 'wrong metadata SEC',
-        'mditemkeyedit': 'wrong metadata SEC',  # shouldn't happen because we pair by key
-        'mditemvalueedit': 'wrong metadata SEC',
+        'mditemins': 'wrong metadata OMR-ED',
+        'mditemdel': 'wrong metadata OMR-ED',
+        'mditemkeyedit': 'wrong metadata OMR-ED',  # shouldn't happen because we pair by key
+        'mditemvalueedit': 'wrong metadata OMR-ED',
 
-        'staffgrpins': 'wrong staff group SEC',
-        'staffgrpdel': 'wrong staff group SEC',
-        'staffgrpnameedit': 'wrong staff group name/abbrev SEC',
-        'staffgrpabbreviationedit': 'wrong staff group name/abbrev SEC',
-        'staffgrpsymboledit': 'wrong staff group brace SEC',
-        'staffgrpbartogetheredit': 'wrong staff group barline SEC',
-        'staffgrppartindicesedit': 'wrong staff group SEC',
+        'staffgrpins': 'wrong staff group OMR-ED',
+        'staffgrpdel': 'wrong staff group OMR-ED',
+        'staffgrpnameedit': 'wrong staff group name/abbrev OMR-ED',
+        'staffgrpabbreviationedit': 'wrong staff group name/abbrev OMR-ED',
+        'staffgrpsymboledit': 'wrong staff group brace OMR-ED',
+        'staffgrpbartogetheredit': 'wrong staff group barline OMR-ED',
+        'staffgrppartindicesedit': 'wrong staff group OMR-ED',
     }
 
     _VOICING_HEADER_NAME_OF_EDIT_NAME_EXTRAS: dict[str, str] = {
@@ -3437,12 +3438,12 @@ class Visualization:
         # (2) notes are paired by pitch, so instead of pitch edits we
         # get note insertions and deletions, and (3) we ignore voices
         # completely, so we certainly don't insert or delete them.
-        'inspitch': 'pitch insert/delete SEC',
-        'delpitch': 'pitch insert/delete SEC',
-        'pitchnameedit': 'wrong pitch SEC',
-        'pitchtypeedit': 'wrong pitch SEC',
-        'voiceins': 'voice insert/delete SEC',
-        'voicedel': 'voice insert/delete SEC',
+        'inspitch': 'pitch insert/delete OMR-ED',
+        'delpitch': 'pitch insert/delete OMR-ED',
+        'pitchnameedit': 'wrong pitch OMR-ED',
+        'pitchtypeedit': 'wrong pitch OMR-ED',
+        'voiceins': 'voice insert/delete OMR-ED',
+        'voicedel': 'voice insert/delete OMR-ED',
     }
 
     _PRE_EDITS_HEADER_NAMES: list[str] = [
@@ -3453,8 +3454,8 @@ class Visualization:
         'gt numsyms',
         'pred numsyms',
         'total numsyms (in both scores)',
-        'SEC (symbolic edit cost)',
-        'SECR (SEC / total numsyms)',
+        'OMR-ED (OMR Edit Distance)',
+        'OMR-NED (OMR-ED / total numsyms)',
     ]
 
     @staticmethod
@@ -3484,23 +3485,23 @@ class Visualization:
         # Compute all the totals
         total_gt_numsyms: int = 0
         total_pred_numsyms: int = 0
-        total_sym_edit_cost: int = 0
-        total_edit_costs_dict: dict[str, int] = {}
+        total_omr_edit_distance: int = 0
+        total_edit_distances_dict: dict[str, int] = {}
 
         for metrics in metrics_list:
             total_gt_numsyms += metrics.gt_numsyms
             total_pred_numsyms += metrics.pred_numsyms
-            total_sym_edit_cost += metrics.sym_edit_cost
-            for name in metrics.edit_costs_dict:
-                if name not in total_edit_costs_dict:
-                    total_edit_costs_dict[name] = metrics.edit_costs_dict[name]
+            total_omr_edit_distance += metrics.omr_edit_distance
+            for name in metrics.edit_distances_dict:
+                if name not in total_edit_distances_dict:
+                    total_edit_distances_dict[name] = metrics.edit_distances_dict[name]
                 else:
-                    total_edit_costs_dict[name] += metrics.edit_costs_dict[name]
+                    total_edit_distances_dict[name] += metrics.edit_distances_dict[name]
 
         total_numsyms: int = total_gt_numsyms + total_pred_numsyms
 
-        overall_SECR: float = Visualization.get_secr(
-            total_sym_edit_cost, total_pred_numsyms, total_gt_numsyms
+        overall_omr_ned: float = Visualization.get_omr_ned(
+            total_omr_edit_distance, total_pred_numsyms, total_gt_numsyms
         )
 
         totals_line: str = 'Total:'  # the only thing in first column
@@ -3516,18 +3517,36 @@ class Visualization:
                 totals_line += f'{total_pred_numsyms}'
             elif name == 'total numsyms (in both scores)':
                 totals_line += f'{total_numsyms}'
-            elif name == 'SEC (symbolic edit cost)':
-                totals_line += f'{total_sym_edit_cost}'
-            elif name == 'SECR (SEC / total numsyms)':
-                totals_line += f'{overall_SECR}'
+            elif name == 'OMR-ED (OMR Edit Distance)':
+                totals_line += f'{total_omr_edit_distance}'
+            elif name == 'OMR-NED (OMR-ED / total numsyms)':
+                totals_line += f'{overall_omr_ned}'
 
         # then the edit fields
+        previous_column_edit_distance: int = 0
         for name in Visualization._ORDERED_HEADER_NAMES:
             totals_line += ', '
-            if name in total_edit_costs_dict:
-                totals_line += f'{total_edit_costs_dict[name]}'
+            if name.endswith('OMR-ED'):
+                if name in total_edit_distances_dict:
+                    previous_column_edit_distance = total_edit_distances_dict[name]
+                    totals_line += f'{total_edit_distances_dict[name]}'
+                else:
+                    previous_column_edit_distance = 0
+                    totals_line += '0'
+            elif name.endswith('% contribution to OMR-NED'):
+                if previous_column_edit_distance:
+                    contrib: float = (
+                        float(previous_column_edit_distance * 100)
+                        / float(total_omr_edit_distance)
+                    )
+                    totals_line += f'{contrib}'
+                else:
+                    totals_line += '0.'
+                previous_column_edit_distance = 0
             else:
-                totals_line += '0'
+                # how did we get here?
+                previous_column_edit_distance = 0
+
 
         # then the post-edits fields
         for name in Visualization._POST_EDITS_HEADER_NAMES:
@@ -3540,10 +3559,10 @@ class Visualization:
                 totals_line += f'{total_pred_numsyms}'
             elif name == 'total numsyms (in both scores)':
                 totals_line += f'{total_numsyms}'
-            elif name == 'SEC (symbolic edit cost)':
-                totals_line += f'{total_sym_edit_cost}'
-            elif name == 'SECR (SEC / total numsyms)':
-                totals_line += f'{overall_SECR}'
+            elif name == 'OMR-ED (OMR Edit Distance)':
+                totals_line += f'{total_omr_edit_distance}'
+            elif name == 'OMR-NED (OMR-ED / total numsyms)':
+                totals_line += f'{overall_omr_ned}'
 
         repeated_header_line: str = Visualization.get_output_csv_header(detail)
 
@@ -3557,8 +3576,8 @@ class Visualization:
     ) -> str:
         Visualization.create_header_names_once(detail)
 
-        # 888 could validate metrics.sym_edit_cost here (make sure it is the sum of
-        # 888 everything in metrics.edit_costs_dict)
+        # 888 could validate metrics.omr_edit_distance here (make sure it is the sum of
+        # 888 everything in metrics.edit_distances_dict)
         total_numsyms: int = metrics.pred_numsyms + metrics.gt_numsyms
 
         line: str = ''
@@ -3576,18 +3595,36 @@ class Visualization:
                 line += f'{metrics.pred_numsyms}'
             elif name == 'total numsyms (in both scores)':
                 line += f'{total_numsyms}'
-            elif name == 'SEC (symbolic edit cost)':
-                line += f'{metrics.sym_edit_cost}'
-            elif name == 'SECR (SEC / total numsyms)':
-                line += f'{metrics.sym_edit_cost_ratio}'
+            elif name == 'OMR-ED (OMR Edit Distance)':
+                line += f'{metrics.omr_edit_distance}'
+            elif name == 'OMR-NED (OMR-ED / total numsyms)':
+                line += f'{metrics.omr_ned}'
 
         # then the edit fields
+        previous_column_edit_distance: int = 0
         for name in Visualization._ORDERED_HEADER_NAMES:
             line += ', '
-            if name in metrics.edit_costs_dict:
-                line += f'{metrics.edit_costs_dict[name]}'
+            if name.endswith('OMR-ED'):
+                if name in metrics.edit_distances_dict:
+                    previous_column_edit_distance = metrics.edit_distances_dict[name]
+                    line += f'{metrics.edit_distances_dict[name]}'
+                else:
+                    line += '0'
+            elif name.endswith('% contribution to OMR-NED'):
+                if previous_column_edit_distance:
+                    contrib: float = (
+                        float(previous_column_edit_distance * 100)
+                        / float(metrics.omr_edit_distance)
+                    )
+                    line += (
+                        f'{contrib}'
+                    )
+                else:
+                    line += '0.'
+                previous_column_edit_distance = 0
             else:
-                line += '0'
+                # how did we get here?
+                previous_column_edit_distance = 0
 
         # then the post-edits fields
         for name in Visualization._POST_EDITS_HEADER_NAMES:
@@ -3602,9 +3639,9 @@ class Visualization:
                 line += f'{metrics.pred_numsyms}'
             elif name == 'total numsyms (in both scores)':
                 line += f'{total_numsyms}'
-            elif name == 'SEC (symbolic edit cost)':
-                line += f'{metrics.sym_edit_cost}'
-            elif name == 'SECR (SEC / total numsyms)':
-                line += f'{metrics.sym_edit_cost_ratio}'
+            elif name == 'OMR-ED (OMR Edit Distance)':
+                line += f'{metrics.omr_edit_distance}'
+            elif name == 'OMR-NED (OMR-ED / total numsyms)':
+                line += f'{metrics.omr_ned}'
 
         return line
