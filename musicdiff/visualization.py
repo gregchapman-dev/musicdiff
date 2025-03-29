@@ -3194,6 +3194,7 @@ class Visualization:
             if hn in ordered_names:
                 continue
             ordered_names.append(hn)
+            ordered_names.append(re.sub('SEC', '% contribution to SECR', hn))
 
         Visualization._ORDERED_HEADER_NAMES = ordered_names
 
@@ -3522,12 +3523,28 @@ class Visualization:
                 totals_line += f'{overall_SECR}'
 
         # then the edit fields
+        previousColumnCost: int = 0
         for name in Visualization._ORDERED_HEADER_NAMES:
             totals_line += ', '
-            if name in total_edit_costs_dict:
-                totals_line += f'{total_edit_costs_dict[name]}'
+            if name.endswith('SEC'):
+                if name in total_edit_costs_dict:
+                    previousColumnCost = total_edit_costs_dict[name]
+                    totals_line += f'{total_edit_costs_dict[name]}'
+                else:
+                    previousColumnCost = 0
+                    totals_line += '0'
+            elif name.endswith('% contribution to SECR'):
+                if previousColumnCost:
+                    totals_line += (
+                        f'{float(previousColumnCost * 100) / float(total_sym_edit_cost)}'
+                    )
+                else:
+                    totals_line += '0.'
+                previousColumnCost = 0
             else:
-                totals_line += '0'
+                # how did we get here?
+                previousColumnCost = 0
+
 
         # then the post-edits fields
         for name in Visualization._POST_EDITS_HEADER_NAMES:
@@ -3582,12 +3599,26 @@ class Visualization:
                 line += f'{metrics.sym_edit_cost_ratio}'
 
         # then the edit fields
+        previousColumnCost: int = 0
         for name in Visualization._ORDERED_HEADER_NAMES:
             line += ', '
-            if name in metrics.edit_costs_dict:
-                line += f'{metrics.edit_costs_dict[name]}'
+            if name.endswith('SEC'):
+                if name in metrics.edit_costs_dict:
+                    previousColumnCost = metrics.edit_costs_dict[name]
+                    line += f'{metrics.edit_costs_dict[name]}'
+                else:
+                    line += '0'
+            elif name.endswith('% contribution to SECR'):
+                if previousColumnCost:
+                    line += (
+                        f'{float(previousColumnCost * 100) / float(metrics.sym_edit_cost)}'
+                    )
+                else:
+                    line += '0.'
+                previousColumnCost = 0
             else:
-                line += '0'
+                # how did we get here?
+                previousColumnCost = 0
 
         # then the post-edits fields
         for name in Visualization._POST_EDITS_HEADER_NAMES:
