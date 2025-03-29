@@ -27,7 +27,7 @@ if __name__ == "__main__":
     usage: str = """python3 -m musicdiff [-h]
                             [-i [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
                             [-x [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
-                            [-o [{visual,v,text,t,secr,s} ...]]
+                            [-o [{visual,v,text,t,omrned,o} ...]]
                             [--fix_first_file_syntax]
                             file1 file2
 
@@ -56,9 +56,9 @@ required:
                         in the predicted folder.
   --output_folder outputfolderpath
                         Must be set if (and only if) --ml_training_evaluation
-                        is set. A folder where the musicdiff results (SECR
+                        is set. A folder where the musicdiff results (OMR-NED
                         metrics for each predicted score, as well as an overall
-                        SECR metric for the run) will be written into an
+                        OMR-NED metric for the run) will be written into an
                         output.csv file. This folder must already exist.
 """
     parser = argparse.ArgumentParser(
@@ -159,11 +159,11 @@ required:
             "--output",
             default=["visual"],
             nargs="*",
-            choices=["visual", "v", "text", "t", "secr", "s"],
+            choices=["visual", "v", "text", "t", "omrned", "o"],
             help="'visual'/'v' is marked up scores, rendered to PDFs;"
             + " 'text'/'t' is diff-like, written to stdout;"
-            + " 'secr'/'s is the symbolic edit cost ratio"
-            + " (symbolic edit cost/total symbols),"
+            + " 'omrned'/'o' is the OMR Normalized Edit Distance"
+            + " (OMR edit distance/total symbols),"
             + " written to stdout."
             + " Any, all, or none of these can be requested."
             + " Cannot be specified with --ml_training_evaluation."
@@ -190,7 +190,7 @@ required:
         + " must contain files with the same names. Every score in the predicted"
         + " folder will be compared with the score of the same name in the"
         + " ground truth folder. Syntax errors in predicted scores will be fixed"
-        + " if possible, and SECR metrics for each predicted score (as well as"
+        + " if possible, and OMR-NED metrics for each predicted score (as well as"
         + " an overall metric for the run) will be produced in output.csv"
         + " in the output folder. No files can be specified on the command line,"
         + " nor can -o/--output or --fix_first_file_syntax be specified."
@@ -363,7 +363,7 @@ required:
     # files
     visualize_diffs: bool = "visual" in args.output or "v" in args.output
     print_text_output: bool = "text" in args.output or "t" in args.output
-    print_secr_output: bool = "secr" in args.output or "s" in args.output
+    print_omr_ned_output: bool = "omrned" in args.output or "o" in args.output
     fix_first_file_syntax: bool = args.fix_first_file_syntax is True
 
     cost: int | None = diff(
@@ -372,7 +372,7 @@ required:
         detail=detail,
         visualize_diffs=visualize_diffs,
         print_text_output=print_text_output,
-        print_secr_output=print_secr_output,
+        print_omr_ned_output=print_omr_ned_output,
         fix_first_file_syntax=fix_first_file_syntax,
     )
 

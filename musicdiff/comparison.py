@@ -33,17 +33,17 @@ class EvaluationMetrics:
         pred_path: Path,
         gt_numsyms: int,
         pred_numsyms: int,
-        sym_edit_cost: int,
-        edit_costs_dict: dict[str, int],
-        sym_edit_cost_ratio: float
+        omr_edit_distance: int,
+        edit_distances_dict: dict[str, int],
+        omr_ned: float
     ):
         self.gt_path: Path = gt_path
         self.pred_path: Path = pred_path
         self.gt_numsyms: int = gt_numsyms
         self.pred_numsyms: int = pred_numsyms
-        self.sym_edit_cost: int = sym_edit_cost
-        self.edit_costs_dict: dict[str, int] = edit_costs_dict
-        self.sym_edit_cost_ratio: float = sym_edit_cost_ratio
+        self.omr_edit_distance: int = omr_edit_distance
+        self.edit_distances_dict: dict[str, int] = edit_distances_dict
+        self.omr_ned: float = omr_ned
 
 # memoizers to speed up the recursive computation
 def _memoize_notes_set_distance(func):
@@ -1658,7 +1658,7 @@ class Comparison:
         cost_total += mditems_cost
 
         # Add the cost of any syntax errors in score1 that were fixed during parsing.
-        # Ignore enough syntax errors to keep SECR <= 1.0, for consistency.
+        # Ignore enough syntax errors to keep OMR-NED <= 1.0, for consistency.
         total_syms: int = score1.notation_size() + score2.notation_size()
         cost_plus_errors: int = cost_total + score1.num_syntax_errors_fixed
         if cost_plus_errors > total_syms:
