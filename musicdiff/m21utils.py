@@ -759,6 +759,13 @@ class M21Utils:
             # definitely empty, ignore
             return True
 
+        if kind in ('pedalbounce', 'pedalgapstart', 'pedalgapend'):
+            # we ignore these if they are not in a PedalMark spanner
+            for sp in el.getSpannerSites():
+                if isinstance(sp, m21.expressions.PedalMark):
+                    return False
+            return True
+
         if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
             # we ignore PageLayouts and SystemLayouts that are not in the
             # first Part in the Score.
