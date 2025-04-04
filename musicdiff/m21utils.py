@@ -762,8 +762,10 @@ class M21Utils:
         if kind in ('pedalbounce', 'pedalgapstart', 'pedalgapend'):
             # we ignore these if they are not in a PedalMark spanner
             for sp in el.getSpannerSites():
-                if isinstance(sp, m21.expressions.PedalMark):
+                # pylint: disable=no-member
+                if isinstance(sp, m21.expressions.PedalMark):  # type: ignore
                     return False
+                # pylint: enable=no-member
             return True
 
         if isinstance(el, (m21.layout.PageLayout, m21.layout.SystemLayout)):
@@ -1070,14 +1072,14 @@ class M21Utils:
     # pylint: disable=no-member
     @staticmethod
     def get_enclosing_pedalmark(
-        po: m21.expressions.PedalObject  # type: ignore
+        pt: m21.expressions.PedalTransition  # type: ignore
     ) -> m21.expressions.PedalMark | None:  # type: ignore
         if not M21Utilities.m21PedalMarksSupported():
             return None
 
         pm: m21.expressions.PedalMark | None = None  # type: ignore
         ss: list[m21.spanner.Spanner] = (
-            po.getSpannerSites((m21.expressions.PedalMark,))  # type: ignore
+            pt.getSpannerSites((m21.expressions.PedalMark,))  # type: ignore
         )
         if ss:
             if t.TYPE_CHECKING:
@@ -1086,11 +1088,13 @@ class M21Utils:
         return pm
 
     @staticmethod
-    def is_in_pedalmark(po: m21.expressions.PedalObject) -> bool:  # type: ignore
+    def is_in_pedalmark(
+        pt: m21.expressions.PedalTransition  # type: ignore
+    ) -> bool:  # type: ignore
         if not M21Utilities.m21PedalMarksSupported():
             return False
 
-        return M21Utils.get_enclosing_pedalmark(po) is not None
+        return M21Utils.get_enclosing_pedalmark(pt) is not None
     # pylint: enable=no-member
 
     @staticmethod
@@ -1812,8 +1816,26 @@ class M21Utils:
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
         output: dict[str, str] = {}
-        output['pedalType'] = expr.pedalType  # type: ignore
-        output['pedalForm'] = expr.pedalForm  # type: ignore
+        if expr.startForm in (
+                m21.expressions.PedalForm.PedalName,  # type: ignore
+                m21.expressions.PedalForm.Ped):  # type: ignore
+            if expr.startForm == m21.expressions.PedalForm.PedalName:  # type: ignore
+                if expr.pedalType != m21.expressions.PedalType.Sustain:  # type: ignore
+                    output['start'] = expr.pedalType
+                else:
+                    output['start'] = 'Ped'
+            elif expr.startForm == m21.expressions.PedalForm.Ped:  # type: ignore
+                output['start'] = 'Ped'
+            if expr.continueLine in (
+                    m21.expressions.PedalLine.Line,   # type: ignore
+                    m21.expressions.PedalLine.Dashed):  # type: ignore
+                output['continue'] = expr.continueLine
+            output['end'] = '*'
+        elif expr.startForm == m21.expressions.PedalForm.VerticalLine:  # type: ignore
+            output['start'] = 'line'
+        else:
+            output['start'] = 'unspecified'
+
         if expr.abbreviated:  # type: ignore
             output['abbreviated'] = 'yes'
         return output
@@ -1832,11 +1854,7 @@ class M21Utils:
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
-        output: str = ''
-        pm = M21Utils.get_enclosing_pedalmark(expr)
-        if pm is not None:
-            output = pm.pedalForm  # type: ignore
-        return output
+        return ''
 
     @staticmethod
     def pedalbounce_to_infodict(
@@ -1844,7 +1862,24 @@ class M21Utils:
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
-        return {}
+        output: dict[str, str] = {}
+        pm = M21Utils.get_enclosing_pedalmark(expr)
+        if pm is not None:
+            bounceUp: m21.expressions.PedalForm = expr.overrideBounceUp  # type: ignore
+            bounceDown: m21.expressions.PedalForm = expr.overrideBounceDown  # type: ignore
+            if bounceUp in m21.expressions.PedalForm.Inherit:  # type: ignore
+                bounceUp = pm.bounceUp
+            if bounceDown == m21.expressions.PedalForm.Inherit:  # type: ignore
+                bounceDown = pm.bounceDown
+            if m21.expressions.PedalForm.SlantedLine in (bounceUp, bounceDown):  # type: ignore
+                output['bounce'] = 'caret'
+            elif bounceUp == m21.expressions.PedalForm.NoMark:  # type: ignore
+                output['bounceDown'] = 'Ped/Sost'
+            else:
+                output['bounceUp'] = 'star'
+                output['bounceDown'] = 'Ped/Sost'
+
+        return output
 
     @staticmethod
     def pedalgapstart_to_string(
@@ -1863,7 +1898,7 @@ class M21Utils:
         output: str = ''
         pm = M21Utils.get_enclosing_pedalmark(expr)
         if pm is not None:
-            output = pm.pedalForm  # type: ignore
+            output = 'PedalGapStart'
         return output
 
     @staticmethod
@@ -1891,7 +1926,7 @@ class M21Utils:
         output: str = ''
         pm = M21Utils.get_enclosing_pedalmark(expr)
         if pm is not None:
-            output = pm.pedalForm  # type: ignore
+            output = 'PedalGapEnd'
         return output
 
     @staticmethod
