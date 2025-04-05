@@ -1865,12 +1865,8 @@ class M21Utils:
         output: dict[str, str] = {}
         pm = M21Utils.get_enclosing_pedalmark(expr)
         if pm is not None:
-            bounceUp: m21.expressions.PedalForm = expr.overrideBounceUp  # type: ignore
-            bounceDown: m21.expressions.PedalForm = expr.overrideBounceDown  # type: ignore
-            if bounceUp in m21.expressions.PedalForm.Inherit:  # type: ignore
-                bounceUp = pm.bounceUp
-            if bounceDown == m21.expressions.PedalForm.Inherit:  # type: ignore
-                bounceDown = pm.bounceDown
+            bounceUp: m21.expressions.PedalForm = expr.bounceUp  # type: ignore
+            bounceDown: m21.expressions.PedalForm = expr.bounceDown  # type: ignore
             if m21.expressions.PedalForm.SlantedLine in (bounceUp, bounceDown):  # type: ignore
                 output['bounce'] = 'caret'
             elif bounceUp == m21.expressions.PedalForm.NoMark:  # type: ignore
