@@ -1820,21 +1820,21 @@ class M21Utils:
                 m21.expressions.PedalForm.PedalName,  # type: ignore
                 m21.expressions.PedalForm.Ped):  # type: ignore
             if expr.startForm == m21.expressions.PedalForm.PedalName:  # type: ignore
-                if expr.pedalType != m21.expressions.PedalType.Sustain:  # type: ignore
-                    output['start'] = expr.pedalType
+                if expr.pedalType == m21.expressions.PedalType.Sostenuto:  # type: ignore
+                    output['start'] = 'Sost.'
                 else:
-                    output['start'] = 'Ped'
+                    output['start'] = 'Ped.'
             elif expr.startForm == m21.expressions.PedalForm.Ped:  # type: ignore
-                output['start'] = 'Ped'
+                output['start'] = 'Ped.'
             if expr.continueLine in (
                     m21.expressions.PedalLine.Line,   # type: ignore
                     m21.expressions.PedalLine.Dashed):  # type: ignore
                 output['continue'] = expr.continueLine
             output['end'] = '*'
         elif expr.startForm == m21.expressions.PedalForm.VerticalLine:  # type: ignore
-            output['start'] = 'line'
+            output['start/end'] = 'line'
         else:
-            output['start'] = 'unspecified'
+            output['start/end'] = 'unspecified'
 
         if expr.abbreviated:  # type: ignore
             output['abbreviated'] = 'yes'
@@ -1870,10 +1870,18 @@ class M21Utils:
             if m21.expressions.PedalForm.SlantedLine in (bounceUp, bounceDown):  # type: ignore
                 output['bounce'] = 'caret'
             elif bounceUp == m21.expressions.PedalForm.NoMark:  # type: ignore
-                output['bounceDown'] = 'Ped/Sost'
+                if (pm.pedalType == m21.expressions.PedalType.Sostenuto  # type: ignore
+                        and pm.pedalForm == m21.expressions.PedalName):  # type: ignore
+                    output['bounceDown'] = 'Sost.'
+                else:
+                    output['bounceDown'] = 'Ped.'
             else:
-                output['bounceUp'] = 'star'
-                output['bounceDown'] = 'Ped/Sost'
+                output['bounceUp'] = '*'
+                if (pm.pedalType == m21.expressions.PedalType.Sostenuto  # type: ignore
+                        and pm.pedalForm == m21.expressions.PedalName):  # type: ignore
+                    output['bounceDown'] = 'Sost.'
+                else:
+                    output['bounceDown'] = 'Ped.'
 
         return output
 
