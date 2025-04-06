@@ -1826,15 +1826,23 @@ class M21Utils:
                     output['start'] = 'Ped.'
             elif expr.startForm == m21.expressions.PedalForm.Ped:  # type: ignore
                 output['start'] = 'Ped.'
+
             if expr.continueLine in (
                     m21.expressions.PedalLine.Line,   # type: ignore
                     m21.expressions.PedalLine.Dashed):  # type: ignore
-                output['continue'] = expr.continueLine
-            output['end'] = '*'
+                if expr.continueLine == m21.expressions.PedalLine.Dashed:
+                    output['line'] = expr.continueLine
+                output['end'] = 'line'
+            else:
+                output['end'] = '*'
         elif expr.startForm == m21.expressions.PedalForm.VerticalLine:  # type: ignore
-            output['start/end'] = 'line'
+            output['start'] = 'line'
+            output['end'] = 'line'
+            if expr.continueLine == m21.expressions.PedalLine.Dashed:
+                output['line'] = expr.continueLine
         else:
-            output['start/end'] = 'unspecified'
+            output['start'] = 'unspecified'
+            output['end'] = 'unspecified'
 
         if expr.abbreviated:  # type: ignore
             output['abbreviated'] = 'yes'
