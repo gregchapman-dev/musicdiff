@@ -1816,6 +1816,9 @@ class M21Utils:
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
         output: dict[str, str] = {}
+        if expr.pedalType != m21.expressions.PedalType.Unspecified:
+            output['pedalType'] = expr.pedalType
+
         if expr.startForm in (
                 m21.expressions.PedalForm.PedalName,  # type: ignore
                 m21.expressions.PedalForm.Ped):  # type: ignore
@@ -1830,7 +1833,7 @@ class M21Utils:
             if expr.continueLine in (
                     m21.expressions.PedalLine.Line,   # type: ignore
                     m21.expressions.PedalLine.Dashed):  # type: ignore
-                if expr.continueLine == m21.expressions.PedalLine.Dashed:
+                if expr.continueLine in m21.expressions.PedalLine.Dashed:
                     output['line'] = expr.continueLine
                 output['end'] = 'line'
             else:
@@ -1838,11 +1841,16 @@ class M21Utils:
         elif expr.startForm == m21.expressions.PedalForm.VerticalLine:  # type: ignore
             output['start'] = 'line'
             output['end'] = 'line'
-            if expr.continueLine == m21.expressions.PedalLine.Dashed:
+            if expr.continueLine in (
+                    m21.expressions.PedalLine.Dashed, m21.expressions.PedalLine.NoLine):
+                # only annotate unexpected continueLine
                 output['line'] = expr.continueLine
         else:
-            output['start'] = 'unspecified'
-            output['end'] = 'unspecified'
+            # startForm is unspecified or makes no sense, so ignored.
+            # Either way, we have nothing to annotate about visual form.
+            # output['start'] = 'unspecified'
+            # output['end'] = 'unspecified'
+            pass
 
         if expr.abbreviated:  # type: ignore
             output['abbreviated'] = 'yes'
