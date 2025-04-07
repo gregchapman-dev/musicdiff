@@ -128,11 +128,15 @@ class AnnNote:
         self.noteheadParenthesis: bool = False
         self.stemDirection: str = 'unspecified'
         if DetailLevel.includesStyle(detail) and isinstance(general_note, m21.note.NotRest):
-            if t.TYPE_CHECKING:
-                # because general_note is NotRest, parent_chord must also be (might be
-                # a chord instead of a note, but that still works)
-                assert isinstance(carrier, m21.note.NotRest)
-            self.stemDirection = carrier.stemDirection
+            # stemDirection is different.  It might be on the parent chord, or
+            # it might be on the first note of the parent chord (and applies
+            # to the whole chord, of course).
+            if parent_chord is None:
+                self.stemDirection = general_note.stemDirection
+            else:
+                self.stemDirection = parent_chord.stemDirection
+                if self.stemDirection == 'unspecified':
+                    self.stemDirection = parent_chord.notes[0].stemDirection
 
             if parent_chord is None:
                 self.noteshape = general_note.notehead
