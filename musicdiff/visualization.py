@@ -1732,6 +1732,12 @@ class Visualization:
                 (default is None)
         """
         # display the two (presumably annotated) scores
+
+        # avoid some crashes during write()/show() operations
+        from converter21 import M21Utilities
+        M21Utilities.fixupComplexHiddenRests(score1, inPlace=True)
+        M21Utilities.fixupComplexHiddenRests(score2, inPlace=True)
+
         originalComposer1: str | None = None
         originalComposer2: str | None = None
 
