@@ -129,14 +129,18 @@ class AnnNote:
         self.stemDirection: str = 'unspecified'
         if DetailLevel.includesStyle(detail) and isinstance(general_note, m21.note.NotRest):
             # stemDirection is different.  It might be on the parent chord, or
-            # it might be on the first note of the parent chord (and applies
-            # to the whole chord, of course).
+            # it might be on one of the notes in the parent chord (and applies
+            # to all the notes in the chord, of course).
             if parent_chord is None:
                 self.stemDirection = general_note.stemDirection
             else:
-                self.stemDirection = parent_chord.stemDirection
-                if self.stemDirection == 'unspecified':
-                    self.stemDirection = parent_chord.notes[0].stemDirection
+                if parent_chord.stemDirection != 'unspecified':
+                    self.stemDirection = parent_chord.stemDirection
+                else:
+                    for n in parent_chord.notes:
+                        if n.stemDirection != 'unspecified':
+                            self.stemDirection = n.stemDirection
+                            break
 
             if parent_chord is None:
                 self.noteshape = general_note.notehead
