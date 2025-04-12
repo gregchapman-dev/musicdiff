@@ -1027,8 +1027,12 @@ class M21Utils:
             return 'keysig'
         if isinstance(extra, m21.expressions.TextExpression):
             return 'direction'
-        if isinstance(extra, (m21.dynamics.Dynamic, m21.dynamics.DynamicWedge)):
+        if isinstance(extra, m21.dynamics.Dynamic):
             return 'dynamic'
+        if isinstance(extra, m21.dynamics.Crescendo):
+            return 'crescendo'
+        if isinstance(extra, m21.dynamics.Diminuendo):
+            return 'diminuendo'
         if isinstance(extra, m21.spanner.Slur):
             return 'slur'
         if isinstance(extra, (m21.expressions.ArpeggioMark, m21.expressions.ArpeggioMarkSpanner)):
@@ -1329,16 +1333,14 @@ class M21Utils:
             # derived from the objects in the measure, which are already being compared.
             pass
         elif kind in ('chordsym', 'ending', 'direction',
-                'clef', 'keysig', 'timesig', 'tempo',
+                'clef', 'keysig', 'timesig', 'tempo', 'dynamic',
                 'staffinfo', 'systembreak', 'pagebreak',
                 'rehearsalmark', 'pedalbounce',
                 'pedalgapstart', 'pedalgapend'):
             # we ignore duration for ChordSymbols, it is often 0.0 or 1.0, and meaningless.
             # we also ignore duration for endings (RepeatBrackets).  We count how many measures
-            # instead.
-            offset = extra.getOffsetInHierarchy(measure)
-        elif isinstance(extra, m21.dynamics.Dynamic):
-            # don't check kind; DynamicWedges are kind='dynamic' too, and have duration
+            # instead.  Several other things just don't have duration (timesig, dynamic, etc).
+            # Note that 'dynamic' does not include 'crescendo' and 'diminuendo', just 'fff' et al.
             offset = extra.getOffsetInHierarchy(measure)
         else:
             offset = extra.getOffsetInHierarchy(measure)
@@ -1754,8 +1756,7 @@ class M21Utils:
                 return None
             if isinstance(dynamic, m21.dynamics.Diminuendo):
                 return None
-            else:
-                return 'wedge'  # shouldn't happen
+            return 'wedge'  # shouldn't happen
         return None  # shouldn't happen
 
     @staticmethod
