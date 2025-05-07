@@ -716,7 +716,8 @@ class Comparison:
         cost = 0
         op_list = []
 
-        # add for the key
+        # add for the key (this never adds anything because we don't compare
+        # items that don't have the same key).
         if annMetadataItem1.key != annMetadataItem2.key:
             key_cost: int = (
                 Comparison._strings_levenshtein_distance(
@@ -1378,7 +1379,7 @@ class Comparison:
                 # found a perfect match
                 paired_metadata_items.append((orig_mdi, comp_mdi))
 
-                # remove comp_n from unpaired_comp_metadata_items
+                # remove comp_mdi from unpaired_comp_metadata_items
                 unpaired_comp_metadata_items.pop(i)
 
                 found_it = True
