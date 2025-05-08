@@ -1360,19 +1360,15 @@ class Comparison:
         unpaired_orig_metadata_items: list[AnnMetadataItem] = []
         unpaired_comp_metadata_items: list[AnnMetadataItem] = copy.copy(compare_to)
 
+        # first look for perfect matches
         for orig_mdi in original:
-            fallback: AnnMetadataItem | None = None
-            fallback_i: int = -1
             found_it: bool = False
             for i, comp_mdi in enumerate(unpaired_comp_metadata_items):
-                # key is required for pairing
+                # key is required for perfect match
                 if orig_mdi.key != comp_mdi.key:
                     continue
-                if fallback is None:
-                    fallback = comp_mdi
-                    fallback_i = i
 
-                # value is preferred for pairing
+                # value is required for perfect match
                 if orig_mdi.value != comp_mdi.value:
                     continue
 
@@ -1389,14 +1385,29 @@ class Comparison:
                 # on to the next original metadata_item
                 continue
 
-            # did we find a fallback (matched on key, not on value)?
-            if fallback is not None:
-                paired_metadata_items.append((orig_mdi, fallback))
-                unpaired_comp_metadata_items.pop(fallback_i)
-                continue
-
-            # we found nothing
+            # we found no perfect match
             unpaired_orig_metadata_items.append(orig_mdi)
+
+        # now look among the unpaired remainders for key match only
+        key_matched_orig_indexes: list[int] = []
+        for orig_idx, orig_mdi in enumerate(unpaired_orig_metadata_items):
+            for comp_idx, comp_mdi in enumerate(unpaired_comp_metadata_items):
+                # key is required for key-only match
+                if orig_mdi.key != comp_mdi.key:
+                    continue
+
+                # found a key-only match
+                paired_metadata_items.append((orig_mdi, comp_mdi))
+
+                # remove comp_mdi from unpaired_comp_metadata_items
+                unpaired_comp_metadata_items.pop(comp_idx)
+
+                # make a note of unpaired_orig_metadata_item to remove later
+                key_matched_orig_indexes.append(orig_idx)
+                break
+
+        for orig_idx in key_matched_orig_indexes:
+            unpaired_orig_metadata_items.pop(orig_idx)
 
         # compute the cost and the op_list
         cost: int = 0
