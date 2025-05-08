@@ -1389,8 +1389,8 @@ class Comparison:
             unpaired_orig_metadata_items.append(orig_mdi)
 
         # now look among the unpaired remainders for key match only
-        key_matched_orig_indexes: list[int] = []
-        for orig_idx, orig_mdi in enumerate(unpaired_orig_metadata_items):
+        remove_unpaired_orig_items: list[AnnMetadataItem] = []
+        for orig_mdi in unpaired_orig_metadata_items:
             for comp_idx, comp_mdi in enumerate(unpaired_comp_metadata_items):
                 # key is required for key-only match
                 if orig_mdi.key != comp_mdi.key:
@@ -1403,11 +1403,11 @@ class Comparison:
                 unpaired_comp_metadata_items.pop(comp_idx)
 
                 # make a note of unpaired_orig_metadata_item to remove later
-                key_matched_orig_indexes.append(orig_idx)
+                remove_unpaired_orig_items.append(orig_mdi)
                 break
 
-        for orig_idx in key_matched_orig_indexes:
-            unpaired_orig_metadata_items.pop(orig_idx)
+        for remove_mdi in remove_unpaired_orig_items:
+            unpaired_orig_metadata_items.remove(remove_mdi)
 
         # compute the cost and the op_list
         cost: int = 0
