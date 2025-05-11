@@ -1076,8 +1076,9 @@ class M21Utils:
     # pylint: disable=no-member
     @staticmethod
     def get_enclosing_pedalmark(
-        pt: m21.expressions.PedalTransition  # type: ignore
-    ) -> m21.expressions.PedalMark | None:  # type: ignore
+        # pt: m21.expressions.PedalTransition
+        pt: m21.base.Music21Object
+    ) -> m21.spanner.Spanner | None:  # m21.expressions.PedalMark | None:
         if not M21Utilities.m21PedalMarksSupported():
             return None
 
@@ -1093,7 +1094,8 @@ class M21Utils:
 
     @staticmethod
     def is_in_pedalmark(
-        pt: m21.expressions.PedalTransition  # type: ignore
+        # pt: m21.expressions.PedalTransition
+        pt: m21.base.Music21Object
     ) -> bool:  # type: ignore
         if not M21Utilities.m21PedalMarksSupported():
             return False
@@ -1796,7 +1798,8 @@ class M21Utils:
     # pylint: disable=no-member
     @staticmethod
     def pedalmark_to_string(
-        expr: m21.expressions.PedalMark,  # type: ignore
+        # expr: m21.expressions.PedalMark,
+        expr: m21.spanner.Spanner,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
@@ -1804,7 +1807,8 @@ class M21Utils:
 
     @staticmethod
     def pedalmark_to_symbolic(
-        expr: m21.expressions.PedalMark,  # type: ignore
+        # expr: m21.expressions.PedalMark,
+        expr: m21.spanner.Spanner,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
@@ -1812,7 +1816,8 @@ class M21Utils:
 
     @staticmethod
     def pedalmark_to_infodict(
-        expr: m21.expressions.PedalMark,  # type: ignore
+        # expr: m21.expressions.PedalMark,
+        expr: m21.spanner.Spanner,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
@@ -1859,7 +1864,8 @@ class M21Utils:
 
     @staticmethod
     def pedalbounce_to_string(
-        expr: m21.expressions.PedalBounce,  # type: ignore
+        # expr: m21.expressions.PedalBounce,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
@@ -1867,7 +1873,8 @@ class M21Utils:
 
     @staticmethod
     def pedalbounce_to_symbolic(
-        expr: m21.expressions.PedalBounce,  # type: ignore
+        # expr: m21.expressions.PedalBounce,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
@@ -1875,7 +1882,8 @@ class M21Utils:
 
     @staticmethod
     def pedalbounce_to_infodict(
-        expr: m21.expressions.PedalBounce,  # type: ignore
+        # expr: m21.expressions.PedalBounce,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
@@ -1904,7 +1912,8 @@ class M21Utils:
 
     @staticmethod
     def pedalgapstart_to_string(
-        expr: m21.expressions.PedalGapStart,  # type: ignore
+        # expr: m21.expressions.PedalGapStart,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
@@ -1912,7 +1921,8 @@ class M21Utils:
 
     @staticmethod
     def pedalgapstart_to_symbolic(
-        expr: m21.expressions.PedalGapStart,  # type: ignore
+        # expr: m21.expressions.PedalGapStart,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
@@ -1924,7 +1934,8 @@ class M21Utils:
 
     @staticmethod
     def pedalgapstart_to_infodict(
-        expr: m21.expressions.PedalGapStart,  # type: ignore
+        # expr: m21.expressions.PedalGapStart,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
@@ -1932,7 +1943,8 @@ class M21Utils:
 
     @staticmethod
     def pedalgapend_to_string(
-        expr: m21.expressions.PedalGapEnd,  # type: ignore
+        # expr: m21.expressions.PedalGapEnd,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str | None:
@@ -1940,7 +1952,8 @@ class M21Utils:
 
     @staticmethod
     def pedalgapend_to_symbolic(
-        expr: m21.expressions.PedalGapEnd,  # type: ignore
+        # expr: m21.expressions.PedalGapEnd,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> str:
@@ -1952,7 +1965,8 @@ class M21Utils:
 
     @staticmethod
     def pedalgapend_to_infodict(
-        expr: m21.expressions.PedalGapEnd,  # type: ignore
+        # expr: m21.expressions.PedalGapEnd,
+        expr: m21.base.Music21Object,
         kind: str,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
