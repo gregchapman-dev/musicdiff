@@ -1822,10 +1822,10 @@ class M21Utils:
         detail: DetailLevel | int = DetailLevel.Default
     ) -> dict[str, str]:
         output: dict[str, str] = {}
-        if expr.pedalType != m21.expressions.PedalType.Unspecified:
-            output['pedalType'] = expr.pedalType
+        if expr.pedalType != m21.expressions.PedalType.Unspecified:  # type: ignore
+            output['pedalType'] = expr.pedalType  # type: ignore
 
-        if expr.startForm in (
+        if expr.startForm in (  # type: ignore
                 m21.expressions.PedalForm.PedalName,  # type: ignore
                 m21.expressions.PedalForm.Ped):  # type: ignore
             if expr.startForm == m21.expressions.PedalForm.PedalName:  # type: ignore
@@ -1836,21 +1836,22 @@ class M21Utils:
             elif expr.startForm == m21.expressions.PedalForm.Ped:  # type: ignore
                 output['start'] = 'Ped.'
 
-            if expr.continueLine in (
+            if expr.continueLine in (  # type: ignore
                     m21.expressions.PedalLine.Line,   # type: ignore
                     m21.expressions.PedalLine.Dashed):  # type: ignore
-                if expr.continueLine in m21.expressions.PedalLine.Dashed:
-                    output['line'] = expr.continueLine
+                if expr.continueLine in m21.expressions.PedalLine.Dashed:  # type: ignore
+                    output['line'] = expr.continueLine  # type: ignore
                 output['end'] = 'line'
             else:
                 output['end'] = '*'
         elif expr.startForm == m21.expressions.PedalForm.VerticalLine:  # type: ignore
             output['start'] = 'line'
             output['end'] = 'line'
-            if expr.continueLine in (
-                    m21.expressions.PedalLine.Dashed, m21.expressions.PedalLine.NoLine):
+            if expr.continueLine in (  # type: ignore
+                    m21.expressions.PedalLine.Dashed,   # type: ignore
+                    m21.expressions.PedalLine.NoLine):  # type: ignore
                 # only annotate unexpected continueLine
-                output['line'] = expr.continueLine
+                output['line'] = expr.continueLine  # type: ignore
         else:
             # startForm is unspecified or makes no sense, so ignored.
             # Either way, we have nothing to annotate about visual form.
@@ -2524,12 +2525,3 @@ class M21Utils:
             num -= abs(wholeNum) * den
             return f"{wholeNum} {num}/{den}"
         return f"{num}/{den}"
-
-    _m21PedalMarksSupportedCached: bool | None = None
-    @staticmethod
-    def m21PedalMarksSupported() -> bool:
-        if M21Utils._m21PedalMarksSupportedCached is None:
-            M21Utils._m21PedalMarksSupportedCached = (
-                hasattr(m21.expressions, 'PedalMark')
-            )
-        return M21Utils._m21PedalMarksSupportedCached
