@@ -62,7 +62,7 @@ if __name__ == '__main__':
         install_requires=[
             'music21>=9.7',
             'numpy',
-            'converter21>=4.0'
+            'converter21>=3.5'
         ],
 
         project_urls={
