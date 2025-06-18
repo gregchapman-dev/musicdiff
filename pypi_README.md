@@ -1,5 +1,5 @@
 # musicdiff
-A Python3 package (and command-line tool) for computing and visualizing (or describing) the notation differences between two music scores.
+A Python3 package (and command-line tool) for computing and visualizing (or describing) the notation differences between two music scores, or between two folders of music scores (for ML training runs).
 
 musicdiff is focused on visible notation differences, not only on audible musical differences.  For example, two tied eighth notes are considered different from a single quarter note.  And two beamed 16th notes are considered different from two unbeamed 16th notes. This makes musicdiff particularly useful for assessing the results of Optical Music Recognition software.
 
@@ -26,15 +26,36 @@ On the command line:
                     default this is ignored).
       -x/--exclude  one or more named details to exclude from comparison.  Can be any of the
                     named details accepted by -i/--include.
-      -o/--output   one or more of three output formats: text (or t) or visual (or v) or ser (or s);
-                    the default is visual). visual (or v) requests production of marked-up score
-                    PDFs; text (or t) requests production of diff-like text output; ser (or s)
-                    requests a JSON text output containing Symbolic Error Ratio information.
+      -o/--output   one or more of three output formats: text (or t) or visual (or v) or omrned
+                    (or o); the default is visual). visual (or v) requests production of marked-up
+                    score PDFs; text (or t) requests production of diff-like text output; omrned
+                    (or o) requests a JSON text output containing OMR-NED (Optical Music
+                    Recognition - Normalized Edit Distance) information.
 
       file1         first music score file to compare (any format music21 or converter21 can parse)
       file2         second music score file to compare (any format music21 or converter21 can parse)
 
-musicdiff is also a package, with APIs you can call in your own code. There is a high-level diff() API that the command-line tool uses (that you can tweak the behavior of), and there are also lower level APIs that you can use in projects that perhaps want to do something more complicated than just visualization in PDFs or diff-like text output.
+Alternate usage (for ML training runs):
+
+    python3 -m musicdiff [-h]
+                            --ml_training_evaluation
+                            --ground_truth_folder gtfolderpath
+                            --predicted_folder predfolderpath
+                            --output_folder outputfolderpath
+    other arguments:
+      -i/--include  one or more named details to include in comparison (the default is allobjects,
+                    a.k.a. decoratednotesandrests and otherobjects). Can be decoratednotesandrests,
+                    otherobjects, allobjects, or any combination of those and/or the following:
+                    notesandrests; the aforementioned note decorations: beams, tremolos, ornaments,
+                    articulations, ties, slurs; the other objects: signatures, directions,
+                    barlines, staffdetails, chordsymbols, ottavas, arpeggios, and lyrics; and
+                    a final few details that are not found in allobjects: style, metadata, and
+                    voicing.  voicing compares how notes are included in voices and chords (by
+                    default this is ignored).
+      -x/--exclude  one or more named details to exclude from comparison.  Can be any of the
+                    named details accepted by -i/--include.
+
+musicdiff is also a package, with APIs you can call in your own code. There is a high-level diff() and diff_ml_training() API that the command-line tool uses (that you can tweak the behavior of), and there are also lower level APIs that you can use in projects that perhaps want to do something more complicated than just visualization in PDFs or diff-like text output.
 
 ## Documentation
 You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).
@@ -55,7 +76,7 @@ If you use this work in any research, please cite the relevant paper:
 The paper is freely available [here](https://hal.inria.fr/hal-02267454v2/document).
 
 ## Acknowledgment
-Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowing me to use his [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git) code, and for continuing to work with and advise me on this project.
+Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowing me to use his [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git) code, and for continuing to advise me on this project.
 
 ## License
 The MIT License (MIT)
