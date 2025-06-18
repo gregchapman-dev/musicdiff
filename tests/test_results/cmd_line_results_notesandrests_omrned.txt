@@ -1,7 +1,7 @@
 {
-    "symbolEditCost": "0",
+    "OMR-ED": "0",
     "numSymbolsInPredicted": "47",
     "numSymbolsInGroundTruth": "47",
     "numSymbolsInBoth": "94",
-    "SECR": "0.0"
+    "OMR-NED": "0.0"
 }

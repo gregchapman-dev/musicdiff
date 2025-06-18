@@ -1,9 +1,9 @@
 {
-    "symbolEditCost": "39",
+    "OMR-ED": "39",
     "numSymbolsInPredicted": "143",
     "numSymbolsInGroundTruth": "126",
     "numSymbolsInBoth": "269",
-    "SECR": "0.1449814126394052"
+    "OMR-NED": "0.1449814126394052"
 }
 
 --- tests/test_scores/test_all_details_1a.mei
