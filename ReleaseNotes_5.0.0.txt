@@ -1,11 +1,10 @@
 Changes since 4.2.0:
+    Introduce new ML batch evaluation command line option: --ml_training_evaluation
     Introduce new ML batch evaluation API: diff_ml_training()
-    Introduce new OMR-NED (Optical Music Recognition Normalized Edit
+    Introduce new OMR-NED (Optical Music Recognition - Normalized Edit
         Distance) metric.
     Add comparison of RehearsalMarks.
     Improve StaffGroup comparison.
     Improve Metadata comparison.
     Improve stem direction comparison.
     Fix crashes during visualization caused by complex-duration hidden rests.
-
-
