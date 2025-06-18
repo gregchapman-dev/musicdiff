@@ -232,7 +232,7 @@ def diff(
     return cost
 
 
-def diff_omr_ned_metrics(
+def _diff_omr_ned_metrics(
     predpath: str | Path,
     gtpath: str | Path,
     detail: DetailLevel | int = DetailLevel.Default
@@ -318,6 +318,30 @@ def diff_ml_training(
     output_folder: str,
     detail: DetailLevel | int = DetailLevel.Default,
 ) -> tuple[float, str]:
+    '''
+    Compare two folders of musical scores, and produce a CSV spreadsheet of results, including
+    the overall OMR-NED score for the batch.
+
+    Args:
+        predicted_folder (str): The folder full of predicted scores. The scores
+            can be of any format readable by music21 (e.g. MusicXML, MEI, Humdrum, etc).
+            Each score must have the exact same filename as the corresponding ground
+            truth score.
+        ground_truth_folder (str): The folder full of ground truth scores. Each score must
+            have the exact same filename as the corresponding predicted score.
+        output_folder (str): The folder in which to save the output spreadsheet (output.csv).
+        detail (DetailLevel | int): What level of detail to use during the comparisons.
+            Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
+            AllObjects), or any combination (with | or &~) of those or NotesAndRests,
+            Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
+            Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
+            Style, Metadata, or Voicing.
+
+    Returns:
+        tuple[float, str]: Overall OMR-NED score for the batch, and the full path to the
+            output spreadsheet (output.csv).
+    '''
+
     converter21.register()
 
     output_file_path: str = output_folder + '/output.csv'
@@ -340,7 +364,7 @@ def diff_ml_training(
         if not os.path.isfile(gtpath):
             continue
 
-        metrics: EvaluationMetrics | None = diff_omr_ned_metrics(
+        metrics: EvaluationMetrics | None = _diff_omr_ned_metrics(
             predpath=predpath, gtpath=gtpath, detail=detail
         )
         if metrics is None:
