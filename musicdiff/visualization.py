@@ -3172,8 +3172,9 @@ class Visualization:
             if op[0].startswith('extra'):
                 extra: AnnExtra | None = op[1] or op[2]
                 if extra is not None and extra.kind:
-                    name = re.sub('extra', extra.kind, op[0])
-                    name = Visualization._HEADER_NAME_OF_EDIT_NAME[name]
+                    _name = re.sub('extra', extra.kind, op[0])
+                    if _name in Visualization._HEADER_NAME_OF_EDIT_NAME:
+                        name = Visualization._HEADER_NAME_OF_EDIT_NAME[_name]
             omr_ed: int = op[3]
             if name not in edit_distances_dict:
                 edit_distances_dict[name] = omr_ed
