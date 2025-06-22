@@ -28,6 +28,10 @@ from musicdiff import M21Utils
 from musicdiff import DetailLevel
 from musicdiff import EvaluationMetrics
 
+class MUSICDIFF_MISSING_HEADER_NAME_ERROR(Exception):
+    # raised if an edit name has no header name (for ML training output.csv)
+    pass
+
 class Visualization:
     # These can be set by the client to different colors
     INSERTED_COLOR = "red"
@@ -3168,11 +3172,15 @@ class Visualization:
 
         edit_distances_dict: dict[str, int] = {}
         for op in op_list:
+            if op[0] not in Visualization._HEADER_NAME_OF_EDIT_NAME:
+                raise MUSICDIFF_MISSING_HEADER_NAME_ERROR(f'"{op[0]}" has no HEADER_NAME')
             name: str = Visualization._HEADER_NAME_OF_EDIT_NAME[op[0]]
             if op[0].startswith('extra'):
                 extra: AnnExtra | None = op[1] or op[2]
                 if extra is not None and extra.kind:
                     name = re.sub('extra', extra.kind, op[0])
+                    if name not in Visualization._HEADER_NAME_OF_EDIT_NAME:
+                        raise MUSICDIFF_MISSING_HEADER_NAME_ERROR(f'"{name}" has no HEADER_NAME')
                     name = Visualization._HEADER_NAME_OF_EDIT_NAME[name]
             omr_ed: int = op[3]
             if name not in edit_distances_dict:
@@ -3318,12 +3326,30 @@ class Visualization:
 
         'dynamicins': 'wrong dynamic OMR-ED',
         'dynamicdel': 'wrong dynamic OMR-ED',
-        'dynamiccontentedit': 'wrong dynamic OMR-ED',  # shouldn't happen; directions are symbolic
+        'dynamiccontentedit': 'wrong dynamic OMR-ED',  # shouldn't happen; dynamics are symbolic
         'dynamicsymboledit': 'wrong dynamic OMR-ED',
-        'dynamicinfoedit': 'wrong dynamic OMR-ED',  # shouldn't happen; directions are symbolic
+        'dynamicinfoedit': 'wrong dynamic OMR-ED',  # shouldn't happen; dynamics are symbolic
         'dynamicoffsetedit': 'wrong dynamic OMR-ED',  # shouldn't happen; we pair by offset
         'dynamicdurationedit': 'wrong dynamic OMR-ED',
         'dynamicstyleedit': 'wrong dynamic OMR-ED',
+
+        'crescendoins': 'wrong crescendo OMR-ED',
+        'crescendodel': 'wrong crescendo OMR-ED',
+        'crescendocontentedit': 'wrong crescendo OMR-ED',  # shouldn't happen; crescs are symbolic
+        'crescendosymboledit': 'wrong crescendo OMR-ED',
+        'crescendoinfoedit': 'wrong crescendo OMR-ED',  # shouldn't happen; crescs are symbolic
+        'crescendooffsetedit': 'wrong crescendo OMR-ED',  # shouldn't happen; we pair by offset
+        'crescendodurationedit': 'wrong crescendo OMR-ED',
+        'crescendostyleedit': 'wrong crescendo OMR-ED',
+
+        'diminuendoins': 'wrong diminuendo OMR-ED',
+        'diminuendodel': 'wrong diminuendo OMR-ED',
+        'diminuendocontentedit': 'wrong diminuendo OMR-ED',  # shouldn't happen; dims are symbolic
+        'diminuendosymboledit': 'wrong diminuendo OMR-ED',
+        'diminuendoinfoedit': 'wrong diminuendo OMR-ED',  # shouldn't happen; dims are symbolic
+        'diminuendooffsetedit': 'wrong diminuendo OMR-ED',  # shouldn't happen; we pair by offset
+        'diminuendodurationedit': 'wrong diminuendo OMR-ED',
+        'diminuendostyleedit': 'wrong diminuendo OMR-ED',
 
         'slurins': 'wrong slur OMR-ED',
         'slurdel': 'wrong slur OMR-ED',
