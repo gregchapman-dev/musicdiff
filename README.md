@@ -1,7 +1,7 @@
 # musicdiff
 A Python3 package (and command-line tool) for computing and visualizing (or describing) the notation differences between two music scores, or between two folders of music scores (for ML training runs).
 
-musicdiff is focused on visible notation differences, not only on audible musical differences.  For example, two tied eighth notes are considered different from a single quarter note.  And two beamed 16th notes are considered different from two unbeamed 16th notes. This makes musicdiff particularly useful for assessing the results of Optical Music Recognition software.
+musicdiff is focused on visible notation differences, not only on audible musical differences.  For example, two tied eighth notes are considered different from a single quarter note.  And two beamed 16th notes are considered different from two unbeamed 16th notes. This makes musicdiff particularly useful for evaluating the results of Optical Music Recognition software.
 
 musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git)
     by [Francesco Foscarin](https://github.com/fosfrancesco).
@@ -56,8 +56,6 @@ Alternate usage (for ML training runs):
                     named details accepted by -i/--include.
 
 The source for that command-line tool, which calls musicdiff's high-level diff() and diff_ml_training() API, can be seen [here](musicdiff/__main__.py).  You can use it as example code for adding musicdiff capabilities to your own code.  See the documentation [here](https://gregchapman-dev.github.io/musicdiff) to find out how to customize diff()'s behavior beyond what the command line tool does.
-
-A google colab notebook is available [here](examples/musicdiff_demo.ipynb).
 
 If you are interested in calling lower-level musicdiff APIs to do more complicated things than just visualization in PDFs or diff-like text output, the source for musicdiff's high-level APIs (found [here](musicdiff/__init__.py)) is good example code to read.  Note particularly how diff() calls converter21.register() to register converter21's Humdrum and MEI parsers for use by music21.  If you call lower-level APIs than diff(), you will need to do this yourself.
 

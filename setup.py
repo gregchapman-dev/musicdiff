@@ -13,7 +13,7 @@
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '5.0.0'
+musicdiffversion = '5.0.1'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -51,8 +51,10 @@ if __name__ == '__main__':
             'Optical Music Recognition',
             'assess',
             'assessment',
+            'evaluation',
             'comparison',
             'music21',
+            'OMR-NED'
         ],
 
         packages=find_packages(),
