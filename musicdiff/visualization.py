@@ -28,10 +28,6 @@ from musicdiff import M21Utils
 from musicdiff import DetailLevel
 from musicdiff import EvaluationMetrics
 
-class MUSICDIFF_MISSING_HEADER_NAME_ERROR(Exception):
-    # raised if an edit name has no header name (for ML training output.csv)
-    pass
-
 class Visualization:
     # These can be set by the client to different colors
     INSERTED_COLOR = "red"
