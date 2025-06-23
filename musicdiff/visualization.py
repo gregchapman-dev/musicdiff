@@ -3172,16 +3172,16 @@ class Visualization:
 
         edit_distances_dict: dict[str, int] = {}
         for op in op_list:
-            if op[0] not in Visualization._HEADER_NAME_OF_EDIT_NAME:
-                raise MUSICDIFF_MISSING_HEADER_NAME_ERROR(f'"{op[0]}" has no HEADER_NAME')
-            name: str = Visualization._HEADER_NAME_OF_EDIT_NAME[op[0]]
-            if op[0].startswith('extra'):
+            edit_name: str = op[0]
+            if edit_name.startswith('extra'):
                 extra: AnnExtra | None = op[1] or op[2]
                 if extra is not None and extra.kind:
-                    name = re.sub('extra', extra.kind, op[0])
-                    if name not in Visualization._HEADER_NAME_OF_EDIT_NAME:
-                        raise MUSICDIFF_MISSING_HEADER_NAME_ERROR(f'"{name}" has no HEADER_NAME')
-                    name = Visualization._HEADER_NAME_OF_EDIT_NAME[name]
+                    edit_name = re.sub('extra', extra.kind, edit_name)
+
+            if edit_name not in Visualization._HEADER_NAME_OF_EDIT_NAME:
+                edit_name = 'directionins'  # default to direction
+            name: str = Visualization._HEADER_NAME_OF_EDIT_NAME[edit_name]
+
             omr_ed: int = op[3]
             if name not in edit_distances_dict:
                 edit_distances_dict[name] = omr_ed
