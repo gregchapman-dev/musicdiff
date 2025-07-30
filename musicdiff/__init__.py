@@ -190,6 +190,8 @@ def diff(
         assert isinstance(score1, (m21.stream.Score, m21.stream.Opus))
         assert isinstance(score2, (m21.stream.Score, m21.stream.Opus))
 
+    total_cost: int = 0
+
     # if both "scores" are actually Scores, the lists will be of length 1.
     # If one or both are Opuses, the lists will be sized to fit the larger
     # of the two, with the list for the shorter Opus (or maybe just a Score)
@@ -206,6 +208,8 @@ def diff(
         diff_list: list
         cost: int
         diff_list, cost = Comparison.annotated_scores_diff(annotated_score1, annotated_score2)
+
+        total_cost += cost
 
         if cost != 0:
             if visualize_diffs:
@@ -238,7 +242,7 @@ def diff(
                     print('')
                 print(text_output)
 
-    return cost
+    return total_cost
 
 
 def _diff_omr_ned_metrics(
@@ -270,6 +274,9 @@ def _diff_omr_ned_metrics(
             forceSource=True,
             acceptSyntaxErrors=True
         )
+        if isinstance(predscore, m21.stream.Opus):
+            # for ML training we only compare the first score found in the file
+            predscore = predscore.scores[0]
     except Exception:
         predscore = m21.stream.Score()
 
@@ -286,6 +293,9 @@ def _diff_omr_ned_metrics(
             forceSource=True,
             acceptSyntaxErrors=False
         )
+        if isinstance(gtscore, m21.stream.Opus):
+            # for ML training we only compare the first score found in the file
+            gtscore = gtscore.scores[0]
     except Exception:
         gtscore = m21.stream.Score()
 
