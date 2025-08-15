@@ -597,8 +597,8 @@ class M21Utils:
                         if tup.placement is not None:
                             new_info = new_info + tup.placement
                     else:
-                        # no annotated style? just a number and a bracket.
-                        new_info = str(tup.numberNotesActual) + "B"
+                        # no annotated style? just a number
+                        new_info = str(tup.numberNotesActual)
 
                 tuplet_info_list_for_note.append(new_info)
             str_list.append(tuplet_info_list_for_note)
