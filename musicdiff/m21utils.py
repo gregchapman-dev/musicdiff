@@ -567,31 +567,40 @@ class M21Utils:
         for n in note_list:
             tuplet_info_list_for_note: list[str] = []
             for tup in n.duration.tuplets:
+                # notes that don't start a tuplet have no info that anyone looks at
+                new_info: str = ""
                 if tup.type == "start":
                     # music21 only pays attention to number and bracket visibility/placement
                     # on the start note of a tuplet.  TODO: Should I pass in/use result of
                     # get_tuplets_type?  It has more (implied) starts than the actual tuplets do.
-                    if tup.tupletActualShow in ("number", "both"):
-                        if tup.tupletNormalShow in ("number", "both"):
-                            new_info = str(tup.numberNotesActual) + ":" + str(tup.numberNotesNormal)
-                        else:  # just a number for the tuplets
-                            new_info = str(tup.numberNotesActual)
-                    else:
-                        if tup.tupletNormalShow in ("number", "both"):
-                            new_info = ":" + str(tup.numberNotesNormal)
-                        else:  # no number shown
-                            new_info = ""
-                    # if the brackets are drawn explicitly, add B
-                    if tup.bracket:
-                        new_info = new_info + "B"
-                    # if diffing style, include placement (None, "above", "below")
                     if DetailLevel.includesStyle(detail):
+                        # what number(s) are shown?
+                        if tup.tupletActualShow in ("number", "both"):
+                            if tup.tupletNormalShow in ("number", "both"):
+                                new_info = (str(tup.numberNotesActual)
+                                    + ":" + str(tup.numberNotesNormal))
+                            else:  # just a number for the tuplets
+                                new_info = str(tup.numberNotesActual)
+                        else:
+                            if tup.tupletNormalShow in ("number", "both"):
+                                new_info = ":" + str(tup.numberNotesNormal)
+                            else:  # no number shown
+                                new_info = ""
+
+                        # append bracketing and placement to the number(s)
+
+                        # if the brackets are drawn explicitly, add B
+                        if tup.bracket:
+                            new_info = new_info + "B"
+
+                        # placement (None, "above", "below")
                         if tup.placement is not None:
                             new_info = new_info + tup.placement
-                    tuplet_info_list_for_note.append(new_info)
-                else:
-                    # notes that don't start a tuplet have no info that anyone looks at
-                    tuplet_info_list_for_note.append("")
+                    else:
+                        # no annotated style? just a number and a bracket.
+                        new_info = str(tup.numberNotesActual) + "B"
+
+                tuplet_info_list_for_note.append(new_info)
             str_list.append(tuplet_info_list_for_note)
         return str_list
 
