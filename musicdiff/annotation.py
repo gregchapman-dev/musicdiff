@@ -1029,7 +1029,7 @@ class AnnVoice:
             self.tuplet_list = M21Utils.get_tuplets_type(
                 note_list
             )  # corrected tuplets (with "start" and "continue")
-            self.tuplet_info = M21Utils.get_tuplets_info(note_list)
+            self.tuplet_info = M21Utils.get_tuplets_info(note_list, detail)
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
             for i, n in enumerate(note_list):
@@ -1199,7 +1199,7 @@ class AnnMeasure:
                 tuplet_list = M21Utils.get_tuplets_type(
                     note_list
                 )  # corrected tuplets (with "start" and "continue")
-                tuplet_info = M21Utils.get_tuplets_info(note_list)
+                tuplet_info = M21Utils.get_tuplets_info(note_list, detail)
 
                 # create a list of notes with beaming and tuplets information attached
                 self.annot_notes = []

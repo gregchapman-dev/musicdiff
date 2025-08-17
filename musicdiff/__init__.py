@@ -248,7 +248,7 @@ def diff(
 def _diff_omr_ned_metrics(
     predpath: str | Path,
     gtpath: str | Path,
-    detail: DetailLevel | int = DetailLevel.Default
+    detail: DetailLevel | int
 ) -> EvaluationMetrics | None:
     # Returns (numsyms_gt, numsyms_pred, omr_edit_distance, edit_distances_dict, omr_ned).
     # Returns None if pred or gt is not a music21-importable format.
