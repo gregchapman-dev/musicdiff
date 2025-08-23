@@ -1772,6 +1772,13 @@ class AnnScore:
                     # extended ASCII encoding of the Humdrum file, 'humdrum:PUB'
                     # is the publication status of the file (published or not?).
                     continue
+                if key == 'composer' and str(value) == 'Music21':
+                    # ignore music21's MusicXML reader's fill-in composer name.
+                    continue
+                if key in ('title', 'movementName') and str(value) == 'Music21 Fragment':
+                    # ignore music21's MusicXML reader's fill-in title/movementName.
+                    continue
+
                 ami: AnnMetadataItem = AnnMetadataItem(key, value)
                 if ami.key and ami.value:
                     self.metadata_items_list.append(ami)
