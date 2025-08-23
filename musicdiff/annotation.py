@@ -1758,7 +1758,6 @@ class AnnScore:
                 md['title'] = copy.deepcopy(md['movementName'])
                 md['movementName'] = None
 
-
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
             # Note: we sort metadata_items_list after the fact, because sometimes
             # (e.g. otherContributor:poet) we substitute names (e.g. lyricist:)
