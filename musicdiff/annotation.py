@@ -17,6 +17,7 @@ __docformat__ = "google"
 import html
 from fractions import Fraction
 import typing as t
+import copy
 
 import music21 as m21
 from music21.common import OffsetQL, opFrac
@@ -1745,11 +1746,24 @@ class AnnScore:
             )
 
         if DetailLevel.includesMetadata(detail) and score.metadata:
+            # Before getting everything, undo the weird thing that m21's MusicXML
+            # reader does: if title and movementName are identical, it deletes title.
+            # This is to undo a thing that music21's MusicXML writer does, which is:
+            # if there is no movementName, duplicate title into movementName.  So,
+            # to properly undo this here, we need to do: if no title, copy movementName
+            # to title, and remove movementName.  But I don't want to modify the actual
+            # metadata, so I will make a copy first.
+            md: m21.metadata.Metadata = copy.deepcopy(score.metadata)
+            if not md['title'] and md['movementName']:
+                md['title'] = copy.deepcopy(md['movementName'])
+                md['movementName'] = None
+
+
             # m21 metadata.all() can't sort primitives, so we'll have to sort by hand.
             # Note: we sort metadata_items_list after the fact, because sometimes
             # (e.g. otherContributor:poet) we substitute names (e.g. lyricist:)
             allItems: list[tuple[str, t.Any]] = list(
-                score.metadata.all(returnPrimitives=True, returnSorted=False)
+                md.all(returnPrimitives=True, returnSorted=False)
             )
             for key, value in allItems:
                 if key in ('fileFormat', 'filePath', 'software'):
