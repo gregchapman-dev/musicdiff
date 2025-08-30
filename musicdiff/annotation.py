@@ -1593,16 +1593,13 @@ class AnnMetadataItem:
         self.metadata_item = id(self)
         self.key = key
         if isinstance(value, m21.metadata.Text):
-            # Create a string representing both the text and the language, but not isTranslated,
-            # since isTranslated cannot be represented in many file formats.
-            self.value = (
-                self.make_value_string(value)
-                + f'(language={value.language})'
-            )
+            # Create a string representing the text, but not the language or isTranslated,
+            # since language/isTranslated cannot be represented in many file formats.
+            self.value = self.make_value_string(value)
             if isinstance(value, m21.metadata.Copyright):
                 self.value += f' role={value.role}'
         elif isinstance(value, m21.metadata.Contributor):
-            # Create a string (same thing: value.name.isTranslated will differ randomly)
+            # Create a string (same thing: language and isTranslated will differ randomly)
             # Currently I am also ignoring more than one name, and birth/death.
             if not value._names:
                 # ignore this metadata item
@@ -1622,10 +1619,6 @@ class AnnMetadataItem:
                 else:
                     self.value += f'(role={value.role}'
                 roleEmitted = True
-            if value._names:
-                if roleEmitted:
-                    self.value += ', '
-                self.value += f'language={value._names[0].language}'
             if roleEmitted:
                 self.value += ')'
         else:
@@ -1754,7 +1747,7 @@ class AnnScore:
             # to title, and remove movementName.  But I don't want to modify the actual
             # metadata, so I will make a copy first.
             md: m21.metadata.Metadata = copy.deepcopy(score.metadata)
-            if not md['title'] and md['movementName']:
+            if not md['title'] and len(md['movementName']) == 1:
                 md['title'] = copy.deepcopy(md['movementName'])
                 md['movementName'] = None
 
