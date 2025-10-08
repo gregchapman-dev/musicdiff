@@ -1661,8 +1661,7 @@ class AnnMetadataItem:
             int: The notation size of the annotated metadata item
         """
         if self._cached_notation_size is None:
-            size: int = len(self.key)
-            size += len(self.value)
+            size: int = len(self.value)
             self._cached_notation_size = size
         return self._cached_notation_size
 

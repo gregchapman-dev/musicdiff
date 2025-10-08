@@ -716,17 +716,9 @@ class Comparison:
         cost = 0
         op_list = []
 
-        # add for the key (this never adds anything because we don't compare
-        # items that don't have the same key).
+        # we don't compare items that don't have the same key.
         if annMetadataItem1.key != annMetadataItem2.key:
-            key_cost: int = (
-                Comparison._strings_levenshtein_distance(
-                    annMetadataItem1.key,
-                    annMetadataItem2.key
-                )
-            )
-            cost += key_cost
-            op_list.append(("mditemkeyedit", annMetadataItem1, annMetadataItem2, key_cost))
+            raise ValueError('unexpected comparison of metadata items with different keys')
 
         # add for the value
         if annMetadataItem1.value != annMetadataItem2.value:
