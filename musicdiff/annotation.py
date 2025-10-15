@@ -1462,11 +1462,13 @@ class AnnStaffGroup:
         self.name: str = staff_group.name or ''
         self.abbreviation: str = staff_group.abbreviation or ''
         self.symbol: str | None = None
-        self.barTogether: bool | str | None = staff_group.barTogether
+        self.barTogether: bool | str | None = None
 
         if DetailLevel.includesStyle(detail):
             # symbol (brace, bracket, line, etc) is considered to be style
             self.symbol = staff_group.symbol
+            # so is the style of barline
+            self.barTogether = staff_group.barTogether
 
         self.part_indices: list[int] = []
         for part in staff_group:
