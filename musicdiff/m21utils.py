@@ -19,6 +19,7 @@ import re
 import typing as t
 
 # import sys
+import webcolors  # type: ignore
 import music21 as m21
 from music21.common import OffsetQL, opFrac
 
@@ -2095,14 +2096,38 @@ class M21Utils:
             # we normalize to MusicXML's color spec, which is '#rrggbb' or '#aarrggbb',
             # so we don't think that 'red' is different from '#FF0000' (or whatever).
             # We ignore colors that cannot be normalized (which will crash in webcolors)
+            # And then we _try_ to convert to standard name (e.g. 'limegreen') if possible.
             try:
-                output['color'] = m21.musicxml.m21ToXml.normalizeColor(style.color)
+                normalizedColor: str = M21Utils.normalizeColor(style.color)
+                if normalizedColor:
+                    output['color'] = normalizedColor
             except Exception:
                 pass
         # if style.units != 'tenths':
             # output['units'] = style.units
         # if style.hideObjectOnPrint:
             # output['hidden'] = True
+        return output
+
+    @staticmethod
+    def normalizeColor(color: str) -> str:
+        # we normalize to MusicXML's color spec, which is '#rrggbb' or '#aarrggbb',
+        # so we don't think that 'red' is different from '#FF0000' (or whatever).
+        # We ignore colors that cannot be normalized (which will crash in webcolors)
+        # And then we _try_ to convert to standard name (e.g. 'limegreen') if possible,
+        # for readability.
+        output: str = ''
+        try:
+            output = m21.musicxml.m21ToXml.normalizeColor(color)
+        except Exception:
+            return ''
+
+        try:
+            output = webcolors.hex_to_name(output)
+        except Exception:
+            # output was hex, not translatable to standard name. Leave it as is.
+            pass
+
         return output
 
     @staticmethod
