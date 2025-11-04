@@ -2091,8 +2091,14 @@ class M21Utils:
             output['encl'] = style.enclosure
         if style.fontRepresentation is not None:
             output['fontrep'] = style.fontRepresentation
-        if style.color is not None:
-            output['color'] = style.color
+        if style.color:
+            # we normalize to MusicXML's color spec, which is '#rrggbb' or '#aarrggbb',
+            # so we don't think that 'red' is different from '#FF0000' (or whatever).
+            # We ignore colors that cannot be normalized (which will crash in webcolors)
+            try:
+                output['color'] = m21.musicxml.m21ToXml.normalizeColor(style.color)
+            except Exception:
+                pass
         # if style.units != 'tenths':
             # output['units'] = style.units
         # if style.hideObjectOnPrint:
