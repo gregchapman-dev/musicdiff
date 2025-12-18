@@ -655,6 +655,11 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert noteOrChord2 is not None
                 if len(op) >= 5 and op[4] is not None:
+                    if not isinstance(noteOrChord2, m21.chord.ChordBase):
+                        # Can happen if imported xml has repeated xml:id values,
+                        # so getElementById returns an unexpected GeneralNote.
+                        # Don't crash, but we won't color the note either.
+                        continue
                     note2 = noteOrChord2.notes[op[4]]
                 else:
                     note2 = noteOrChord2
@@ -676,6 +681,11 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert noteOrChord1 is not None
                 if len(op) >= 5 and op[4] is not None:
+                    if not isinstance(noteOrChord1, m21.chord.ChordBase):
+                        # Can happen if imported xml has repeated xml:id values,
+                        # so getElementById returns an unexpected GeneralNote.
+                        # Don't crash, but we won't color the note either.
+                        continue
                     note1 = noteOrChord1.notes[op[4]]
                 else:
                     note1 = noteOrChord1
@@ -2365,6 +2375,11 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert noteOrChord2 is not None
                 if len(op) >= 5 and op[4] is not None:
+                    if not isinstance(noteOrChord2, m21.chord.ChordBase):
+                        # Can happen if imported xml has repeated xml:id values,
+                        # so getElementById returns an unexpected GeneralNote.
+                        # Don't crash, but we won't color the note either.
+                        continue
                     note2 = noteOrChord2.notes[op[4]]
                 else:
                     note2 = noteOrChord2
@@ -2384,6 +2399,11 @@ class Visualization:
                 if t.TYPE_CHECKING:
                     assert noteOrChord1 is not None
                 if len(op) >= 5 and op[4] is not None:
+                    if not isinstance(noteOrChord1, m21.chord.ChordBase):
+                        # Can happen if imported xml has repeated xml:id values,
+                        # so getElementById returns an unexpected GeneralNote.
+                        # Don't crash, but we won't color the note either.
+                        continue
                     note1 = noteOrChord1.notes[op[4]]
                 else:
                     note1 = noteOrChord1

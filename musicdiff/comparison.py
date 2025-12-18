@@ -1214,13 +1214,13 @@ class Comparison:
         if unpaired_orig_notes:
             for an in unpaired_orig_notes:
                 cost += an.notation_size()
-                op_list.append(("notedel", an, None, an.notation_size()))
+                op_list.append(("notedel", an, None, an.notation_size(), an.note_idx_in_chord))
 
         # noteins
         if unpaired_comp_notes:
             for an in unpaired_comp_notes:
                 cost += an.notation_size()
-                op_list.append(("noteins", None, an, an.notation_size()))
+                op_list.append(("noteins", None, an, an.notation_size(), an.note_idx_in_chord))
 
         # notesub
         if paired_notes:
