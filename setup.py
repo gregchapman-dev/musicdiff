@@ -13,7 +13,7 @@
 from setuptools import setup, find_packages
 import pathlib
 
-musicdiffversion = '5.0.2'
+musicdiffversion = '5.1'
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -47,12 +47,13 @@ if __name__ == '__main__':
             'notation',
             'diff',
             'compare',
+            'comparison',
             'OMR',
             'Optical Music Recognition',
             'assess',
             'assessment',
             'evaluation',
-            'comparison',
+            'training',
             'music21',
             'OMR-NED'
         ],
@@ -62,9 +63,9 @@ if __name__ == '__main__':
         python_requires='>=3.10',
 
         install_requires=[
-            'music21>=9.7',
+            'music21>=9.9.1',
             'numpy',
-            'converter21>=3.5'
+            'converter21>=4.0'
         ],
 
         project_urls={
