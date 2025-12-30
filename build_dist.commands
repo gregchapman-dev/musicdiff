@@ -1,12 +1,16 @@
-# git checkout main
-# git merge develop
-# Fix any conflicts, add, commit, push to origin
+# git checkout develop
+# git merge any other branches that should go in this release
 
 # Edit setup.py to change version number and maybe dependencies.
 # MAYBE README and pypi_README, too, if dependencies changed.
-# git add setup.py README etc
+# bbedit setup.py README.md pypi_README.md
+# git add setup.py README.md pypi_README.md
 # git commit
 # git push origin
+
+# git checkout main
+# git merge develop
+# Fix any conflicts, add, commit, push to origin
 
 # Clean up previous stuff:
 rm -r __pycache__
