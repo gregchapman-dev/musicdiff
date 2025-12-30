@@ -1,0 +1,9 @@
+Changes since 5.0.0:
+    Support comparison of multi-score music21 Opuses.
+        Note: if one Opus contains more Scores than the other Opus, those 
+        extra Scores will be compared against empty Scores.
+    Support comparison of PedalMarks.
+    Tuplet comparison fixes.
+    Accidental comparison fixes.
+    Color comparison fixes.
+    
