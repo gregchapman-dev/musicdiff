@@ -1,5 +1,5 @@
 --- tests/test_scores/test_all_details_1a.mei
 +++ tests/test_scores/test_all_details_1b.mei
 @@ measure 0, staff 0, beat 0.0 @@
--(metadata:value) title:Test file 1a for command line detail options(language=None)
-+(metadata:value) title:Test file 1b for command line detail options(language=None)
+-(metadata:value) title:Test file 1a for command line detail options
++(metadata:value) title:Test file 1b for command line detail options
