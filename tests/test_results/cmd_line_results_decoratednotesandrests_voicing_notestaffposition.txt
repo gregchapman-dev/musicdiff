@@ -1,0 +1,29 @@
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 1, staff 1, beat 1.0 @@
++(Note:pitch) [N-2,N0] (quarter chord), pitch[1]=N0
+@@ measure 1, staff 1, beat 1.0 @@
+-(voice) [N0 (quarter note),N-2 (quarter note),N2 (quarter note),N0 (quarter note)]
+@@ measure 1, staff 1, beat 1.0 @@
++(Slur) dur=7.5
+@@ measure 1, staff 1, beat 2.0 @@
++(Note:pitch) [N-4,N-2] (quarter chord), pitch[1]=N-2
+@@ measure 1, staff 1, beat 3.0 @@
++(Note:pitch) [N-2,N2] (quarter chord), pitch[1]=N2
+@@ measure 1, staff 1, beat 4.0 @@
++(Note:pitch) [N-4,N0] (quarter chord), pitch[1]=N0
+@@ measure 2, staff 1, beat 1.0 @@
++(Note:pitch) [N1,N5] (half chord), pitch[1]=N5
+@@ measure 2, staff 1, beat 1.0 @@
+-(voice) [N5 (half note),N4 (half note)]
+@@ measure 2, staff 1, beat 2.5 @@
+-(Note:tie) N-6 (eighth note), tied
++(Note:tie) N-6 (eighth note), not tied
+@@ measure 2, staff 1, beat 3.0 @@
+-(Note:flagsbeams) N-6 (eighth note), 1 beam=start
++(Note:flagsbeams) N-6 (eighth note), 1 flag
+@@ measure 2, staff 1, beat 3.0 @@
++(Note:pitch) [N2,N4] (half chord), pitch[1]=N4
+@@ measure 2, staff 1, beat 3.5 @@
+-(Note:flagsbeams) N-8 (eighth note), 1 beam=stop
++(Note:flagsbeams) N-8 (eighth note), 1 flag

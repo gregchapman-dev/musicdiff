@@ -1,0 +1,57 @@
+{
+    "OMR-ED": "39",
+    "numSymbolsInPredicted": "123",
+    "numSymbolsInGroundTruth": "106",
+    "numSymbolsInBoth": "229",
+    "OMR-NED": "0.1703056768558952"
+}
+
+--- tests/test_scores/test_all_details_1a.mei
++++ tests/test_scores/test_all_details_1b.mei
+@@ measure 0, staff 0, beat 0.0 @@
+-(metadata:value) title:Test file 1a for command line detail options
++(metadata:value) title:Test file 1b for command line detail options
+@@ measure 1, staff 1, beat 1.0 @@
++(Slur) dur=7.5
+@@ measure 1, staff 1, beat 1.0 @@
+-(Dynamic:placement) p changedStyle={placement:below}
++(Dynamic:placement) p changedStyle={placement:above}
+@@ measure 1, staff 1, beat 1.0 @@
+-(Lyric) "lyric2", num=2
+@@ measure 1, staff 1, beat 1.0 @@
+-(Lyric) "lyric1", num=1
+@@ measure 2, staff 1, beat 1.0 @@
+-(Note:stemdir) N-9 (eighth note), stemDirection=down
++(Note:stemdir) N-9 (eighth note), stemDirection=up
+@@ measure 2, staff 1, beat 1.5 @@
+-(Note:stemdir) N-8 (eighth note), stemDirection=down
++(Note:stemdir) N-8 (eighth note), stemDirection=up
+@@ measure 2, staff 1, beat 2.0 @@
+-(Note:stemdir) N-7 (eighth note), stemDirection=down
++(Note:stemdir) N-7 (eighth note), stemDirection=up
+@@ measure 2, staff 1, beat 2.5 @@
+-(Note:tie) N-6 (eighth note), tied
++(Note:tie) N-6 (eighth note), not tied
+@@ measure 2, staff 1, beat 2.5 @@
+-(Note:stemdir) N-6 (eighth note), stemDirection=down
++(Note:stemdir) N-6 (eighth note), stemDirection=up
+@@ measure 2, staff 1, beat 2.5 @@
+-(Dynamic) mp
+@@ measure 2, staff 1, beat 3.0 @@
+-(Note:flagsbeams) N-6 (eighth note), 1 beam=start
++(Note:flagsbeams) N-6 (eighth note), 1 flag
+@@ measure 2, staff 1, beat 3.0 @@
+-(Note:stemdir) N-6 (eighth note), stemDirection=down
++(Note:stemdir) N-6 (eighth note), stemDirection=up
+@@ measure 2, staff 1, beat 3.5 @@
+-(Note:flagsbeams) N-8 (eighth note), 1 beam=stop
++(Note:flagsbeams) N-8 (eighth note), 1 flag
+@@ measure 2, staff 1, beat 3.5 @@
+-(Note:stemdir) N-8 (eighth note), stemDirection=down
++(Note:stemdir) N-8 (eighth note), stemDirection=up
+@@ measure 2, staff 1, beat 4.0 @@
+-(Note:stemdir) N-9 (eighth note), stemDirection=down
++(Note:stemdir) N-9 (eighth note), stemDirection=up
+@@ measure 2, staff 1, beat 5.0 @@
+-(Barline:symbolic) final
++(Barline:symbolic) double

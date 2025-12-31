@@ -8,6 +8,8 @@ run_test() {
     python -m musicdiff --output text $@ -- tests/test_scores/test_all_details_1a.mei tests/test_scores/test_all_details_1b.mei > /tmp/results.txt >& /dev/null
     diff -q /tmp/results.txt tests/test_results/cmd_line_results_$name.txt >/dev/null 2>&1
     if [[ $? -ne 0 ]]; then
+        # bbedit /tmp/results.txt
+        # echo tests/test_results/cmd_line_results_$name.txt
         # bbdiff /tmp/results.txt tests/test_results/cmd_line_results_$name.txt
         # exit(0)
         print "Test failure: musicdiff $@"
@@ -50,6 +52,8 @@ run_test notesandrests --include decoratednotesandrests --exclude beams ties slu
 
 # voicing adds a bunch of chord and voice diffs
 run_test decoratednotesandrests_voicing --include decoratednotesandrests voicing
+# try with voicing and notestaffposition
+run_test decoratednotesandrests_voicing_notestaffposition --include decoratednotesandrests voicing notestaffposition
 
 # Check interactions of voicing and lyrics. voicing (or not) should not affect lyrics diffs.
 # Lack of notes should not affect lyrics diffs, either.
@@ -73,6 +77,7 @@ run_test metadata --include metadata
 
 run_test allobjects_style_metadata -i metadata style allobjects
 run_test allobjects_style_metadata_omrned omrned -i metadata style allobjects
+run_test allobjects_style_metadata_notestaffposition_omrned omrned -i metadata style allobjects notestaffposition
 
 
 print Total failures: ${fails}
