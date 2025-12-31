@@ -25,6 +25,9 @@ from music21.common import OffsetQL, opFrac
 from musicdiff import M21Utils
 from musicdiff import DetailLevel
 
+# search/replace when supporting staves with other than 5 lines
+LINES_PER_STAFF: int = 5
+
 class AnnNote:
     def __init__(
         self,
@@ -66,6 +69,7 @@ class AnnNote:
         # A lot of stuff is carried by the parent_chord (if present) or the
         # general_note (if parent_chord not present); we call that the carrier
         carrier: m21.note.GeneralNote = parent_chord or general_note
+        curr_clef: m21.clef.Clef | None = carrier.getContextByClass(m21.clef.Clef)
 
         self.gap_dur: OffsetQL = gap_dur
         self.beamings: list[str] = enhanced_beam_list
@@ -173,10 +177,14 @@ class AnnNote:
             for p in notes:
                 if not isinstance(p, (m21.note.Note, m21.note.Unpitched)):
                     raise TypeError("The chord must contain only Note or Unpitched")
-                self.pitches.append(M21Utils.note2tuple(p, detail))
+                self.pitches.append(M21Utils.note2tuple(
+                    p, curr_clef, LINES_PER_STAFF, detail
+                ))
 
         elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched, m21.note.Rest)):
-            self.pitches = [M21Utils.note2tuple(general_note, detail)]
+            self.pitches = [M21Utils.note2tuple(
+                general_note, curr_clef, LINES_PER_STAFF, detail
+            )]
         else:
             raise TypeError("The generalNote must be a Chord, a Rest, a Note, or an Unpitched")
 

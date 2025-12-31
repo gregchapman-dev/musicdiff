@@ -246,8 +246,25 @@ class M21Utils:
         return theName
 
     @staticmethod
+    def get_mid_line(clef: m21.clef.Clef | None, lines_per_staff: int) -> int:
+        lowest_line: int = (7 * 4) + 3  # 4 octaves + 3 notes = e4 (default to TrebleClef)
+        if (isinstance(clef, (m21.clef.PercussionClef, m21.clef.PitchClef))
+                and clef.lowestLine is not None):
+            lowest_line = clef.lowestLine
+            # check for known bugs
+            if isinstance(clef, m21.clef.Treble8vaClef):
+                lowest_line = (7 * 5) + 3
+            elif isinstance(clef, m21.clef.Bass8vbClef):
+                lowest_line = (7 * 1) + 5
+            elif isinstance(clef, m21.clef.Bass8vaClef):
+                lowest_line = (7 * 3) + 5
+        return lowest_line + (lines_per_staff - 1)
+
+    @staticmethod
     def note2tuple(
         note: m21.note.Note | m21.note.Unpitched | m21.note.Rest,
+        curr_clef: m21.clef.Clef | None,
+        lines_per_staff: int,
         detail: DetailLevel | int
     ) -> tuple[str, str, bool]:
         note_pitch: str
@@ -269,9 +286,15 @@ class M21Utils:
             # use the displayName (e.g. 'G4') with no accidental
             note_pitch = note.displayName
             note_accidental = "None"
+
         else:
-            # pitch name (including octave, but not accidental)
-            note_pitch = note.pitch.step + str(note.pitch.octave)
+            if DetailLevel.includesNoteStaffPosition(detail):
+                # we annotate the note's vertical position in the staff (mid-staff == 0)
+                mid_line: int = M21Utils.get_mid_line(curr_clef, lines_per_staff)
+                note_pitch = f"N{note.pitch.diatonicNoteNum - mid_line}"
+            else:
+                # we annotate the note's pitch name (including octave, but not accidental)
+                note_pitch = note.pitch.step + str(note.pitch.octave)
 
             # note_accidental is only set to non-'None' if the accidental will
             # be visible in the printed score.

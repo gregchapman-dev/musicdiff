@@ -103,6 +103,11 @@ class DetailLevel(IntEnum):
     # voice ids; we compare the best matching pairs of voices.
     Voicing = 1 << 17
 
+    # If specified, note staff positions will be compared instead of note pitches. This is
+    # good for ML training, where an erroneous clef or ottava should not propagate errors
+    # into every affected note.
+    NoteStaffPosition = 1 << 18
+
     # default detail level is all objects:
     Default = AllObjects
 
@@ -178,6 +183,10 @@ class DetailLevel(IntEnum):
     @classmethod
     def includesVoicing(cls, val: int) -> bool:
         return val & cls.Voicing != 0
+
+    @classmethod
+    def includesNoteStaffPosition(cls, val: int) -> bool:
+        return val & cls.NoteStaffPosition != 0
 
     @classmethod
     def _included_m21_types(cls, val: int) -> tuple[t.Type, ...]:
