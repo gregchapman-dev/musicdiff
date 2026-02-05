@@ -105,7 +105,7 @@ class DetailLevel(IntEnum):
 
     # If specified, note staff positions will be compared instead of note pitches. This is
     # good for ML training, where an erroneous clef or ottava should not propagate errors
-    # into every affected note.
+    # into every affected note. If this is set, NotesAndRests will also be considered set.
     NoteStaffPosition = 1 << 18
 
     # default detail level is all objects:
@@ -114,7 +114,12 @@ class DetailLevel(IntEnum):
     # checkers for each individual bit
     @classmethod
     def includesNotesAndRests(cls, val: int) -> bool:
-        return val & cls.NotesAndRests != 0
+        # Special case: this returns True if either NotesAndRests _or_ NoteStaffPosition is set.
+        if val & cls.NotesAndRests != 0:
+            return True
+        if val & cls.NoteStaffPosition != 0:
+            return True
+        return False
 
     @classmethod
     def includesBeams(cls, val: int) -> bool:
