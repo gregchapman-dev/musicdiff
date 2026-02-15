@@ -21,8 +21,10 @@ On the command line:
                     notesandrests; the aforementioned note decorations: beams, tremolos, ornaments,
                     articulations, ties, slurs; the other objects: signatures, directions,
                     barlines, staffdetails, chordsymbols, ottavas, arpeggios, and lyrics; and
-                    a final few details that are not found in allobjects: style, metadata, and
-                    voicing.  voicing compares how notes are included in voices and chords (by
+                    a final few details that are not found in allobjects: style, metadata, 
+                    notestaffposition, and voicing.  notestaffposition compares note staff position
+                    instead of note diatonic pitch (to avoid cascading errors from OMR clef/key 
+                    errors), and voicing compares how notes are included in voices and chords (by 
                     default this is ignored).
       -x/--exclude  one or more named details to exclude from comparison.  Can be any of the
                     named details accepted by -i/--include.
@@ -49,8 +51,10 @@ Alternate usage (for ML training runs):
                     notesandrests; the aforementioned note decorations: beams, tremolos, ornaments,
                     articulations, ties, slurs; the other objects: signatures, directions,
                     barlines, staffdetails, chordsymbols, ottavas, arpeggios, and lyrics; and
-                    a final few details that are not found in allobjects: style, metadata, and
-                    voicing.  voicing compares how notes are included in voices and chords (by
+                    a final few details that are not found in allobjects: style, metadata, 
+                    notestaffposition, and voicing.  notestaffposition compares note staff position
+                    instead of note diatonic pitch (to avoid cascading errors from OMR clef/key 
+                    errors), and voicing compares how notes are included in voices and chords (by 
                     default this is ignored).
       -x/--exclude  one or more named details to exclude from comparison.  Can be any of the
                     named details accepted by -i/--include.
@@ -63,9 +67,24 @@ If you are interested in calling lower-level musicdiff APIs to do more complicat
 You can find the musicdiff API documentation [here](https://gregchapman-dev.github.io/musicdiff).
 
 ## Citing
-If you use this work in any research, please cite the relevant paper:
+If you use this work in any research, please cite the relevant papers:
 
 ```
+@inproceedings{juan_c_martinez_sevilla_2025_17811446,
+  title = {Sheet Music Benchmark: Standardized Optical Music Recognition Evaluation},
+  author = {Juan C. Martinez-Sevilla and Joan Cerveto-Serrano and Noelia Luna-Barahona and 
+            Greg Chapman and Craig Sapp and David Rizo and Jorge Calvo-Zaragoza},
+  booktitle = {Proceedings of the 26th International Society for 
+               Music Information Retrieval Conference},
+  pages = {618-625},
+  year = 2025,
+  publisher = {ISMIR},
+  month = sep,
+  venue = {Daejeon, South Korea and Online},
+  doi = {10.5281/zenodo.17811446},
+  url = {https://doi.org/10.5281/zenodo.17811446},
+}
+
 @inproceedings{foscarin2019diff,
   title={A diff procedure for music score files},
   author={Foscarin, Francesco and Jacquemard, Florent and Fournier-S’niehotta, Raphael},
@@ -75,7 +94,7 @@ If you use this work in any research, please cite the relevant paper:
 }
 ```
 
-The paper is freely available [here](https://hal.inria.fr/hal-02267454v2/document).
+The Martinez-Sevilla paper is freely available [on arxiv.org](https://arxiv.org/pdf/2506.10488), and the Foscarin paper is freely available [on hal.inria.fr](https://hal.inria.fr/hal-02267454v2/document).
 
 ## Acknowledgment
 Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowing me to use his [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git) code, and for continuing to advise me on this project.

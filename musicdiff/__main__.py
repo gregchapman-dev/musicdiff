@@ -25,8 +25,8 @@ from musicdiff import diff, diff_ml_training
 '''
 if __name__ == "__main__":
     usage: str = """python3 -m musicdiff [-h]
-                            [-i [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
-                            [-x [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+                            [-i [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notestaffposition,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+                            [-x [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notestaffposition,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
                             [-o [{visual,v,text,t,omrned,o} ...]]
                             [--fix_first_file_syntax]
                             file1 file2
@@ -37,8 +37,8 @@ usage: python3 -m musicdiff [-h]
                             --ground_truth_folder gtfolderpath
                             --predicted_folder predfolderpath
                             --output_folder outputfolderpath
-                            [-i [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
-                            [-x [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+                            [-i [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notestaffposition,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
+                            [-x [{decoratednotesandrests,otherobjects,allobjects,style,metadata,voicing,notestaffposition,notesandrests,beams,tremolos,ornaments,articulations,ties,slurs,signatures,directions,barlines,staffdetails,chordsymbols,ottavas,arpeggios,lyrics} ...]]
 
 """
     epilog: str = """\
@@ -101,6 +101,7 @@ required:
             "style",
             "metadata",
             "voicing",
+            "notestaffposition",
 
             "notesandrests",
             "beams",
@@ -133,6 +134,7 @@ required:
             "style",
             "metadata",
             "voicing",
+            "notestaffposition",
 
             "notesandrests",
             "beams",
@@ -242,6 +244,8 @@ required:
                 detail |= DetailLevel.Voicing
             elif det == "metadata":
                 detail |= DetailLevel.Metadata
+            elif det == "notestaffposition":
+                detail |= DetailLevel.NoteStaffPosition
 
             # bits in the DecoratedNotesAndRests combo
             elif det == "notesandrests":
@@ -294,6 +298,8 @@ required:
                 detail &= ~DetailLevel.Voicing
             elif det == "metadata":
                 detail &= ~DetailLevel.Metadata
+            elif det == "notestaffposition":
+                detail &= ~DetailLevel.NoteStaffPosition
 
             # bits in the DecoratedNotesAndRests combo
             elif det == "notesandrests":
