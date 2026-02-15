@@ -68,14 +68,6 @@ You can find the musicdiff API documentation [here](https://gregchapman-dev.gith
 If you use this work in any research, please cite the relevant papers:
 
 ```
-@inproceedings{foscarin2019diff,
-  title={A diff procedure for music score files},
-  author={Foscarin, Francesco and Jacquemard, Florent and Fournier-S’niehotta, Raphael},
-  booktitle={6th International Conference on Digital Libraries for Musicology},
-  pages={58--64},
-  year={2019}
-}
-
 @inproceedings{juan_c_martinez_sevilla_2025_17811446,
   title = {Sheet Music Benchmark: Standardized Optical Music Recognition Evaluation},
   author = {Juan C. Martinez-Sevilla and Joan Cerveto-Serrano and Noelia Luna-Barahona and 
@@ -90,9 +82,17 @@ If you use this work in any research, please cite the relevant papers:
   doi = {10.5281/zenodo.17811446},
   url = {https://doi.org/10.5281/zenodo.17811446},
 }
+
+@inproceedings{foscarin2019diff,
+  title={A diff procedure for music score files},
+  author={Foscarin, Francesco and Jacquemard, Florent and Fournier-S’niehotta, Raphael},
+  booktitle={6th International Conference on Digital Libraries for Musicology},
+  pages={58--64},
+  year={2019}
+}
 ```
 
-The Foscarin paper is freely available [here](https://hal.inria.fr/hal-02267454v2/document), and the Martinez-Sevilla paper is freely available [here](https://arxiv.org/pdf/2506.10488).
+The Martinez-Sevilla paper is freely available [on arxiv.org](https://arxiv.org/pdf/2506.10488), and the Foscarin paper is freely available [on hal.inria.fr](https://hal.inria.fr/hal-02267454v2/document).
 
 ## Acknowledgment
 Many thanks to [Francesco Foscarin](https://github.com/fosfrancesco) for allowing me to use his [music-score-diff](https://github.com/fosfrancesco/music-score-diff.git) code, and for continuing to advise me on this project.

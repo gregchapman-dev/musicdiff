@@ -251,7 +251,7 @@ class M21Utils:
         if (isinstance(clef, (m21.clef.PercussionClef, m21.clef.PitchClef))
                 and clef.lowestLine is not None):
             lowest_line = clef.lowestLine
-            # check for known bugs
+            # check for known music21 bugs
             if isinstance(clef, m21.clef.Treble8vaClef):
                 lowest_line = (7 * 5) + 3
             elif isinstance(clef, m21.clef.Bass8vbClef):
