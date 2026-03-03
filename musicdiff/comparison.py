@@ -25,7 +25,7 @@ from music21.common import OffsetQL
 from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnLyric
 from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
-from musicdiff import PitchInfo
+from musicdiff.m21utils import PitchInfo
 
 class EvaluationMetrics:
     def __init__(

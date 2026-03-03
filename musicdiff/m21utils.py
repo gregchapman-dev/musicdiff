@@ -26,7 +26,26 @@ from music21.common import OffsetQL, opFrac
 from converter21 import M21Utilities
 
 from musicdiff import DetailLevel
-from musicdiff import PitchInfo
+
+class PitchInfo:
+    def __init__(
+        self,
+        name: str,  # "An"-"Gn", or "R" for rests, or "N" for staff position
+        accidental: str = "None",  # always "None" for rests
+        tied: bool = False  # always False for rests
+    ):
+        self.name = name
+        self.accidental = accidental
+        self.tied = tied
+
+    def __str__(self) -> str:
+        output: str = self.name
+        if self.accidental != "None":
+            output += self.accidental
+        if self.tied:
+            output += ", tied"
+        return output
+
 
 class M21Utils:
     @staticmethod
