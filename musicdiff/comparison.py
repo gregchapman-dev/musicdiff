@@ -353,7 +353,7 @@ class Comparison:
         return out
 
     @staticmethod
-    def _pitches_diff(pitch1, pitch2, noteNode1, noteNode2, ids):
+    def _pitches_diff(pitch1: PitchInfo, pitch2: PitchInfo, noteNode1, noteNode2, ids):
         """
         Compute the differences between two pitch (definition from the paper).
         a pitch consist of a tuple: pitch name (letter+number), accidental, tie.
@@ -369,38 +369,38 @@ class Comparison:
         cost = 0
         op_list = []
         # add for pitch name differences
-        if pitch1[0] != pitch2[0]:
+        if pitch1.name != pitch2.name:
             cost += 1
             # TODO: select the note in a more precise way in case of a chord
             # rest to note
-            if (pitch1[0][0] == "R") != (pitch2[0][0] == "R"):  # xor
+            if (pitch1.name[0] == "R") != (pitch2.name[0] == "R"):  # xor
                 op_list.append(("pitchtypeedit", noteNode1, noteNode2, 1, ids))
             else:  # they are two notes or two rests
                 op_list.append(("pitchnameedit", noteNode1, noteNode2, 1, ids))
 
         # add for the accidentals
-        if pitch1[1] != pitch2[1]:  # if the accidental is different
-            if pitch1[1] == "None":
-                assert pitch2[1] != "None"
+        if pitch1.accidental != pitch2.accidental:  # if the accidental is different
+            if pitch1.accidental == "None":
+                assert pitch2.accidental != "None"
                 cost += 1
                 op_list.append(("accidentins", noteNode1, noteNode2, 1, ids))
-            elif pitch2[1] == "None":
-                assert pitch1[1] != "None"
+            elif pitch2.accidental == "None":
+                assert pitch1.accidental != "None"
                 cost += 1
                 op_list.append(("accidentdel", noteNode1, noteNode2, 1, ids))
             else:  # a different type of alteration is present
                 cost += 2  # delete then add
                 op_list.append(("accidentedit", noteNode1, noteNode2, 2, ids))
         # add for the ties
-        if pitch1[2] != pitch2[2]:
+        if pitch1.tied != pitch2.tied:
             # exclusive or. Add if one is tied and not the other.
             # probably to revise for chords
             cost += 1
-            if pitch1[2]:
-                assert not pitch2[2]
+            if pitch1.tied:
+                assert not pitch2.tied
                 op_list.append(("tiedel", noteNode1, noteNode2, 1, ids))
-            elif pitch2[2]:
-                assert not pitch1[2]
+            elif pitch2.tied:
+                assert not pitch1.tied
                 op_list.append(("tieins", noteNode1, noteNode2, 1, ids))
         return op_list, cost
 
