@@ -26,6 +26,7 @@ from music21.common import OffsetQL, opFrac
 from converter21 import M21Utilities
 
 from musicdiff import DetailLevel
+from musicdiff import PitchInfo
 
 class M21Utils:
     @staticmethod
@@ -261,33 +262,34 @@ class M21Utils:
         return lowest_line + (lines_per_staff - 1)
 
     @staticmethod
-    def note2tuple(
+    def note_to_pitch_info(
         note: m21.note.Note | m21.note.Unpitched | m21.note.Rest,
         curr_clef: m21.clef.Clef | None,
         lines_per_staff: int,
         detail: DetailLevel | int
-    ) -> tuple[str, str, bool]:
-        note_pitch: str
-        note_accidental: str
-        note_tie: bool = False
+    ) -> PitchInfo:
         if isinstance(note, m21.note.Rest):
-            note_pitch = "R"
-            note_accidental = "None"
+            # special case, returns quickly
+            rest_name: str = "R"
             if DetailLevel.includesStyle(detail):
                 # Rest position is style, not substance
                 # rest.stepShift is the number of lines/spaces above/below middle of staff.
                 # We can use it directly in our annotation.
                 if note.stepShift > 0:
-                    note_pitch = f"R+{note.stepShift}"
+                    rest_name = f"R+{note.stepShift}"
                 elif note.stepShift < 0:
-                    note_pitch = f"R{note.stepShift}"
+                    rest_name = f"R{note.stepShift}"
+            return PitchInfo(rest_name)
 
-        elif isinstance(note, m21.note.Unpitched):
+        # must be Note or Unpitched
+        note_pitch: str
+        note_accidental: str = "None"
+        if isinstance(note, m21.note.Unpitched):
+            # TODO: Unpitched + NoteStaffPosition
             # use the displayName (e.g. 'G4') with no accidental
             note_pitch = note.displayName
-            note_accidental = "None"
-
-        else:
+            # we cannot return here, Unpitched needs tie info below
+        elif isinstance(note, m21.note.Note):
             if DetailLevel.includesNoteStaffPosition(detail):
                 # we annotate the note's vertical position in the staff (mid-staff == 0)
                 mid_line: int = M21Utils.get_mid_line(curr_clef, lines_per_staff)
@@ -298,7 +300,6 @@ class M21Utils:
 
             # note_accidental is only set to non-'None' if the accidental will
             # be visible in the printed score.
-            note_accidental = "None"
             if note.pitch.accidental is None:
                 pass
             elif note.pitch.accidental.displayStatus is not None:
@@ -327,20 +328,19 @@ class M21Utils:
                     note_accidental = note.pitch.accidental.name
 
             # TODO: we should append editorial style info to note_accidental here ('paren', etc)
+        else:
+            # Chords and other non-Note/Rest/Unpitched should never get here!
+            raise ValueError("wrong type object passed to note_to_pitch_info")
 
+        note_tie: bool = False
         if DetailLevel.includesTies(detail):
-            # add tie information (Unpitched has this, too, but not Rest, and not meaningfully in
-            # Chord either)
-            if isinstance(note, (m21.note.Rest, m21.chord.ChordBase)):
-                note_tie = False
-            else:
-                note_tie = note.tie is not None and note.tie.type in ("start", "continue")
+            # add tie information
+            note_tie = note.tie is not None and note.tie.type in ("start", "continue")
 
-        return (note_pitch, note_accidental, note_tie)
-
+        return PitchInfo(note_pitch, note_accidental, note_tie)
 
     @staticmethod
-    def pitch_size(pitch: tuple[str, str, bool]) -> int:
+    def pitch_size(pitch: PitchInfo) -> int:
         """Compute the size of a pitch.
         Arguments:
             pitch {[triple]} -- a triple (pitchname,accidental,tie)
@@ -349,13 +349,12 @@ class M21Utils:
         # add for the pitchname
         size += 1
         # add for the accidental
-        if not pitch[1] == "None":
+        if pitch.accidental != "None":
             size += 1
         # add for the tie
-        if pitch[2]:
+        if pitch.tied:
             size += 1
         return size
-
 
     @staticmethod
     def generalNote_info(gn: m21.note.GeneralNote) -> dict[str, int | str | list]:
@@ -409,7 +408,6 @@ class M21Utils:
         }
         return gn_info
 
-
     # def get_ties(note_list):
     #     _general_ties_list = []
     #     for n in note_list:
@@ -452,7 +450,6 @@ class M21Utils:
             _type_list.append(M21Utils.get_type_num(n.duration))
         return _type_list
 
-
     @staticmethod
     def get_rest_or_note(note_list: list[m21.note.GeneralNote]) -> list[str]:
         _rest_or_note: list[str] = []
@@ -462,7 +459,6 @@ class M21Utils:
             else:
                 _rest_or_note.append("N")
         return _rest_or_note
-
 
     @staticmethod
     def get_enhance_beamings(

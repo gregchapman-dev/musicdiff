@@ -25,6 +25,7 @@ from music21.common import OffsetQL
 from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnLyric
 from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem
 from musicdiff import M21Utils
+from musicdiff import PitchInfo
 
 class EvaluationMetrics:
     def __init__(
@@ -276,8 +277,8 @@ class Comparison:
     @staticmethod
     @_memoize_pitches_lev_diff
     def _pitches_levenshtein_diff(
-        original: list[tuple[str, str, bool]],
-        compare_to: list[tuple[str, str, bool]],
+        original: list[PitchInfo],
+        compare_to: list[PitchInfo],
         noteNode1: AnnNote,
         noteNode2: AnnNote,
         ids: tuple[int, int]
@@ -374,7 +375,7 @@ class Comparison:
             # rest to note
             if (pitch1[0][0] == "R") != (pitch2[0][0] == "R"):  # xor
                 op_list.append(("pitchtypeedit", noteNode1, noteNode2, 1, ids))
-            else:  # they are two notes
+            else:  # they are two notes or two rests
                 op_list.append(("pitchnameedit", noteNode1, noteNode2, 1, ids))
 
         # add for the accidentals
@@ -1154,7 +1155,7 @@ class Comparison:
             fallback_i: int = -1
             found_it: bool = False
             for i, comp_n in enumerate(unpaired_comp_notes):
-                if orig_n.pitches[0][0] != comp_n.pitches[0][0]:
+                if orig_n.pitches[0].name != comp_n.pitches[0].name:
                     # this pitch comparison (1) assumes the note is not a chord
                     # (because we don't do chords when Voicing is not set, and
                     # we only call _notes_set_distance when Voicing is not set),

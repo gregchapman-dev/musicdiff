@@ -28,6 +28,26 @@ from musicdiff import DetailLevel
 # search/replace when supporting staves with other than 5 lines
 LINES_PER_STAFF: int = 5
 
+class PitchInfo:
+    def __init__(
+        self,
+        name: str,  # "An"-"Gn", or "R" for rests, or "N" for staff position
+        accidental: str = "None",  # always "None" for rests
+        tied: bool = False  # always False for rests
+    ):
+        self.name = name
+        self.accidental = accidental
+        self.tied = tied
+
+    def __str__(self) -> str:
+        output: str = self.name
+        if self.accidental != "None":
+            output += self.accidental
+        if self.tied:
+            output += ", tied"
+        return output
+
+
 class AnnNote:
     def __init__(
         self,
@@ -167,7 +187,7 @@ class AnnNote:
 
         # compute the representation of NoteNode as in the paper
         # pitches is a list  of elements, each one is (pitchposition, accidental, tied)
-        self.pitches: list[tuple[str, str, bool]]
+        self.pitches: list[PitchInfo]
         if isinstance(general_note, m21.chord.ChordBase):
             notes: tuple[m21.note.NotRest, ...] = general_note.notes
             if hasattr(general_note, "sortDiatonicAscending"):
@@ -177,12 +197,12 @@ class AnnNote:
             for p in notes:
                 if not isinstance(p, (m21.note.Note, m21.note.Unpitched)):
                     raise TypeError("The chord must contain only Note or Unpitched")
-                self.pitches.append(M21Utils.note2tuple(
+                self.pitches.append(M21Utils.note_to_pitch_info(
                     p, curr_clef, LINES_PER_STAFF, detail
                 ))
 
         elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched, m21.note.Rest)):
-            self.pitches = [M21Utils.note2tuple(
+            self.pitches = [M21Utils.note_to_pitch_info(
                 general_note, curr_clef, LINES_PER_STAFF, detail
             )]
         else:
@@ -319,16 +339,16 @@ class AnnNote:
         if self.fullNameSuffix.endswith("rest"):
             string = self.fullNameSuffix
         elif self.fullNameSuffix.endswith("note"):
-            string = self.pitches[0][0]
-            if self.pitches[0][1] != "None":
-                string += " " + self.pitches[0][1]
+            string = self.pitches[0].name
+            if self.pitches[0].accidental != "None":
+                string += " " + self.pitches[0].accidental
             string += " (" + self.fullNameSuffix + ")"
         elif self.fullNameSuffix.endswith("chord"):
             string = "["
             for p in self.pitches:  # add for pitches
-                string += p[0]  # pitch name and octave
-                if p[1] != "None":
-                    string += " " + p[1]  # pitch accidental
+                string += p.name  # pitch name and octave
+                if p.accidental != "None":
+                    string += " " + p.accidental  # pitch accidental
                 string += ","
             string = string[:-1]  # delete the last comma
             string += "] (" + self.fullNameSuffix + ")"
@@ -339,14 +359,14 @@ class AnnNote:
         if name == "pitch":
             # this is only for "pitch", not for "" (pitches are in identifying string)
             if self.fullNameSuffix.endswith("chord"):
-                string += f", pitch[{idx}]={self.pitches[idx][0]}"
+                string += f", pitch[{idx}]={self.pitches[idx].name}"
             return string
 
         if name == "accid":
             # this is only for "accid" (indexed in a chord), not for "", or for "accid" on a note
             # (accidental is in identifying string)
             if self.fullNameSuffix.endswith("chord"):
-                string += f", accid[{idx}]={self.pitches[idx][1]}"
+                string += f", accid[{idx}]={self.pitches[idx].accidental}"
             return string
 
         if name == "head":
@@ -409,7 +429,7 @@ class AnnNote:
                     return string
 
         if not name or name == "tie":
-            if self.pitches[idx][2]:
+            if self.pitches[idx].tied:
                 string += ", tied"
             elif name:
                 string += ", not tied"
@@ -548,10 +568,10 @@ class AnnNote:
         """
         string: str = "["
         for p in self.pitches:  # add for pitches
-            string += p[0]
-            if p[1] != "None":
-                string += p[1]
-            if p[2]:
+            string += p.name
+            if p.accidental != "None":
+                string += p.accidental
+            if p.tied:
                 string += "T"
             string += ","
         string = string[:-1]  # delete the last comma

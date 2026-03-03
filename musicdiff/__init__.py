@@ -25,6 +25,7 @@ import converter21
 from musicdiff.detaillevel import DetailLevel
 from musicdiff.m21utils import M21Utils
 from musicdiff.annotation import AnnScore
+from musicdiff.annotation import PitchInfo
 from musicdiff.comparison import Comparison
 from musicdiff.comparison import EvaluationMetrics
 from musicdiff.visualization import Visualization
