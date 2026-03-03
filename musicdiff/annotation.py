@@ -55,7 +55,7 @@ class AnnNote:
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, or Voicing.
+                Style, Metadata, Voicing, or NoteStaffPosition.
         """
         self.general_note: int | str = general_note.id
         self.is_in_chord: bool = False
@@ -663,7 +663,7 @@ class AnnExtra:
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, or Voicing.
+                Style, Metadata, Voicing, or NoteStaffPosition.
         """
         self.extra = extra.id
         self.kind: str = M21Utils.extra_to_kind(extra)
@@ -888,7 +888,7 @@ class AnnLyric:
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, or Voicing.
+                Style, Metadata, Voicing, or NoteStaffPosition.
         """
         self.lyric_holder = lyric_holder.id
 
@@ -1017,7 +1017,7 @@ class AnnVoice:
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, or Voicing.
+                Style, Metadata, Voicing, or NoteStaffPosition.
         """
         self.voice: int | str = voice.id
         note_list: list[m21.note.GeneralNote] = []
@@ -1166,7 +1166,7 @@ class AnnMeasure:
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, or Voicing.
+                Style, Metadata, Voicing, or NoteStaffPosition.
         """
         self.measure: int | str = measure.id
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
@@ -1390,7 +1390,7 @@ class AnnPart:
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, or Voicing.
+                Style, Metadata, Voicing, or NoteStaffPosition.
         """
         self.part: int | str = part.id
         self.part_idx: int = part_idx
@@ -1699,7 +1699,7 @@ class AnnScore:
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, or Voicing.
+                Style, Metadata, Voicing, or NoteStaffPosition.
         """
         self.score: int | str = score.id
         self.part_list: list[AnnPart] = []

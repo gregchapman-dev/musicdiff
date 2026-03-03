@@ -96,7 +96,7 @@ def diff(
             AllObjects), or any combination (with | or &~) of those or NotesAndRests,
             Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
             Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-            Style, Metadata, or Voicing.
+            Style, Metadata, Voicing, or NoteStaffPosition.
 
     Returns:
         int | None: The total OMR Edit Distance, i.e. the number of individual symbols
@@ -354,7 +354,7 @@ def diff_ml_training(
             AllObjects), or any combination (with | or &~) of those or NotesAndRests,
             Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
             Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-            Style, Metadata, or Voicing.
+            Style, Metadata, Voicing, or NoteStaffPosition.
 
     Returns:
         tuple[float, str]: Overall OMR-NED score for the batch, and the full path to the
