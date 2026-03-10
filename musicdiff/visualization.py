@@ -49,7 +49,7 @@ class Visualization:
     def mark_diffs(
         score1: m21.stream.Score,
         score2: m21.stream.Score,
-        operations: list[DiffOperation]
+        op_list: list[DiffOperation]
     ) -> None:
         """
         Mark up two music21 scores with the differences described by an operations
@@ -58,101 +58,11 @@ class Visualization:
         Args:
             score1 (music21.stream.Score): The first score to mark up
             score2 (music21.stream.Score): The second score to mark up
-            operations (list[DiffOperation]): The operations list that describes the difference
+            op_list (list[DiffOperation]): The operations list that describes the difference
                 between the two scores
         """
-        def draw_diff(
-            m21_obj: m21.base.Music21Object,
-            text: str,
-            color: str,
-            note_idx: int | None = None,
-            color_accidental_too: bool = False
-        ):
-            # Create text expression, and insert it as requested
-            textExp = m21.expressions.TextExpression(text)
-            textExp.style.color = color
-            insert_in_stream: m21.stream.Stream | None = None
-            insert_at_offset: OffsetQL | None = None
-            if isinstance(m21_obj, m21.stream.Stream):
-                if isinstance(m21_obj, m21.stream.Part):
-                    # insert in first Measure of Part
-                    insert_at_stream = m21_obj[m21.stream.Measure].first()
-                else:
-                    # insert in stream
-                    insert_in_stream = m21_obj
-                insert_at_offset = 0.
-            elif isinstance(m21_obj, m21.spanner.Spanner):
-                insertionPoint: m21.base.Music21Object = m21_obj.getFirst()
-                if isinstance(insertionPoint, m21.stream.Part):
-                    # insertionPoint is a part, put the textExp at offset 0
-                    # in the first measure in the part
-                    insert_in_stream = insertionPoint[m21.stream.Measure].first()
-                    insert_at_offset = 0.
-                elif isinstance(insertionPoint, m21.stream.Measure):
-                    # insertionPoint is a measure, put the textExp at offset 0
-                    # inside the measure
-                    insert_in_stream = insertionPoint
-                    insert_at_offset = 0.
-                else:
-                    # insertionPoint is something else, put the textExp right next to it.
-                    insert_in_stream = insertionPoint.activeSite
-                    insert_at_offset = insertionPoint.offset
-            else:
-                # neither Stream nor Spanner, just insert the textExp right next to it
-                insert_in_stream = m21_obj.activeSite
-                insert_at_offset = m21_obj.offset
-
-            if insert_in_stream is not None and insert_at_offset is not None:
-                insert_in_stream.insert(insert_at_offset, textExp)
-            else:
-                raise ValueError("stream or offset of descriptive text is missing.")
-
-            # color the m21_obj with the requested color
-            if isinstance(m21_obj, m21.stream.Stream):
-                # m21_obj is a Score or Part or Measure or Voice...
-                # Color every note and rest in that stream, recursively.
-                # Don't bother with accidentals.
-                for el in m21_obj.recurse().notesAndRests:
-                    el.style.color = color
-            elif note_idx is not None:
-                if isinstance(m21_obj, m21.chord.ChordBase):
-                    specified_note: m21.note.GeneralNote = m21_obj.notes[note_idx]
-                    specified_note.style.color = color
-                    if color_accidental_too and hasattr(specified_note, 'pitch'):
-                        if specified_note.pitch.accidental:
-                            specified_note.pitch.accidental.style.color = color
-                else:
-                    # Can happen if imported xml has repeated xml:id values,
-                    # so getElementById returns an unexpected non-Chord.
-                    # Don't crash by looking for notes, just color whatever the
-                    # returned object is.
-                    m21_obj.style.color = color
-                    if color_accidental_too and hasattr(m21_obj, 'pitch'):
-                        if m21_obj.pitch.accidental:
-                            m21_obj.pitch.accidental.style.color = color
-            else:
-                m21_obj.style.color = color
-                if color_accidental_too and hasattr(m21_obj, 'pitch'):
-                    if m21_obj.pitch.accidental:
-                        m21_obj.pitch.accidental.style.color = color
-
-        def dict_change_str(prefix: str, dict1: dict[str, str], dict2: dict[str, str]) -> str:
-            change_str: str = prefix
-            for k1, v1 in dict1.items():
-                if k1 not in dict2 or dict2[k1] != v1:
-                    if change_str:
-                        change_str += ","
-                    change_str += k1
-            # one last thing: check for keys in dict2 that aren't in dict1
-            for k2 in dict2:
-                if k2 not in dict1:
-                    if change_str:
-                        change_str += ","
-                    change_str += k2
-            return change_str
-
         changedStr: str
-        for op in operations:
+        for op in op_list:
             m21_obj1: m21.base.Music21Object | None
             m21_obj2: m21.base.Music21Object | None
             m21_obj1, m21_obj2 = op.get_m21_objs(score1, score2)
@@ -160,39 +70,39 @@ class Visualization:
             if op.name == "insbar":
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.stream.Measure)
-                draw_diff(m21_obj2, "inserted measure", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted measure", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "delbar":
                 assert isinstance(m21_obj1, m21.stream.Measure)
                 assert m21_obj2 is None
-                draw_diff(m21_obj1, "deleted measure", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted measure", Visualization.DELETED_COLOR)
                 continue
 
             # voices
             if op.name == "voiceins":
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.stream.Voice)
-                draw_diff(m21_obj2, "inserted voice", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted voice", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "voicedel":
                 assert isinstance(m21_obj1, m21.stream.Voice)
                 assert m21_obj2 is None
-                draw_diff(m21_obj1, "deleted voice", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted voice", Visualization.DELETED_COLOR)
                 continue
 
             # extra
             if op.name == "extrains":
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.base.Music21Object)
-                draw_diff(m21_obj2, f"inserted {m21_obj2.classes[0]}", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, f"inserted {m21_obj2.classes[0]}", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "extradel":
                 assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert m21_obj2 is None
-                draw_diff(m21_obj1, f"deleted {m21_obj1.classes[0]}", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, f"deleted {m21_obj1.classes[0]}", Visualization.DELETED_COLOR)
                 continue
 
             if op.name == "extrasub":
@@ -201,32 +111,32 @@ class Visualization:
                 if m21_obj1.classes[0] != m21_obj2.classes[0]:
                     # This no longer happens(?) due to the new extras_set_distance
                     # comparison algorithm (we never compare different kinds of extras)
-                    draw_diff(m21_obj1, f"changed to {m21_obj2.classes[0]}",
+                    Visualization._draw_diff(m21_obj1, f"changed to {m21_obj2.classes[0]}",
                         Visualization.CHANGED_COLOR)
-                    draw_diff(m21_obj2, f"changed from {m21_obj1.classes[0]}",
+                    Visualization._draw_diff(m21_obj2, f"changed from {m21_obj1.classes[0]}",
                         Visualization.CHANGED_COLOR)
                 else:
-                    draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]}",
+                    Visualization._draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]}",
                         Visualization.CHANGED_COLOR)
-                    draw_diff(m21_obj2, f"changed {m21_obj1.classes[0]}",
+                    Visualization._draw_diff(m21_obj2, f"changed {m21_obj1.classes[0]}",
                         Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "extracontentedit":
                 assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(m21_obj2, m21.base.Music21Object)
-                draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} text",
+                Visualization._draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} text",
                     Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} text",
+                Visualization._draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} text",
                     Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "extrasymboledit":
                 assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(m21_obj2, m21.base.Music21Object)
-                draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} symbol",
+                Visualization._draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} symbol",
                     Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} symbol",
+                Visualization._draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} symbol",
                     Visualization.CHANGED_COLOR)
                 continue
 
@@ -235,40 +145,40 @@ class Visualization:
                 assert isinstance(m21_obj2, m21.base.Music21Object)
                 assert isinstance(op.obj1, AnnExtra)  # because we access infodict
                 assert isinstance(op.obj2, AnnExtra)  # because we access infodict
-                changedStr = dict_change_str("info: ", op.obj1.infodict, op.obj2.infodict)
-                draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} {changedStr}",
+                changedStr = Visualization._dict_change_str(op.obj1.infodict, op.obj2.infodict)
+                Visualization._draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} info: {changedStr}",
                     Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} {changedStr}",
+                Visualization._draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} info: {changedStr}",
                     Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "extraoffsetedit":
                 assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(m21_obj2, m21.base.Music21Object)
-                draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} offset",
+                Visualization._draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} offset",
                     Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} offset",
+                Visualization._draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} offset",
                     Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "extradurationedit":
                 assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(m21_obj2, m21.base.Music21Object)
-                draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} duration",
+                Visualization._draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} duration",
                     Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} duration",
+                Visualization._draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} duration",
                     Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "extrastyleedit":
                 assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(m21_obj2, m21.base.Music21Object)
-                assert isinstance(op.obj1, AnnExtra)  # because we access styledict
-                assert isinstance(op.obj2, AnnExtra)  # because we access styledict
-                changedStr = dict_change_str("style: ", op.obj1.styledict, op.obj2.styledict)
-                draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} {changedStr}",
+                assert isinstance(op.obj1, AnnObject)  # because we access styledict
+                assert isinstance(op.obj2, AnnObject)  # because we access styledict
+                changedStr = Visualization._dict_change_str(op.obj1.styledict, op.obj2.styledict)
+                Visualization._draw_diff(m21_obj1, f"changed {m21_obj1.classes[0]} style: {changedStr}",
                     Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} {changedStr}",
+                Visualization._draw_diff(m21_obj2, f"changed {m21_obj2.classes[0]} style: {changedStr}",
                     Visualization.CHANGED_COLOR)
                 continue
 
@@ -276,68 +186,68 @@ class Visualization:
             if op.name == "inspart":
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.stream.Part)
-                draw_diff(m21_obj2, "inserted Part", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted Part", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "delpart":
                 assert isinstance(m21_obj1, m21.stream.Part)
                 assert m21_obj2 is None
-                draw_diff(m21_obj1, "deleted Part", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted Part", Visualization.DELETED_COLOR)
                 continue
 
             # staff groups
             if op.name == "staffgrpins":
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.layout.StaffGroup)
-                draw_diff(m21_obj2, "inserted StaffGroup", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted StaffGroup", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "staffgrpdel":
                 assert isinstance(m21_obj1, m21.layout.StaffGroup)
                 assert m21_obj2 is None
-                draw_diff(m21_obj1, "deleted StaffGroup", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted StaffGroup", Visualization.DELETED_COLOR)
                 continue
 
             if op.name == "staffgrpsub":
                 assert isinstance(m21_obj1, m21.layout.StaffGroup)
                 assert isinstance(m21_obj2, m21.layout.StaffGroup)
-                draw_diff(m21_obj1, "changed StaffGroup", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed StaffGroup", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed StaffGroup", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed StaffGroup", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "staffgrpnameedit":
                 assert isinstance(m21_obj1, m21.layout.StaffGroup)
                 assert isinstance(m21_obj2, m21.layout.StaffGroup)
-                draw_diff(m21_obj1, "changed StaffGroup name", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed StaffGroup name", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed StaffGroup name", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed StaffGroup name", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "staffgrpabbreviationedit":
                 assert isinstance(m21_obj1, m21.layout.StaffGroup)
                 assert isinstance(m21_obj2, m21.layout.StaffGroup)
-                draw_diff(m21_obj1, "changed StaffGroup abbreviation", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed StaffGroup abbreviation", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed StaffGroup abbreviation", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed StaffGroup abbreviation", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "staffgrpsymboledit":
                 assert isinstance(m21_obj1, m21.layout.StaffGroup)
                 assert isinstance(m21_obj2, m21.layout.StaffGroup)
-                draw_diff(m21_obj1, "changed StaffGroup symbol shape", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed StaffGroup symbol shape", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed StaffGroup symbol shape", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed StaffGroup symbol shape", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "staffgrpbartogetheredit":
                 assert isinstance(m21_obj1, m21.layout.StaffGroup)
                 assert isinstance(m21_obj2, m21.layout.StaffGroup)
-                draw_diff(m21_obj1, "changed StaffGroup barline type", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed StaffGroup barline type", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed StaffGroup barline type", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed StaffGroup barline type", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "staffgrppartindicesedit":
                 assert isinstance(m21_obj1, m21.layout.StaffGroup)
                 assert isinstance(m21_obj2, m21.layout.StaffGroup)
-                draw_diff(m21_obj1, "changed StaffGroup parts", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed StaffGroup parts", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed StaffGroup parts", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed StaffGroup parts", Visualization.CHANGED_COLOR)
                 continue
 
             # note
@@ -345,7 +255,7 @@ class Visualization:
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
                 assert op.indexes is None or isinstance(op.indexes, int)
-                draw_diff(m21_obj2, f"inserted {m21_obj2.classes[0]}",
+                Visualization._draw_diff(m21_obj2, f"inserted {m21_obj2.classes[0]}",
                     Visualization.INSERTED_COLOR, note_idx=op.indexes)
                 continue
 
@@ -353,7 +263,7 @@ class Visualization:
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert m21_obj2 is None
                 assert op.indexes is None or isinstance(op.indexes, int)
-                draw_diff(m21_obj1, f"deleted {m21_obj1.classes[0]}",
+                Visualization._draw_diff(m21_obj1, f"deleted {m21_obj1.classes[0]}",
                     Visualization.DELETED_COLOR, note_idx=op.indexes)
                 continue
 
@@ -367,9 +277,9 @@ class Visualization:
                 assert len(op.indexes) == 2
                 assert isinstance(op.indexes[0], int)
                 assert isinstance(op.indexes[1], int)
-                draw_diff(m21_obj1, "changed pitch",
+                Visualization._draw_diff(m21_obj1, "changed pitch",
                     Visualization.CHANGED_COLOR, note_idx=op.indexes[0])
-                draw_diff(m21_obj2, "changed pitch",
+                Visualization._draw_diff(m21_obj2, "changed pitch",
                     Visualization.CHANGED_COLOR, note_idx=op.indexes[1])
                 continue
 
@@ -377,7 +287,7 @@ class Visualization:
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
                 assert isinstance(op.indexes, int)  # the index must be there
-                draw_diff(m21_obj2, "inserted note in chord",
+                Visualization._draw_diff(m21_obj2, "inserted note in chord",
                     Visualization.INSERTED_COLOR, note_idx=op.indexes)
                 continue
 
@@ -385,100 +295,100 @@ class Visualization:
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert m21_obj2 is None
                 assert isinstance(op.indexes, int)  # the index must be there
-                draw_diff(m21_obj1, "deleted note from chord",
+                Visualization._draw_diff(m21_obj1, "deleted note from chord",
                     Visualization.DELETED_COLOR, note_idx=op.indexes)
                 continue
 
             if op.name == "headedit":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed note head", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed note head", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed note head", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed note head", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "graceedit":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed grace note", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed grace note", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed grace note", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed grace note", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "graceslashedit":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed grace note slash", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed grace note slash", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed grace note slash", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed grace note slash", Visualization.CHANGED_COLOR)
                 continue
 
             # beam
             if op.name == "insbeam":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "increased flags", Visualization.INSERTED_COLOR)
-                draw_diff(m21_obj2, "increased flags", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj1, "increased flags", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "increased flags", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "delbeam":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "decreased flags", Visualization.DELETED_COLOR)
-                draw_diff(m21_obj2, "decreased flags", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "decreased flags", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj2, "decreased flags", Visualization.DELETED_COLOR)
                 continue
 
             if op.name == "editbeam":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed flags", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed flags", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed flags", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed flags", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "editnoteshape":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed note shape", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed note shape", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed note shape", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed note shape", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "editspace":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed space before", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed space before", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed space before", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed space before", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "insspace":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "inserted space before", Visualization.INSERTED_COLOR)
-                draw_diff(m21_obj2, "inserted space before", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj1, "inserted space before", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted space before", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "delspace":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "deleted space before", Visualization.DELETED_COLOR)
-                draw_diff(m21_obj2, "deleted space before", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted space before", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj2, "deleted space before", Visualization.DELETED_COLOR)
                 continue
 
             if op.name == "editnoteheadfill":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed note head fill", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed note head fill", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed note head fill", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed note head fill", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "editnoteheadparenthesis":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed note head paren", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed note head paren", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed note head paren", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed note head paren", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "editstemdirection":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed stem direction", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed stem direction", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed stem direction", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed stem direction", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "editstyle":
@@ -486,9 +396,9 @@ class Visualization:
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
                 assert isinstance(op.obj1, AnnObject)  # for styledict
                 assert isinstance(op.obj2, AnnObject)  # for styledict
-                changedStr = dict_change_str("", op.obj1.styledict, op.obj2.styledict)
-                draw_diff(m21_obj1, f"changed note {changedStr}", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, f"changed note {changedStr}", Visualization.CHANGED_COLOR)
+                changedStr = Visualization._dict_change_str(op.obj1.styledict, op.obj2.styledict)
+                Visualization._draw_diff(m21_obj1, f"changed note {changedStr}", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, f"changed note {changedStr}", Visualization.CHANGED_COLOR)
                 continue
 
             # accident
@@ -499,9 +409,9 @@ class Visualization:
                 assert len(op.indexes) == 2
                 assert isinstance(op.indexes[0], int)
                 assert isinstance(op.indexes[1], int)
-                draw_diff(m21_obj1, "inserted accidental",
+                Visualization._draw_diff(m21_obj1, "inserted accidental",
                     Visualization.INSERTED_COLOR, note_idx=op.indexes[0], color_accidental_too=True)
-                draw_diff(m21_obj2, "inserted accidental",
+                Visualization._draw_diff(m21_obj2, "inserted accidental",
                     Visualization.INSERTED_COLOR, note_idx=op.indexes[1], color_accidental_too=True)
                 continue
 
@@ -512,9 +422,9 @@ class Visualization:
                 assert len(op.indexes) == 2
                 assert isinstance(op.indexes[0], int)
                 assert isinstance(op.indexes[1], int)
-                draw_diff(m21_obj1, "deleted accidental",
+                Visualization._draw_diff(m21_obj1, "deleted accidental",
                     Visualization.DELETED_COLOR, note_idx=op.indexes[0], color_accidental_too=True)
-                draw_diff(m21_obj2, "deleted accidental",
+                Visualization._draw_diff(m21_obj2, "deleted accidental",
                     Visualization.DELETED_COLOR, note_idx=op.indexes[1], color_accidental_too=True)
                 continue
 
@@ -525,46 +435,46 @@ class Visualization:
                 assert len(op.indexes) == 2
                 assert isinstance(op.indexes[0], int)
                 assert isinstance(op.indexes[1], int)
-                draw_diff(m21_obj1, "changed accidental",
+                Visualization._draw_diff(m21_obj1, "changed accidental",
                     Visualization.CHANGED_COLOR, note_idx=op.indexes[0], color_accidental_too=True)
-                draw_diff(m21_obj2, "changed accidental",
+                Visualization._draw_diff(m21_obj2, "changed accidental",
                     Visualization.CHANGED_COLOR, note_idx=op.indexes[1], color_accidental_too=True)
                 continue
 
             if op.name == "dotins":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "inserted dot", Visualization.INSERTED_COLOR)
-                draw_diff(m21_obj2, "inserted dot", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj1, "inserted dot", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted dot", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "dotdel":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "deleted dot", Visualization.DELETED_COLOR)
-                draw_diff(m21_obj2, "deleted dot", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted dot", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj2, "deleted dot", Visualization.DELETED_COLOR)
                 continue
 
             # tuplets
             if op.name == "instuplet":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "inserted tuplet", Visualization.INSERTED_COLOR)
-                draw_diff(m21_obj2, "inserted tuplet", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj1, "inserted tuplet", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted tuplet", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "deltuplet":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "deleted tuplet", Visualization.DELETED_COLOR)
-                draw_diff(m21_obj2, "deleted tuplet", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted tuplet", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj2, "deleted tuplet", Visualization.DELETED_COLOR)
                 continue
 
             if op.name == "edittuplet":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed tuplet", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed tuplet", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed tuplet", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed tuplet", Visualization.CHANGED_COLOR)
                 continue
 
             # ties
@@ -575,9 +485,9 @@ class Visualization:
                 assert len(op.indexes) == 2
                 assert isinstance(op.indexes[0], int)
                 assert isinstance(op.indexes[1], int)
-                draw_diff(m21_obj1, "inserted tie",
+                Visualization._draw_diff(m21_obj1, "inserted tie",
                     Visualization.INSERTED_COLOR, note_idx=op.indexes[0])
-                draw_diff(m21_obj2, "inserted tie",
+                Visualization._draw_diff(m21_obj2, "inserted tie",
                     Visualization.INSERTED_COLOR, note_idx=op.indexes[1])
                 continue
 
@@ -588,9 +498,9 @@ class Visualization:
                 assert len(op.indexes) == 2
                 assert isinstance(op.indexes[0], int)
                 assert isinstance(op.indexes[1], int)
-                draw_diff(m21_obj1, "deleted tie",
+                Visualization._draw_diff(m21_obj1, "deleted tie",
                     Visualization.DELETED_COLOR, note_idx=op.indexes[0])
-                draw_diff(m21_obj2, "deleted tie",
+                Visualization._draw_diff(m21_obj2, "deleted tie",
                     Visualization.DELETED_COLOR, note_idx=op.indexes[1])
                 continue
 
@@ -598,169 +508,195 @@ class Visualization:
             if op.name == "insexpression":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "inserted expression", Visualization.INSERTED_COLOR)
-                draw_diff(m21_obj2, "inserted expression", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj1, "inserted expression", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted expression", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "delexpression":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "deleted expression", Visualization.DELETED_COLOR)
-                draw_diff(m21_obj2, "deleted expression", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted expression", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj2, "deleted expression", Visualization.DELETED_COLOR)
                 continue
 
             if op.name == "editexpression":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed expression", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed expression", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed expression", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed expression", Visualization.CHANGED_COLOR)
                 continue
 
             # articulations
             if op.name == "insarticulation":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "inserted articulation", Visualization.INSERTED_COLOR)
-                draw_diff(m21_obj2, "inserted articulation", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj1, "inserted articulation", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted articulation", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "delarticulation":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "deleted articulation", Visualization.DELETED_COLOR)
-                draw_diff(m21_obj2, "deleted articulation", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted articulation", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj2, "deleted articulation", Visualization.DELETED_COLOR)
                 continue
 
             if op.name == "editarticulation":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj1, "changed articulation", Visualization.CHANGED_COLOR)
-                draw_diff(m21_obj2, "changed articulation", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj1, "changed articulation", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed articulation", Visualization.CHANGED_COLOR)
                 continue
 
             # lyrics
             if op.name == "lyricins":
                 assert m21_obj1 is None
                 assert isinstance(m21_obj2, m21.note.GeneralNote)
-                draw_diff(m21_obj2, "inserted lyric", Visualization.INSERTED_COLOR)
+                Visualization._draw_diff(m21_obj2, "inserted lyric", Visualization.INSERTED_COLOR)
                 continue
 
             if op.name == "lyricdel":
                 assert isinstance(m21_obj1, m21.note.GeneralNote)
                 assert m21_obj2 is None
-                draw_diff(m21_obj1, "deleted lyric", Visualization.DELETED_COLOR)
+                Visualization._draw_diff(m21_obj1, "deleted lyric", Visualization.DELETED_COLOR)
                 continue
 
-            if op.name in ("lyricsub", "lyricedit"):
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                # color the note with changed lyric (in both scores) using
-                # Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+            if op.name in ("lyricedit"):
+                assert isinstance(m21_obj1, m21.note.GeneralNote)
+                assert isinstance(m21_obj2, m21.note.GeneralNote)
+                Visualization._draw_diff(m21_obj1, "changed lyric", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed lyric", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "lyricnumedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric verse num")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric verse num")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                assert isinstance(m21_obj1, m21.note.GeneralNote)
+                assert isinstance(m21_obj2, m21.note.GeneralNote)
+                Visualization._draw_diff(m21_obj1, "changed lyric verse num", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed lyric verse num", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "lyricidedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric verse id")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric verse id")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                assert isinstance(m21_obj1, m21.note.GeneralNote)
+                assert isinstance(m21_obj2, m21.note.GeneralNote)
+                Visualization._draw_diff(m21_obj1, "changed lyric verse id", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed lyric verse id", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "lyricoffsetedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric offset")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric offset")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                assert isinstance(m21_obj1, m21.note.GeneralNote)
+                assert isinstance(m21_obj2, m21.note.GeneralNote)
+                Visualization._draw_diff(m21_obj1, "changed lyric offset", Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, "changed lyric offset", Visualization.CHANGED_COLOR)
                 continue
 
             if op.name == "lyricstyleedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                # color the modified note (in both scores) using Visualization.CHANGED_COLOR
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note1.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric style")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note1.activeSite.insert(note1.offset, textExp)
-
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                note2.style.color = Visualization.CHANGED_COLOR
-                textExp = m21.expressions.TextExpression("changed lyric style")
-                textExp.style.color = Visualization.CHANGED_COLOR
-                note2.activeSite.insert(note2.offset, textExp)
+                assert isinstance(m21_obj1, m21.base.Music21Object)
+                assert isinstance(m21_obj2, m21.base.Music21Object)
+                assert isinstance(op.obj1, AnnObject)  # because we access styledict
+                assert isinstance(op.obj2, AnnObject)  # because we access styledict
+                changedStr = Visualization._dict_change_str(op.obj1.styledict, op.obj2.styledict)
+                Visualization._draw_diff(m21_obj1, f"changed lyric style: {changedStr}",
+                    Visualization.CHANGED_COLOR)
+                Visualization._draw_diff(m21_obj2, f"changed lyric style: {changedStr}",
+                    Visualization.CHANGED_COLOR)
                 continue
 
             print(
                 f"Annotation type {op.name} not yet supported for visualization",
                 file=sys.stderr
             )
+
+    @staticmethod
+    def _draw_diff(
+        m21_obj: m21.base.Music21Object,
+        text: str,
+        color: str,
+        note_idx: int | None = None,
+        color_accidental_too: bool = False
+    ):
+        # Create text expression, and insert it as requested
+        textExp = m21.expressions.TextExpression(text)
+        textExp.style.color = color
+        insert_in_stream: m21.stream.Stream | None = None
+        insert_at_offset: OffsetQL | None = None
+        if isinstance(m21_obj, m21.stream.Stream):
+            if isinstance(m21_obj, m21.stream.Part):
+                # insert in first Measure of Part
+                insert_at_stream = m21_obj[m21.stream.Measure].first()
+            else:
+                # insert in stream
+                insert_in_stream = m21_obj
+            insert_at_offset = 0.
+        elif isinstance(m21_obj, m21.spanner.Spanner):
+            insertionPoint: m21.base.Music21Object = m21_obj.getFirst()
+            if isinstance(insertionPoint, m21.stream.Part):
+                # insertionPoint is a part, put the textExp at offset 0
+                # in the first measure in the part
+                insert_in_stream = insertionPoint[m21.stream.Measure].first()
+                insert_at_offset = 0.
+            elif isinstance(insertionPoint, m21.stream.Measure):
+                # insertionPoint is a measure, put the textExp at offset 0
+                # inside the measure
+                insert_in_stream = insertionPoint
+                insert_at_offset = 0.
+            else:
+                # insertionPoint is something else, put the textExp right next to it.
+                insert_in_stream = insertionPoint.activeSite
+                insert_at_offset = insertionPoint.offset
+        else:
+            # neither Stream nor Spanner, just insert the textExp right next to it
+            insert_in_stream = m21_obj.activeSite
+            insert_at_offset = m21_obj.offset
+
+        if insert_in_stream is not None and insert_at_offset is not None:
+            insert_in_stream.insert(insert_at_offset, textExp)
+        else:
+            raise ValueError("stream or offset of descriptive text is missing.")
+
+        # color the m21_obj with the requested color
+        if isinstance(m21_obj, m21.stream.Stream):
+            # m21_obj is a Score or Part or Measure or Voice...
+            # Color every note and rest in that stream, recursively.
+            # Don't bother with accidentals.
+            for el in m21_obj.recurse().notesAndRests:
+                el.style.color = color
+        elif note_idx is not None:
+            if isinstance(m21_obj, m21.chord.ChordBase):
+                specified_note: m21.note.GeneralNote = m21_obj.notes[note_idx]
+                specified_note.style.color = color
+                if color_accidental_too and hasattr(specified_note, 'pitch'):
+                    if specified_note.pitch.accidental:
+                        specified_note.pitch.accidental.style.color = color
+            else:
+                # Can happen if imported xml has repeated xml:id values,
+                # so getElementById returns an unexpected non-Chord.
+                # Don't crash by looking for notes, just color whatever the
+                # returned object is.
+                m21_obj.style.color = color
+                if color_accidental_too and hasattr(m21_obj, 'pitch'):
+                    if m21_obj.pitch.accidental:
+                        m21_obj.pitch.accidental.style.color = color
+        else:
+            m21_obj.style.color = color
+            if color_accidental_too and hasattr(m21_obj, 'pitch'):
+                if m21_obj.pitch.accidental:
+                    m21_obj.pitch.accidental.style.color = color
+
+    @staticmethod
+    def _dict_change_str(dict1: dict[str, str], dict2: dict[str, str]) -> str:
+        change_str: str = ""
+        for k1, v1 in dict1.items():
+            if k1 not in dict2 or dict2[k1] != v1:
+                if change_str:
+                    change_str += ","
+                change_str += k1
+        # one last thing: check for keys in dict2 that aren't in dict1
+        for k2 in dict2:
+            if k2 not in dict1:
+                if change_str:
+                    change_str += ","
+                change_str += k2
+        return change_str
 
     @staticmethod
     def show_diffs(
@@ -932,7 +868,7 @@ class Visualization:
     def get_text_output(
         score1: m21.stream.Score,
         score2: m21.stream.Score,
-        operations: list[DiffOperation],
+        op_list: list[DiffOperation],
         score1Name: str | Path | None = None,
         score2Name: str | Path | None = None
     ) -> str:
@@ -943,7 +879,7 @@ class Visualization:
         Args:
             score1 (music21.stream.Score): The first score that was compared
             score2 (music21.stream.Score): The second score that was compared
-            operations (list[DiffOperation]): The operations list that describes the difference
+            op_list (list[DiffOperation]): The operations list that describes the difference
                 between the two scores
             score1Name (str | Path | None): The name to use for the first score in the text output
             score2Name (str | Path | None): The name to use for the second score in the text output
@@ -952,7 +888,7 @@ class Visualization:
         outputList: list[str] = []
         oneOutput: str  # one string, multiple lines (with \n at end of all but last line)
 
-        for op in operations:
+        for op in op_list:
             # part
             if op.name == "inspart":
                 assert isinstance(op.obj2, AnnPart)
@@ -2176,7 +2112,7 @@ class Visualization:
 
         outputList.sort(key=lambda s: (measNum(s), measSuf(s), staffNum(s), beat(s)))
 
-        if operations:
+        if op_list:
             # filenames only show up at the start of text output if there are any diffs
             if score1Name:
                 outputList.insert(0, f"--- {score1Name}")
