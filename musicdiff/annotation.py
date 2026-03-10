@@ -29,7 +29,18 @@ from musicdiff.m21utils import PitchInfo
 # search/replace when supporting staves with other than 5 lines
 LINES_PER_STAFF: int = 5
 
-class AnnNote:
+class AnnObject:
+    def __init__(self, m21Obj: m21.base.Music21Object | None = None):
+        self.styledict: dict[str, str] = {}
+        self.id: str | int
+
+        if m21Obj is not None:
+            self.id = m21Obj.id
+        else:
+            # currently only AnnMetadataItem has no m21 obj
+            self.id = id(self)
+
+class AnnNote(AnnObject):
     def __init__(
         self,
         general_note: m21.note.GeneralNote,
@@ -58,12 +69,12 @@ class AnnNote:
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
         """
-        self.general_note: int | str = general_note.id
+        super().__init__(general_note)
         self.is_in_chord: bool = False
         self.note_idx_in_chord: int | None = None
         if parent_chord is not None:
             # This is what visualization uses to color the note red (chord id and note idx)
-            self.general_note = parent_chord.id
+            self.id = parent_chord.id
             self.is_in_chord = True
             self.note_idx_in_chord = parent_chord.notes.index(general_note)
 
@@ -114,8 +125,6 @@ class AnnNote:
             self.note_dur_type = carrier.duration.type
             self.note_dur_dots = carrier.duration.dots
             self.note_is_grace = carrier.duration.isGrace
-
-        self.styledict: dict = {}
 
         if DetailLevel.includesStyle(detail):
             # we will take style from the individual note, and then override with
@@ -535,7 +544,7 @@ class AnnNote:
         # must include a unique id for memoization!
         # we use the music21 id of the general note.
         return (
-            f"GeneralNote({self.general_note}),G:{self.gap_dur},"
+            f"GeneralNote({self.id}),G:{self.gap_dur},"
             + f"P:{self.pitches},H:{self.note_head},D:{self.dots},"
             + f"B:{self.beamings},T:{self.tuplets},TI:{self.tuplet_info},"
             + f"A:{self.articulations},E:{self.expressions},"
@@ -632,14 +641,14 @@ class AnnNote:
         Returns:
             [int]: A list containing the single GeneralNote id for this note.
         """
-        return [self.general_note]
+        return [self.id]
 
     def __eq__(self, other) -> bool:
         # equality does not consider the MEI id!
         return self.precomputed_str == other.precomputed_str
 
 
-class AnnExtra:
+class AnnExtra(AnnObject):
     def __init__(
         self,
         extra: m21.base.Music21Object,
@@ -666,9 +675,8 @@ class AnnExtra:
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
         """
-        self.extra = extra.id
+        super().__init__(extra)
         self.kind: str = M21Utils.extra_to_kind(extra)
-        self.styledict: dict = {}
 
         # kind-specific fields (set to None if not relevant)
 
@@ -831,7 +839,7 @@ class AnnExtra:
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the extra.
-        output: str = f"Extra({self.extra}):"
+        output: str = f"Extra({self.id}):"
         output += str(self)
         return output
 
@@ -866,7 +874,7 @@ class AnnExtra:
         return self.precomputed_str == other.precomputed_str
 
 
-class AnnLyric:
+class AnnLyric(AnnObject):
     def __init__(
         self,
         lyric_holder: m21.note.GeneralNote,  # note containing the lyric
@@ -879,10 +887,10 @@ class AnnLyric:
         compared information about it.
 
         Args:
-            lyric_holder (music21.note.GeneralNote): The note/chord/rest containing the lyric.
+            lyric_holder (music21.note.GeneralNote): The note/chord containing the lyric.
             lyric (music21.note.Lyric): The music21 Lyric object to extend.
             measure (music21.stream.Measure): The music21 Measure the lyric was found in.
-                If the lyric was found in a Voice, this is the Measure that the lyric was
+                If the lyric was found in a Voice, this is the Measure that the voice was
                 found in.
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
@@ -891,14 +899,13 @@ class AnnLyric:
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
         """
-        self.lyric_holder = lyric_holder.id
+        super().__init__(lyric_holder)
 
         # for comparison: lyric, number, identifier, offset, styledict
         self.lyric: str = ""
         self.number: int = 0
         self.identifier: str = ""
         self.offset = lyric_holder.getOffsetInHierarchy(measure)
-        self.styledict: dict[str, str] = {}
 
         # ignore .syllabic and .text, what is visible is .rawText (and there
         # are several .syllabic/.text combos that create the same .rawText).
@@ -979,7 +986,7 @@ class AnnLyric:
         # we use the music21 id of the general note
         # that holds the lyric, plus the lyric
         # number within that general note.
-        output: str = f"Lyric({self.lyric_holder}[{self.number}]):"
+        output: str = f"Lyric({self.id}[{self.number}]):"
         output += str(self)
         return output
 
@@ -999,7 +1006,7 @@ class AnnLyric:
         return self.precomputed_str == other.precomputed_str
 
 
-class AnnVoice:
+class AnnVoice(AnnObject):
     def __init__(
         self,
         voice: m21.stream.Voice | m21.stream.Measure,
@@ -1020,7 +1027,7 @@ class AnnVoice:
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
         """
-        self.voice: int | str = voice.id
+        super().__init__(voice)
         note_list: list[m21.note.GeneralNote] = []
 
         if DetailLevel.includesNotesAndRests(detail):
@@ -1108,7 +1115,7 @@ class AnnVoice:
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the voice.
-        string: str = f"Voice({self.voice}):"
+        string: str = f"Voice({self.id}):"
         string += "["
         for an in self.annot_notes:
             string += repr(an)
@@ -1141,10 +1148,10 @@ class AnnVoice:
         Returns:
             [int]: A list containing the GeneralNote ids contained in this voice
         """
-        return [an.general_note for an in self.annot_notes]
+        return [an.id for an in self.annot_notes]
 
 
-class AnnMeasure:
+class AnnMeasure(AnnObject):
     def __init__(
         self,
         measure: m21.stream.Measure,
@@ -1169,7 +1176,7 @@ class AnnMeasure:
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
         """
-        self.measure: int | str = measure.id
+        super().__init__(measure)
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
         self.n_of_elements: int = 0
 
@@ -1290,7 +1297,7 @@ class AnnMeasure:
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the measure.
-        output: str = f"Measure({self.measure}):"
+        output: str = f"Measure({self.id}):"
         if self.includes_voicing:
             output += str([repr(v) for v in self.voices_list])
         else:
@@ -1368,7 +1375,7 @@ class AnnMeasure:
         return notes_id
 
 
-class AnnPart:
+class AnnPart(AnnObject):
     def __init__(
         self,
         part: m21.stream.Part,
@@ -1393,7 +1400,7 @@ class AnnPart:
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
         """
-        self.part: int | str = part.id
+        super().__init__(part)
         self.part_idx: int = part_idx
         self.bar_list: list[AnnMeasure] = []
         for measure in part.getElementsByClass("Measure"):
@@ -1440,7 +1447,7 @@ class AnnPart:
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the part.
-        output: str = f"Part({self.part}):"
+        output: str = f"Part({self.id}):"
         output += str([repr(b) for b in self.bar_list])
         return output
 
@@ -1457,7 +1464,7 @@ class AnnPart:
         return notes_id
 
 
-class AnnStaffGroup:
+class AnnStaffGroup(AnnObject):
     def __init__(
         self,
         staff_group: m21.layout.StaffGroup,
@@ -1467,7 +1474,7 @@ class AnnStaffGroup:
         """
         Take a StaffGroup and store it as an annotated object.
         """
-        self.staff_group: int | str = staff_group.id
+        super().__init__(staff_group)
         self.name: str = staff_group.name or ''
         self.abbreviation: str = staff_group.abbreviation or ''
         self.symbol: str | None = None
@@ -1585,14 +1592,14 @@ class AnnStaffGroup:
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the staff group.
-        output: str = f"StaffGroup({self.staff_group}):"
+        output: str = f"StaffGroup({self.id}):"
         output += f" name={self.name}, abbrev={self.abbreviation},"
         output += f" symbol={self.symbol}, barTogether={self.barTogether}"
         output += f", partIndices={self.part_indices}"
         return output
 
 
-class AnnMetadataItem:
+class AnnMetadataItem(AnnObject):
     def __init__(
         self,
         key: str,
@@ -1601,7 +1608,7 @@ class AnnMetadataItem:
         # Normally this would be the id of the Music21Object, but we just have a key/value
         # pair, so we just make up an id, by using our own address.  In this case, we will
         # not be looking this id up in the score, but only using it as a memo-ization key.
-        self.metadata_item = id(self)
+        super().__init__()
         self.key = key
         if isinstance(value, m21.metadata.Text):
             # Create a string representing the text, but not the language or isTranslated,
@@ -1660,7 +1667,7 @@ class AnnMetadataItem:
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # We use id(self), because there is no music21 object here.
-        output: str = f"MetadataItem({self.metadata_item}):"
+        output: str = f"MetadataItem({self.id}):"
         output += self.key + ':' + str(self.value)
         return output
 
@@ -1684,7 +1691,7 @@ class AnnMetadataItem:
         return output
 
 
-class AnnScore:
+class AnnScore(AnnObject):
     def __init__(
         self,
         score: m21.stream.Score,
@@ -1702,7 +1709,7 @@ class AnnScore:
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
         """
-        self.score: int | str = score.id
+        super().__init__(score)
         self.part_list: list[AnnPart] = []
         self.staff_group_list: list[AnnStaffGroup] = []
         self.metadata_items_list: list[AnnMetadataItem] = []
@@ -1831,7 +1838,7 @@ class AnnScore:
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the score.
-        output: str = f"Score({self.score}):"
+        output: str = f"Score({self.id}):"
         output += str(repr(p) for p in self.part_list)
         return output
 

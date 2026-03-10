@@ -21,9 +21,10 @@ from pathlib import Path
 # import typing as t
 import numpy as np
 
+import music21 as m21
 from music21.common import OffsetQL
 from musicdiff.annotation import AnnScore, AnnNote, AnnVoice, AnnExtra, AnnLyric
-from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem
+from musicdiff.annotation import AnnStaffGroup, AnnMetadataItem, AnnObject
 from musicdiff import M21Utils
 from musicdiff.m21utils import PitchInfo
 
@@ -45,6 +46,35 @@ class EvaluationMetrics:
         self.omr_edit_distance: int = omr_edit_distance
         self.edit_distances_dict: dict[str, int] = edit_distances_dict
         self.omr_ned: float = omr_ned
+
+
+class DiffOperation:
+    def __init__(
+        self,
+        name: str,
+        obj1: AnnObject | None,
+        obj2: AnnObject | None,
+        edit_distance: int,
+        indexes: tuple[int, int] | int | None = None
+    ):
+        self.name = name
+        self.obj1 = obj1
+        self.obj2 = obj2
+        self.edit_distance = edit_distance
+        self.indexes = indexes
+
+    def get_m21_objs(
+        self,
+        score1: m21.stream.Score,
+        score2: m21.stream.Score
+    ) -> tuple[m21.base.Music21Object | None, m21.base.Music21Object | None]:
+        m21_obj1: m21.base.Music21Object | None
+        m21_obj2: m21.base.Music21Object | None
+        if self.obj1 is not None:
+            m21_obj1 = score1.recurse().getElementById(self.obj1.id)  # type: ignore
+        if self.obj2 is not None:
+            m21_obj2 = score1.recurse().getElementById(self.obj2.id)  # type: ignore
+        return (m21_obj1, m21_obj2)
 
 # memoizers to speed up the recursive computation
 def _memoize_notes_set_distance(func):
@@ -225,23 +255,24 @@ class Comparison:
         # One without the id (for comparison), and one with the id (to retrieve the bar
         # at the end).
 
-        # get the list of operations
-        op_list = Comparison._myers_diff(
+        # get the list of myers diffs
+        myers_diff_list = Comparison._myers_diff(
             np.array(original, dtype=np.int64), np.array(compare_to, dtype=np.int64)
         )[::-1]
         # retrieve the non common subsequences
         non_common_subsequences = []
         non_common_subsequences.append({"original": [], "compare_to": []})
         ind = 0
-        for op in op_list[::-1]:
-            if op[0] == 2:  # equal
+        for myers_diff in myers_diff_list[::-1]:
+            if myers_diff[0] == 2:  # equal
                 non_common_subsequences.append({"original": [], "compare_to": []})
                 ind += 1
-            elif op[0] == 0:  # original step
-                non_common_subsequences[ind]["original"].append(op[1])
-            elif op[0] == 1:  # compare to step
-                non_common_subsequences[ind]["compare_to"].append(op[1])
-        # remove the empty dict from the list
+            elif myers_diff[0] == 0:  # original step
+                non_common_subsequences[ind]["original"].append(myers_diff[1])
+            elif myers_diff[0] == 1:  # compare to step
+                non_common_subsequences[ind]["compare_to"].append(myers_diff[1])
+
+        # remove the empty dicts from the list
         non_common_subsequences = [
             s for s in non_common_subsequences if s != {"original": [], "compare_to": []}
         ]
@@ -300,7 +331,7 @@ class Comparison:
                 original, compare_to[1:], noteNode1, noteNode2, (ids[0], ids[1] + 1)
             )
             op_list.append(
-                ("inspitch", noteNode1, noteNode2, M21Utils.pitch_size(compare_to[0]), ids)
+                DiffOperation("inspitch", noteNode1, noteNode2, M21Utils.pitch_size(compare_to[0]), ids)
             )
             cost += M21Utils.pitch_size(compare_to[0])
             return op_list, cost
@@ -310,21 +341,21 @@ class Comparison:
                 original[1:], compare_to, noteNode1, noteNode2, (ids[0] + 1, ids[1])
             )
             op_list.append(
-                ("delpitch", noteNode1, noteNode2, M21Utils.pitch_size(original[0]), ids)
+                DiffOperation("delpitch", noteNode1, noteNode2, M21Utils.pitch_size(original[0]), ids)
             )
             cost += M21Utils.pitch_size(original[0])
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
-        cost_dict = {}
-        op_list_dict = {}
+        cost_dict: dict[str, int] = {}
+        op_list_dict: dict[str, list[DiffOperation]] = {}
         # del-pitch
         op_list_dict["delpitch"], cost_dict["delpitch"] = Comparison._pitches_levenshtein_diff(
             original[1:], compare_to, noteNode1, noteNode2, (ids[0] + 1, ids[1])
         )
         cost_dict["delpitch"] += M21Utils.pitch_size(original[0])
         op_list_dict["delpitch"].append(
-            ("delpitch", noteNode1, noteNode2, M21Utils.pitch_size(original[0]), ids)
+            DiffOperation("delpitch", noteNode1, noteNode2, M21Utils.pitch_size(original[0]), ids)
         )
         # ins-pitch
         op_list_dict["inspitch"], cost_dict["inspitch"] = Comparison._pitches_levenshtein_diff(
@@ -332,15 +363,15 @@ class Comparison:
         )
         cost_dict["inspitch"] += M21Utils.pitch_size(compare_to[0])
         op_list_dict["inspitch"].append(
-            ("inspitch", noteNode1, noteNode2, M21Utils.pitch_size(compare_to[0]), ids)
+            DiffOperation("inspitch", noteNode1, noteNode2, M21Utils.pitch_size(compare_to[0]), ids)
         )
         # edit-pitch
         op_list_dict["editpitch"], cost_dict["editpitch"] = Comparison._pitches_levenshtein_diff(
             original[1:], compare_to[1:], noteNode1, noteNode2, (ids[0] + 1, ids[1] + 1)
         )
         if original[0] == compare_to[0]:  # to avoid perform the pitch_diff
-            pitch_diff_op_list = []
-            pitch_diff_cost = 0
+            pitch_diff_op_list: list[DiffOperation] = []
+            pitch_diff_cost: int = 0
         else:
             pitch_diff_op_list, pitch_diff_cost = Comparison._pitches_diff(
                 original[0], compare_to[0], noteNode1, noteNode2, (ids[0], ids[1])
@@ -353,44 +384,51 @@ class Comparison:
         return out
 
     @staticmethod
-    def _pitches_diff(pitch1: PitchInfo, pitch2: PitchInfo, noteNode1, noteNode2, ids):
+    def _pitches_diff(
+        pitch1: PitchInfo,
+        pitch2: PitchInfo,
+        noteNode1: AnnNote,
+        noteNode2: AnnNote,
+        ids: tuple[int, int]
+    ) -> tuple[list[DiffOperation], int]:
         """
-        Compute the differences between two pitch (definition from the paper).
-        a pitch consist of a tuple: pitch name (letter+number), accidental, tie.
-        param : pitch1. The music_notation_repr tuple of note1
-        param : pitch2. The music_notation_repr tuple of note2
-        param : noteNode1. The noteNode where pitch1 belongs
-        param : noteNode2. The noteNode where pitch2 belongs
+        Compute the differences between two pitches (definition from the paper).
+        a pitch consist of: pitch name (letter+number), accidental, tie.
+        param : pitch1. The PitchInfo of note1
+        param : pitch2. The PitchInfo of note2
+        param : noteNode1. The AnnNote where pitch1 belongs
+        param : noteNode2. The AnnNote where pitch2 belongs
         param : ids. (id_from_note1,id_from_note2) The indices of the notes in case of a chord
         Returns:
             [list] -- the list of differences
             [int] -- the cost of diff
         """
-        cost = 0
-        op_list = []
+        cost: int = 0
+        op_list: list[DiffOperation] = []
+
         # add for pitch name differences
         if pitch1.name != pitch2.name:
             cost += 1
             # TODO: select the note in a more precise way in case of a chord
             # rest to note
             if (pitch1.name[0] == "R") != (pitch2.name[0] == "R"):  # xor
-                op_list.append(("pitchtypeedit", noteNode1, noteNode2, 1, ids))
+                op_list.append(DiffOperation("pitchtypeedit", noteNode1, noteNode2, 1, ids))
             else:  # they are two notes or two rests
-                op_list.append(("pitchnameedit", noteNode1, noteNode2, 1, ids))
+                op_list.append(DiffOperation("pitchnameedit", noteNode1, noteNode2, 1, ids))
 
         # add for the accidentals
         if pitch1.accidental != pitch2.accidental:  # if the accidental is different
             if pitch1.accidental == "None":
                 assert pitch2.accidental != "None"
                 cost += 1
-                op_list.append(("accidentins", noteNode1, noteNode2, 1, ids))
+                op_list.append(DiffOperation("accidentins", noteNode1, noteNode2, 1, ids))
             elif pitch2.accidental == "None":
                 assert pitch1.accidental != "None"
                 cost += 1
-                op_list.append(("accidentdel", noteNode1, noteNode2, 1, ids))
+                op_list.append(DiffOperation("accidentdel", noteNode1, noteNode2, 1, ids))
             else:  # a different type of alteration is present
                 cost += 2  # delete then add
-                op_list.append(("accidentedit", noteNode1, noteNode2, 2, ids))
+                op_list.append(DiffOperation("accidentedit", noteNode1, noteNode2, 2, ids))
         # add for the ties
         if pitch1.tied != pitch2.tied:
             # exclusive or. Add if one is tied and not the other.
@@ -398,28 +436,28 @@ class Comparison:
             cost += 1
             if pitch1.tied:
                 assert not pitch2.tied
-                op_list.append(("tiedel", noteNode1, noteNode2, 1, ids))
+                op_list.append(DiffOperation("tiedel", noteNode1, noteNode2, 1, ids))
             elif pitch2.tied:
                 assert not pitch1.tied
-                op_list.append(("tieins", noteNode1, noteNode2, 1, ids))
+                op_list.append(DiffOperation("tieins", noteNode1, noteNode2, 1, ids))
         return op_list, cost
 
     @staticmethod
     @_memoize_block_diff_lin
-    def _block_diff_lin(original, compare_to):
+    def _block_diff_lin(original, compare_to) -> tuple[list[DiffOperation], int]:
         if len(original) == 0 and len(compare_to) == 0:
             return [], 0
 
         if len(original) == 0:
             op_list, cost = Comparison._block_diff_lin(original, compare_to[1:])
             cost += compare_to[0].notation_size()
-            op_list.append(("insbar", None, compare_to[0], compare_to[0].notation_size()))
+            op_list.append(DiffOperation("insbar", None, compare_to[0], compare_to[0].notation_size()))
             return op_list, cost
 
         if len(compare_to) == 0:
             op_list, cost = Comparison._block_diff_lin(original[1:], compare_to)
             cost += original[0].notation_size()
-            op_list.append(("delbar", original[0], None, original[0].notation_size()))
+            op_list.append(DiffOperation("delbar", original[0], None, original[0].notation_size()))
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
@@ -431,7 +469,7 @@ class Comparison:
         )
         cost_dict["delbar"] += original[0].notation_size()
         op_list_dict["delbar"].append(
-            ("delbar", original[0], None, original[0].notation_size())
+            DiffOperation("delbar", original[0], None, original[0].notation_size())
         )
         # ins-bar
         op_list_dict["insbar"], cost_dict["insbar"] = Comparison._block_diff_lin(
@@ -439,7 +477,7 @@ class Comparison:
         )
         cost_dict["insbar"] += compare_to[0].notation_size()
         op_list_dict["insbar"].append(
-            ("insbar", None, compare_to[0], compare_to[0].notation_size())
+            DiffOperation("insbar", None, compare_to[0], compare_to[0].notation_size())
         )
         # edit-bar
         op_list_dict["editbar"], cost_dict["editbar"] = Comparison._block_diff_lin(
@@ -449,8 +487,8 @@ class Comparison:
             original[0] == compare_to[0]
         ):  # to avoid performing the _voices_coupling_recursive/_notes_set_distance
             # if it's not needed
-            inside_bar_op_list = []
-            inside_bar_cost = 0
+            inside_bar_op_list: list[DiffOperation] = []
+            inside_bar_cost: int = 0
         else:
             # diff the bar extras (like _notes_set_distance, but with lists of AnnExtras
             # instead of lists of AnnNotes)
@@ -584,13 +622,16 @@ class Comparison:
         return False
 
     @staticmethod
-    def _annotated_extra_diff(annExtra1: AnnExtra, annExtra2: AnnExtra):
+    def _annotated_extra_diff(
+        annExtra1: AnnExtra,
+        annExtra2: AnnExtra
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the differences between two annotated extras.
         Each annotated extra consists of three values: content, offset, and duration
         """
-        cost = 0
-        op_list = []
+        cost: int = 0
+        op_list: list[DiffOperation] = []
 
         # add for the content
         if annExtra1.content != annExtra2.content:
@@ -601,12 +642,12 @@ class Comparison:
                 )
             )
             cost += content_cost
-            op_list.append(("extracontentedit", annExtra1, annExtra2, content_cost))
+            op_list.append(DiffOperation("extracontentedit", annExtra1, annExtra2, content_cost))
 
         # add for the symbolic (cost 2: delete one symbol, add the other)
         if annExtra1.symbolic != annExtra2.symbolic:
             cost += 2
-            op_list.append(("extrasymboledit", annExtra1, annExtra2, 2))
+            op_list.append(DiffOperation("extrasymboledit", annExtra1, annExtra2, 2))
 
         # add for the infodict
         if annExtra1.infodict != annExtra2.infodict:
@@ -625,38 +666,41 @@ class Comparison:
                     # add a symbol
                     info_cost += 1
             cost += info_cost
-            op_list.append(("extrainfoedit", annExtra1, annExtra2, info_cost))
+            op_list.append(DiffOperation("extrainfoedit", annExtra1, annExtra2, info_cost))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.offset, annExtra2.offset):
             cost += 1
-            op_list.append(("extraoffsetedit", annExtra1, annExtra2, 1))
+            op_list.append(DiffOperation("extraoffsetedit", annExtra1, annExtra2, 1))
 
         # add for the duration
         # Note: duration here is a float, and some file formats have only four
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annExtra1.duration, annExtra2.duration):
             cost += 1
-            op_list.append(("extradurationedit", annExtra1, annExtra2, 1))
+            op_list.append(DiffOperation("extradurationedit", annExtra1, annExtra2, 1))
 
         # add for the style
         if annExtra1.styledict != annExtra2.styledict:
             cost += 1  # someday we might count different items in the styledict
-            op_list.append(("extrastyleedit", annExtra1, annExtra2, 1))
+            op_list.append(DiffOperation("extrastyleedit", annExtra1, annExtra2, 1))
 
         return op_list, cost
 
     @staticmethod
-    def _annotated_lyric_diff(annLyric1: AnnLyric, annLyric2: AnnLyric):
+    def _annotated_lyric_diff(
+        annLyric1: AnnLyric,
+        annLyric2: AnnLyric
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the differences between two annotated lyrics.
         Each annotated lyric consists of five values: lyric, verse_id, offset, duration,
         and styledict.
         """
-        cost = 0
-        op_list = []
+        cost: int = 0
+        op_list: list[DiffOperation] = []
 
         # add for the content
         if annLyric1.lyric != annLyric2.lyric:
@@ -664,7 +708,7 @@ class Comparison:
                 Comparison._strings_levenshtein_distance(annLyric1.lyric, annLyric2.lyric)
             )
             cost += content_cost
-            op_list.append(("lyricedit", annLyric1, annLyric2, content_cost))
+            op_list.append(DiffOperation("lyricedit", annLyric1, annLyric2, content_cost))
 
         # add for the number
         if annLyric1.number != annLyric2.number:
@@ -676,7 +720,7 @@ class Comparison:
                 # add and delete number
                 number_cost = 2
             cost += number_cost
-            op_list.append(("lyricnumedit", annLyric1, annLyric2, number_cost))
+            op_list.append(DiffOperation("lyricnumedit", annLyric1, annLyric2, number_cost))
 
         # add for the identifier
         if annLyric1.identifier != annLyric2.identifier:
@@ -689,19 +733,19 @@ class Comparison:
                 # add and delete identifier
                 id_cost = 2
             cost += id_cost
-            op_list.append(("lyricidedit", annLyric1, annLyric2, id_cost))
+            op_list.append(DiffOperation("lyricidedit", annLyric1, annLyric2, id_cost))
 
         # add for the offset
         # Note: offset here is a float, and some file formats have only four
         # decimal places of precision.  So we should not compare exactly here.
         if Comparison._areDifferentEnough(annLyric1.offset, annLyric2.offset):
             cost += 1
-            op_list.append(("lyricoffsetedit", annLyric1, annLyric2, 1))
+            op_list.append(DiffOperation("lyricoffsetedit", annLyric1, annLyric2, 1))
 
         # add for the style
         if annLyric1.styledict != annLyric2.styledict:
             cost += 1  # someday we might count different items in the styledict
-            op_list.append(("lyricstyleedit", annLyric1, annLyric2, 1))
+            op_list.append(DiffOperation("lyricstyleedit", annLyric1, annLyric2, 1))
 
         return op_list, cost
 
@@ -709,13 +753,13 @@ class Comparison:
     def _annotated_metadata_item_diff(
         annMetadataItem1: AnnMetadataItem,
         annMetadataItem2: AnnMetadataItem
-    ):
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the differences between two annotated metadata items.
         Each annotated metadata item has two values: key: str, value: t.Any,
         """
-        cost = 0
-        op_list = []
+        cost: int = 0
+        op_list: list[DiffOperation] = []
 
         # we don't compare items that don't have the same key.
         if annMetadataItem1.key != annMetadataItem2.key:
@@ -731,20 +775,23 @@ class Comparison:
             )
             cost += value_cost
             op_list.append(
-                ("mditemvalueedit", annMetadataItem1, annMetadataItem2, value_cost)
+                DiffOperation("mditemvalueedit", annMetadataItem1, annMetadataItem2, value_cost)
             )
 
         return op_list, cost
 
     @staticmethod
-    def _annotated_staff_group_diff(annStaffGroup1: AnnStaffGroup, annStaffGroup2: AnnStaffGroup):
+    def _annotated_staff_group_diff(
+        annStaffGroup1: AnnStaffGroup,
+        annStaffGroup2: AnnStaffGroup
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the differences between two annotated staff groups.
         Each annotated staff group consists of five values: name, abbreviation,
         symbol, barTogether, part_indices.
         """
-        cost = 0
-        op_list = []
+        cost: int = 0
+        op_list: list[DiffOperation] = []
 
         # add for the name
         if annStaffGroup1.name != annStaffGroup2.name:
@@ -755,7 +802,7 @@ class Comparison:
                 )
             )
             cost += name_cost
-            op_list.append(("staffgrpnameedit", annStaffGroup1, annStaffGroup2, name_cost))
+            op_list.append(DiffOperation("staffgrpnameedit", annStaffGroup1, annStaffGroup2, name_cost))
 
         # add for the abbreviation
         if annStaffGroup1.abbreviation != annStaffGroup2.abbreviation:
@@ -766,7 +813,7 @@ class Comparison:
                 )
             )
             cost += abbreviation_cost
-            op_list.append((
+            op_list.append(DiffOperation(
                 "staffgrpabbreviationedit",
                 annStaffGroup1,
                 annStaffGroup2,
@@ -784,7 +831,7 @@ class Comparison:
                 symbol_cost = 2
             cost += symbol_cost
             op_list.append(
-                ("staffgrpsymboledit", annStaffGroup1, annStaffGroup2, symbol_cost)
+                DiffOperation("staffgrpsymboledit", annStaffGroup1, annStaffGroup2, symbol_cost)
             )
 
         # add for barTogether
@@ -792,7 +839,7 @@ class Comparison:
             barTogether_cost: int = 1
             cost += barTogether_cost
             op_list.append(
-                ("staffgrpbartogetheredit", annStaffGroup1, annStaffGroup2, barTogether_cost)
+                DiffOperation("staffgrpbartogetheredit", annStaffGroup1, annStaffGroup2, barTogether_cost)
             )
 
         # add for partIndices (sorted list of int)
@@ -807,7 +854,7 @@ class Comparison:
                 partIndices_cost = 1
             cost += partIndices_cost
             op_list.append(
-                ("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2, partIndices_cost)
+                DiffOperation("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2, partIndices_cost)
             )
 
         return op_list, cost
@@ -822,14 +869,14 @@ class Comparison:
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._inside_bars_diff_lin(original, compare_to[1:])
-            op_list.append(("noteins", None, compare_to[0], compare_to[0].notation_size()))
+            op_list.append(DiffOperation("noteins", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._inside_bars_diff_lin(original[1:], compare_to)
-            op_list.append(("notedel", original[0], None, original[0].notation_size()))
+            op_list.append(DiffOperation("notedel", original[0], None, original[0].notation_size()))
             cost += original[0].notation_size()
             return op_list, cost
 
@@ -842,7 +889,7 @@ class Comparison:
         )
         cost["notedel"] += original[0].notation_size()
         op_list["notedel"].append(
-            ("notedel", original[0], None, original[0].notation_size())
+            DiffOperation("notedel", original[0], None, original[0].notation_size())
         )
         # noteins
         op_list["noteins"], cost["noteins"] = Comparison._inside_bars_diff_lin(
@@ -850,7 +897,7 @@ class Comparison:
         )
         cost["noteins"] += compare_to[0].notation_size()
         op_list["noteins"].append(
-            ("noteins", None, compare_to[0], compare_to[0].notation_size())
+            DiffOperation("noteins", None, compare_to[0], compare_to[0].notation_size())
         )
         # notesub
         op_list["notesub"], cost["notesub"] = Comparison._inside_bars_diff_lin(
@@ -870,7 +917,10 @@ class Comparison:
         return out
 
     @staticmethod
-    def _annotated_note_diff(annNote1: AnnNote, annNote2: AnnNote):
+    def _annotated_note_diff(
+        annNote1: AnnNote,
+        annNote2: AnnNote
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the differences between two annotated notes.
         Each annotated note consist in a 5tuple (pitches, notehead, dots, beamings, tuplets)
@@ -879,8 +929,9 @@ class Comparison:
             noteNode1 {[AnnNote]} -- original AnnNote
             noteNode2 {[AnnNote]} -- compare_to AnnNote
         """
-        cost = 0
-        op_list = []
+        cost: int = 0
+        op_list: list[DiffOperation] = []
+
         # add for the pitches
         # if they are equal
         if annNote1.pitches == annNote2.pitches:
@@ -897,24 +948,24 @@ class Comparison:
             # delete one note head, add the other (this isn't noteshape, this is
             # just quarter-note note head vs half-note note head, etc)
             cost += 2
-            op_list.append(("headedit", annNote1, annNote2, 2))
+            op_list.append(DiffOperation("headedit", annNote1, annNote2, 2))
         # add for the dots
         if annNote1.dots != annNote2.dots:
             # add one for each added (or deleted) dot
             dots_diff = abs(annNote1.dots - annNote2.dots)
             cost += dots_diff
             if annNote1.dots > annNote2.dots:
-                op_list.append(("dotdel", annNote1, annNote2, dots_diff))
+                op_list.append(DiffOperation("dotdel", annNote1, annNote2, dots_diff))
             else:
-                op_list.append(("dotins", annNote1, annNote2, dots_diff))
+                op_list.append(DiffOperation("dotins", annNote1, annNote2, dots_diff))
         if annNote1.graceType != annNote2.graceType:
             # accented vs unaccented vs not a grace note (delete the wrong, add the right)
             cost += 2
-            op_list.append(("graceedit", annNote1, annNote2, 2))
+            op_list.append(DiffOperation("graceedit", annNote1, annNote2, 2))
         if annNote1.graceSlash != annNote2.graceSlash:
             # add or delete the slash
             cost += 1
-            op_list.append(("graceslashedit", annNote1, annNote2, 1))
+            op_list.append(DiffOperation("graceslashedit", annNote1, annNote2, 1))
         # add for the beamings
         if annNote1.beamings != annNote2.beamings:
             beam_op_list, beam_cost = Comparison._beamtuplet_levenshtein_diff(
@@ -965,28 +1016,28 @@ class Comparison:
             # in all cases, the edit is a simple horizontal shift of the note
             cost += 1
             if annNote1.gap_dur == 0:
-                op_list.append(("insspace", annNote1, annNote2, 1))
+                op_list.append(DiffOperation("insspace", annNote1, annNote2, 1))
             elif annNote2.gap_dur == 0:
-                op_list.append(("delspace", annNote1, annNote2, 1))
+                op_list.append(DiffOperation("delspace", annNote1, annNote2, 1))
             else:
                 # neither is zero
-                op_list.append(("editspace", annNote1, annNote2, 1))
+                op_list.append(DiffOperation("editspace", annNote1, annNote2, 1))
 
         # add for noteshape
         if annNote1.noteshape != annNote2.noteshape:
             # always delete existing note shape and add the new one
             cost += 2
-            op_list.append(("editnoteshape", annNote1, annNote2, 2))
+            op_list.append(DiffOperation("editnoteshape", annNote1, annNote2, 2))
         # add for noteheadFill
         if annNote1.noteheadFill != annNote2.noteheadFill:
             # always delete existing note fill and add the new one
             cost += 2
-            op_list.append(("editnoteheadfill", annNote1, annNote2, 2))
+            op_list.append(DiffOperation("editnoteheadfill", annNote1, annNote2, 2))
         # add for noteheadParenthesis (True or False)
         if annNote1.noteheadParenthesis != annNote2.noteheadParenthesis:
             # always either add or delete parentheses
             cost += 1
-            op_list.append(("editnoteheadparenthesis", annNote1, annNote2, 1))
+            op_list.append(DiffOperation("editnoteheadparenthesis", annNote1, annNote2, 1))
         # add for stemDirection
         if annNote1.stemDirection != annNote2.stemDirection:
             stemdir_cost: int
@@ -997,17 +1048,23 @@ class Comparison:
                 # gonna change a stem (add then delete)
                 stemdir_cost = 2
             cost += stemdir_cost
-            op_list.append(("editstemdirection", annNote1, annNote2, stemdir_cost))
+            op_list.append(DiffOperation("editstemdirection", annNote1, annNote2, stemdir_cost))
         # add for the styledict
         if annNote1.styledict != annNote2.styledict:
             cost += 1
-            op_list.append(("editstyle", annNote1, annNote2, 1))
+            op_list.append(DiffOperation("editstyle", annNote1, annNote2, 1))
 
         return op_list, cost
 
     @staticmethod
     @_memoize_beamtuplet_lev_diff
-    def _beamtuplet_levenshtein_diff(original, compare_to, note1, note2, which):
+    def _beamtuplet_levenshtein_diff(
+        original,
+        compare_to,
+        note1,
+        note2,
+        which
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the levenshtein distance between two sequences of beaming or tuples.
         Arguments:
@@ -1027,7 +1084,7 @@ class Comparison:
             op_list, cost = Comparison._beamtuplet_levenshtein_diff(
                 original, compare_to[1:], note1, note2, which
             )
-            op_list.append(("ins" + which, note1, note2, 1))
+            op_list.append(DiffOperation("ins" + which, note1, note2, 1))
             cost += 1
             return op_list, cost
 
@@ -1035,7 +1092,7 @@ class Comparison:
             op_list, cost = Comparison._beamtuplet_levenshtein_diff(
                 original[1:], compare_to, note1, note2, which
             )
-            op_list.append(("del" + which, note1, note2, 1))
+            op_list.append(DiffOperation("del" + which, note1, note2, 1))
             cost += 1
             return op_list, cost
 
@@ -1047,13 +1104,13 @@ class Comparison:
             original[1:], compare_to, note1, note2, which
         )
         cost["del" + which] += 1
-        op_list["del" + which].append(("del" + which, note1, note2, 1))
+        op_list["del" + which].append(DiffOperation("del" + which, note1, note2, 1))
         # inswhich
         op_list["ins" + which], cost["ins" + which] = Comparison._beamtuplet_levenshtein_diff(
             original, compare_to[1:], note1, note2, which
         )
         cost["ins" + which] += 1
-        op_list["ins" + which].append(("ins" + which, note1, note2, 1))
+        op_list["ins" + which].append(DiffOperation("ins" + which, note1, note2, 1))
         # editwhich
         op_list["edit" + which], cost["edit" + which] = Comparison._beamtuplet_levenshtein_diff(
             original[1:], compare_to[1:], note1, note2, which
@@ -1072,7 +1129,13 @@ class Comparison:
 
     @staticmethod
     @_memoize_generic_lev_diff
-    def _generic_levenshtein_diff(original, compare_to, note1, note2, which):
+    def _generic_levenshtein_diff(
+        original,
+        compare_to,
+        note1,
+        note2,
+        which
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the Levenshtein distance between two generic sequences of symbols
         (e.g., articulations).
@@ -1090,7 +1153,7 @@ class Comparison:
             op_list, cost = Comparison._generic_levenshtein_diff(
                 original, compare_to[1:], note1, note2, which
             )
-            op_list.append(("ins" + which, note1, note2, 1))
+            op_list.append(DiffOperation("ins" + which, note1, note2, 1))
             cost += 1
             return op_list, cost
 
@@ -1098,7 +1161,7 @@ class Comparison:
             op_list, cost = Comparison._generic_levenshtein_diff(
                 original[1:], compare_to, note1, note2, which
             )
-            op_list.append(("del" + which, note1, note2, 1))
+            op_list.append(DiffOperation("del" + which, note1, note2, 1))
             cost += 1
             return op_list, cost
 
@@ -1110,13 +1173,13 @@ class Comparison:
             original[1:], compare_to, note1, note2, which
         )
         cost["del" + which] += 1
-        op_list["del" + which].append(("del" + which, note1, note2, 1))
+        op_list["del" + which].append(DiffOperation("del" + which, note1, note2, 1))
         # inswhich
         op_list["ins" + which], cost["ins" + which] = Comparison._generic_levenshtein_diff(
             original, compare_to[1:], note1, note2, which
         )
         cost["ins" + which] += 1
-        op_list["ins" + which].append(("ins" + which, note1, note2, 1))
+        op_list["ins" + which].append(DiffOperation("ins" + which, note1, note2, 1))
         # editwhich
         op_list["edit" + which], cost["edit" + which] = Comparison._generic_levenshtein_diff(
             original[1:], compare_to[1:], note1, note2, which
@@ -1138,7 +1201,7 @@ class Comparison:
 
     @staticmethod
     @_memoize_notes_set_distance
-    def _notes_set_distance(original: list[AnnNote], compare_to: list[AnnNote]):
+    def _notes_set_distance(original: list[AnnNote], compare_to: list[AnnNote]) -> tuple[list[DiffOperation], int]:
         """
         Gather up pairs of matching notes (using pitch, offset, graceness, and visual duration, in
         that order of importance).  If you can't find an exactly matching note, try again without
@@ -1201,27 +1264,27 @@ class Comparison:
 
         # compute the cost and the op_list
         cost: int = 0
-        op_list: list = []
+        op_list: list[DiffOperation] = []
 
         # notedel
         if unpaired_orig_notes:
             for an in unpaired_orig_notes:
                 cost += an.notation_size()
-                op_list.append(("notedel", an, None, an.notation_size(), an.note_idx_in_chord))
+                op_list.append(DiffOperation("notedel", an, None, an.notation_size(), an.note_idx_in_chord))
 
         # noteins
         if unpaired_comp_notes:
             for an in unpaired_comp_notes:
                 cost += an.notation_size()
-                op_list.append(("noteins", None, an, an.notation_size(), an.note_idx_in_chord))
+                op_list.append(DiffOperation("noteins", None, an, an.notation_size(), an.note_idx_in_chord))
 
         # notesub
         if paired_notes:
             for ano, anc in paired_notes:
-                if ano == anc:
+                notesub_cost: int = 0
+                notesub_op: list[DiffOperation] = []
+                if ano != anc:
                     # if equal, avoid _annotated_note_diff call
-                    notesub_op, notesub_cost = [], 0
-                else:
                     notesub_op, notesub_cost = (
                         Comparison._annotated_note_diff(ano, anc)
                     )
@@ -1232,7 +1295,7 @@ class Comparison:
 
     @staticmethod
     @_memoize_extras_set_distance
-    def _extras_set_distance(original: list[AnnExtra], compare_to: list[AnnExtra]):
+    def _extras_set_distance(original: list[AnnExtra], compare_to: list[AnnExtra]) -> tuple[list[DiffOperation], int]:
         """
         Gather up pairs of matching extras (using kind, offset, and visual duration, in
         that order of importance).  If you can't find an exactly matching extra, try again
@@ -1310,25 +1373,25 @@ class Comparison:
 
         # compute the cost and the op_list
         cost: int = 0
-        op_list: list = []
+        op_list: list[DiffOperation] = []
 
         # extradel
         for extra in unpaired_orig_extras:
             cost += extra.notation_size()
-            op_list.append(("extradel", extra, None, extra.notation_size()))
+            op_list.append(DiffOperation("extradel", extra, None, extra.notation_size()))
 
         # extrains
         for extra in unpaired_comp_extras:
             cost += extra.notation_size()
-            op_list.append(("extrains", None, extra, extra.notation_size()))
+            op_list.append(DiffOperation("extrains", None, extra, extra.notation_size()))
 
         # extrasub
         if paired_extras:
             for extrao, extrac in paired_extras:
-                if extrao == extrac:
+                extrasub_cost: int = 0
+                extrasub_op: list[DiffOperation] = []
+                if extrao != extrac:
                     # if equal, avoid _annotated_extra_diff call
-                    extrasub_op, extrasub_cost = [], 0
-                else:
                     extrasub_op, extrasub_cost = (
                         Comparison._annotated_extra_diff(extrao, extrac)
                     )
@@ -1342,7 +1405,7 @@ class Comparison:
     def _metadata_items_set_distance(
         original: list[AnnMetadataItem],
         compare_to: list[AnnMetadataItem]
-    ):
+    ) -> tuple[list[DiffOperation], int]:
         """
         Gather up pairs of matching metadata_items (using key and value).  If you can't find
         an exactly matching metadata_item, try again without value.
@@ -1404,25 +1467,25 @@ class Comparison:
 
         # compute the cost and the op_list
         cost: int = 0
-        op_list: list = []
+        op_list: list[DiffOperation] = []
 
         # mditemdel
         for metadata_item in unpaired_orig_metadata_items:
             cost += metadata_item.notation_size()
-            op_list.append(("mditemdel", metadata_item, None, metadata_item.notation_size()))
+            op_list.append(DiffOperation("mditemdel", metadata_item, None, metadata_item.notation_size()))
 
         # mditemins
         for metadata_item in unpaired_comp_metadata_items:
             cost += metadata_item.notation_size()
-            op_list.append(("mditemins", None, metadata_item, metadata_item.notation_size()))
+            op_list.append(DiffOperation("mditemins", None, metadata_item, metadata_item.notation_size()))
 
         # mditemsub
         if paired_metadata_items:
             for metadata_itemo, metadata_itemc in paired_metadata_items:
-                if metadata_itemo == metadata_itemc:
+                metadata_itemsub_cost: int = 0
+                metadata_itemsub_op: list[DiffOperation] = []
+                if metadata_itemo != metadata_itemc:
                     # if equal, avoid _annotated_metadata_item_diff call
-                    metadata_itemsub_op, metadata_itemsub_cost = [], 0
-                else:
                     metadata_itemsub_op, metadata_itemsub_cost = (
                         Comparison._annotated_metadata_item_diff(metadata_itemo, metadata_itemc)
                     )
@@ -1436,7 +1499,7 @@ class Comparison:
     def _staff_groups_set_distance(
         original: list[AnnStaffGroup],
         compare_to: list[AnnStaffGroup]
-    ):
+    ) -> tuple[list[DiffOperation], int]:
         """
         Gather up pairs of matching staffgroups (using start_index and end_index, in
         that order of importance).  If you can't find an exactly matching staffgroup,
@@ -1490,25 +1553,25 @@ class Comparison:
 
         # compute the cost and the op_list
         cost: int = 0
-        op_list: list = []
+        op_list: list[DiffOperation] = []
 
         # staffgrpdel
         for staff_group in unpaired_orig_staff_groups:
             cost += staff_group.notation_size()
-            op_list.append(("staffgrpdel", staff_group, None, staff_group.notation_size()))
+            op_list.append(DiffOperation("staffgrpdel", staff_group, None, staff_group.notation_size()))
 
         # staffgrpins
         for staff_group in unpaired_comp_staff_groups:
             cost += staff_group.notation_size()
-            op_list.append(("staffgrpins", None, staff_group, staff_group.notation_size()))
+            op_list.append(DiffOperation("staffgrpins", None, staff_group, staff_group.notation_size()))
 
         # staffgrpsub
         if paired_staff_groups:
             for staff_groupo, staff_groupc in paired_staff_groups:
-                if staff_groupo == staff_groupc:
+                staff_groupsub_cost: int = 0
+                staff_groupsub_op: list[DiffOperation] = []
+                if staff_groupo != staff_groupc:
                     # if equal, avoid _annotated_staff_group_diff call
-                    staff_groupsub_op, staff_groupsub_cost = [], 0
-                else:
                     staff_groupsub_op, staff_groupsub_cost = (
                         Comparison._annotated_staff_group_diff(staff_groupo, staff_groupc)
                     )
@@ -1518,7 +1581,7 @@ class Comparison:
         return op_list, cost
 
     @staticmethod
-    def _voices_coupling_recursive(original: list[AnnVoice], compare_to: list[AnnVoice]):
+    def _voices_coupling_recursive(original: list[AnnVoice], compare_to: list[AnnVoice]) -> tuple[list[DiffOperation], int]:
         """
         Compare all the possible voices permutations, considering also deletion and
         insertion (equation on office lens).
@@ -1532,7 +1595,7 @@ class Comparison:
             # insertion
             op_list, cost = Comparison._voices_coupling_recursive(original, compare_to[1:])
             # add for the inserted voice
-            op_list.append(("voiceins", None, compare_to[0], compare_to[0].notation_size()))
+            op_list.append(DiffOperation("voiceins", None, compare_to[0], compare_to[0].notation_size()))
             cost += compare_to[0].notation_size()
             return op_list, cost
 
@@ -1540,25 +1603,26 @@ class Comparison:
             # deletion
             op_list, cost = Comparison._voices_coupling_recursive(original[1:], compare_to)
             # add for the deleted voice
-            op_list.append(("voicedel", original[0], None, original[0].notation_size()))
+            op_list.append(DiffOperation("voicedel", original[0], None, original[0].notation_size()))
             cost += original[0].notation_size()
             return op_list, cost
 
-        cost = {}
-        op_list = {}
+        cost_dict: dict[str, int] = {}
+        op_list_dict: dict[str, list[DiffOperation]] = {}
+
         # deletion
-        op_list["voicedel"], cost["voicedel"] = Comparison._voices_coupling_recursive(
+        op_list_dict["voicedel"], cost_dict["voicedel"] = Comparison._voices_coupling_recursive(
             original[1:], compare_to
         )
-        op_list["voicedel"].append(
-            ("voicedel", original[0], None, original[0].notation_size())
+        op_list_dict["voicedel"].append(
+            DiffOperation("voicedel", original[0], None, original[0].notation_size())
         )
-        cost["voicedel"] += original[0].notation_size()
+        cost_dict["voicedel"] += original[0].notation_size()
         for i, c in enumerate(compare_to):
             # substitution
             (
-                op_list["voicesub" + str(i)],
-                cost["voicesub" + str(i)],
+                op_list_dict["voicesub" + str(i)],
+                cost_dict["voicesub" + str(i)],
             ) = Comparison._voices_coupling_recursive(
                 original[1:], compare_to[:i] + compare_to[i + 1:]
             )
@@ -1568,15 +1632,15 @@ class Comparison:
                 op_list_inside_bar, cost_inside_bar = Comparison._inside_bars_diff_lin(
                     original[0].annot_notes, c.annot_notes
                 )  # compute the distance from original[0] and compare_to[i]
-                op_list["voicesub" + str(i)].extend(op_list_inside_bar)
-                cost["voicesub" + str(i)] += cost_inside_bar
+                op_list_dict["voicesub" + str(i)].extend(op_list_inside_bar)
+                cost_dict["voicesub" + str(i)] += cost_inside_bar
         # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
+        min_key: str = min(cost_dict, key=lambda k: cost_dict[k])
+        out = op_list_dict[min_key], cost_dict[min_key]
         return out
 
     @staticmethod
-    def annotated_scores_diff(score1: AnnScore, score2: AnnScore) -> tuple[list[tuple], int]:
+    def annotated_scores_diff(score1: AnnScore, score2: AnnScore) -> tuple[list[DiffOperation], int]:
         '''
         Compare two annotated scores, computing an operations list and the cost of applying those
         operations to the first score to generate the second score.
@@ -1592,7 +1656,7 @@ class Comparison:
         # The cached results are no longer valid.
         Comparison._clear_memoizer_caches()
 
-        op_list_total: list[tuple] = []
+        op_list_total: list[DiffOperation] = []
         cost_total: int = 0
 
         if score1.n_of_parts == score2.n_of_parts:
@@ -1611,7 +1675,7 @@ class Comparison:
                 for part_idx in range(score2.n_of_parts, score1.n_of_parts):
                     deleted_part = score1.part_list[part_idx]
                     op_list_total.append(
-                        (
+                        DiffOperation(
                             "delpart",
                             deleted_part,
                             None,
@@ -1624,7 +1688,7 @@ class Comparison:
                 for part_idx in range(score1.n_of_parts, score2.n_of_parts):
                     inserted_part = score2.part_list[part_idx]
                     op_list_total.append(
-                        (
+                        DiffOperation(
                             "inspart",
                             None,
                             inserted_part,

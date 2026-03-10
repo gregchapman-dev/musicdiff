@@ -27,6 +27,7 @@ from musicdiff.m21utils import M21Utils
 from musicdiff.annotation import AnnScore
 from musicdiff.comparison import Comparison
 from musicdiff.comparison import EvaluationMetrics
+from musicdiff.comparison import DiffOperation
 from musicdiff.visualization import Visualization
 
 def _getInputExtensionsList() -> list[str]:
@@ -205,7 +206,7 @@ def diff(
         annotated_score1: AnnScore = AnnScore(sc1, detail)
         annotated_score2: AnnScore = AnnScore(sc2, detail)
 
-        diff_list: list
+        diff_list: list[DiffOperation]
         cost: int
         diff_list, cost = Comparison.annotated_scores_diff(annotated_score1, annotated_score2)
 
