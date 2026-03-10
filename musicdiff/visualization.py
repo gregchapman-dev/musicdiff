@@ -614,50 +614,54 @@ class Visualization:
         note_idx: int | None = None,
         color_accidental_too: bool = False
     ):
-        # Create text expression, and insert it as requested
+        # Create (and color) text expression, and insert it as requested
         textExp = m21.expressions.TextExpression(text)
         textExp.style.color = color
+
         insert_in_stream: m21.stream.Stream | None = None
         insert_at_offset: OffsetQL | None = None
         if isinstance(m21_obj, m21.stream.Stream):
             if isinstance(m21_obj, m21.stream.Part):
-                # insert in first Measure of Part
+                # insert at beginning of the first Measure of Part
                 insert_at_stream = m21_obj[m21.stream.Measure].first()
+                insert_at_offset = 0.
             else:
-                # insert in stream
+                # insert at beginning of the stream
                 insert_in_stream = m21_obj
-            insert_at_offset = 0.
-        elif isinstance(m21_obj, m21.spanner.Spanner):
-            insertionPoint: m21.base.Music21Object = m21_obj.getFirst()
-            if isinstance(insertionPoint, m21.stream.Part):
-                # insertionPoint is a part, put the textExp at offset 0
-                # in the first measure in the part
-                insert_in_stream = insertionPoint[m21.stream.Measure].first()
                 insert_at_offset = 0.
-            elif isinstance(insertionPoint, m21.stream.Measure):
-                # insertionPoint is a measure, put the textExp at offset 0
-                # inside the measure
-                insert_in_stream = insertionPoint
+        elif isinstance(m21_obj, m21.spanner.Spanner):
+            spannerFirst: m21.base.Music21Object = m21_obj.getFirst()
+            if isinstance(spannerFirst, m21.stream.Part):
+                # spannerFirst is a Part, put the textExp at beginning
+                # of the first Measure in the Part
+                insert_in_stream = spannerFirst[m21.stream.Measure].first()
+                insert_at_offset = 0.
+            elif isinstance(spannerFirst, m21.stream.Stream):
+                # spannerFirst is a Stream, put the textExp at beginning
+                # of the Stream
+                insert_in_stream = spannerFirst
                 insert_at_offset = 0.
             else:
-                # insertionPoint is something else, put the textExp right next to it.
-                insert_in_stream = insertionPoint.activeSite
-                insert_at_offset = insertionPoint.offset
+                # spannerFirst is not a Stream, put the textExp right next to it.
+                insert_in_stream = spannerFirst.activeSite
+                insert_at_offset = spannerFirst.offset
         else:
-            # neither Stream nor Spanner, just insert the textExp right next to it
+            # neither Stream nor Spanner, put the textExp right next to it.
             insert_in_stream = m21_obj.activeSite
             insert_at_offset = m21_obj.offset
 
         if insert_in_stream is not None and insert_at_offset is not None:
             insert_in_stream.insert(insert_at_offset, textExp)
         else:
-            raise ValueError("stream or offset of descriptive text is missing.")
+            # should never happen, but might if the code above is modified.
+            raise ValueError("stream or offset of descriptive text is unknown.")
 
-        # color the m21_obj with the requested color
+        # Now color the m21_obj with the requested color
         if isinstance(m21_obj, m21.stream.Stream):
             # m21_obj is a Score or Part or Measure or Voice...
             # Color every note and rest in that stream, recursively.
-            # Don't bother with accidentals.
+            # Don't bother with accidentals (we don't bother with
+            # extras either, for that matter).
             for el in m21_obj.recurse().notesAndRests:
                 el.style.color = color
         elif note_idx is not None:
@@ -671,7 +675,7 @@ class Visualization:
                 # Can happen if imported xml has repeated xml:id values,
                 # so getElementById returns an unexpected non-Chord.
                 # Don't crash by looking for notes, just color whatever the
-                # returned object is.
+                # non-Chord object is.
                 m21_obj.style.color = color
                 if color_accidental_too and hasattr(m21_obj, 'pitch'):
                     if m21_obj.pitch.accidental:
