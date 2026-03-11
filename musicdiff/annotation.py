@@ -40,6 +40,10 @@ class AnnObject:
             # currently only AnnMetadataItem has no m21 obj
             self.id = id(self)
 
+    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+        # will be overridden by every derived class (AnnNote et al)
+        return ""
+
 class AnnNote(AnnObject):
     def __init__(
         self,
