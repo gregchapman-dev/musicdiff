@@ -40,6 +40,10 @@ class AnnObject:
             # currently only AnnMetadataItem has no m21 obj
             self.id = id(self)
 
+        # offset and/or duration are sometimes relevant in AnnObject
+        self.offset: OffsetQL | None = None
+        self.duration: OffsetQL | None = None
+
     def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
         # will be overridden by every derived class (AnnNote et al)
         return ""
@@ -692,8 +696,6 @@ class AnnExtra(AnnObject):
         self.symbolic: str | None = M21Utils.extra_to_symbolic(extra, self.kind, detail)
 
         # offset and/or duration are sometimes relevant
-        self.offset: OffsetQL | None = None
-        self.duration: OffsetQL | None = None
         self.offset, self.duration = M21Utils.extra_to_offset_and_duration(
             extra, self.kind, measure, score, detail
         )
@@ -968,7 +970,8 @@ class AnnLyric(AnnObject):
             return string
 
         if name == "offset":
-            string += f" offset={M21Utils.ql_to_string(self.offset)}"
+            if self.offset is not None:
+                string += f" offset={M21Utils.ql_to_string(self.offset)}"
             return string
 
         if name == "num":

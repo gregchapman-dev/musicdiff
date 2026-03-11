@@ -16,15 +16,13 @@ __docformat__ = "google"
 from pathlib import Path
 import sys
 import re
-import typing as t
+# import typing as t
 from fractions import Fraction
 
 import music21 as m21
 from music21.common import OffsetQL, opFrac
 
-from musicdiff.annotation import AnnScore, AnnPart, AnnMeasure, AnnVoice, AnnNote
-from musicdiff.annotation import AnnExtra, AnnLyric, AnnStaffGroup, AnnMetadataItem
-from musicdiff.annotation import AnnObject
+from musicdiff.annotation import AnnScore, AnnNote, AnnExtra, AnnObject
 from musicdiff.comparison import DiffOperation
 from musicdiff import M21Utils
 from musicdiff import DetailLevel
@@ -599,7 +597,7 @@ class Visualization:
         if isinstance(m21_obj, m21.stream.Stream):
             if isinstance(m21_obj, m21.stream.Part):
                 # insert at beginning of the first Measure of Part
-                insert_at_stream = m21_obj[m21.stream.Measure].first()
+                insert_in_stream = m21_obj[m21.stream.Measure].first()
                 insert_at_offset = 0.
             else:
                 # insert at beginning of the stream
@@ -846,52 +844,122 @@ class Visualization:
         output += f"beat {M21Utils.ql_to_string(fractionalBeats)}"
         return output
 
+    READABLE_STR_NAMES: dict[str, str] = {
+        "dur": "duration"
+    }
+
     @staticmethod
     def _text_diff(
-    8888 I think this needs op, so then the op.get_m21_objs(score1, score2) call can happen here.
-        m21_obj1: m21.base.Music21Object | None,
-        m21_obj2: m21.base.Music21Object | None,
+        op: DiffOperation,
         score1: m21.stream.Score,
         score2: m21.stream.Score,
-        class_name: str = "",
+        name: str = "",
         sub_name: str = "",  # e.g. "content" or "sym"
-        note_idx: int | None = None
     ) -> list[str]:
         outputList: list[str] = []
-        oneOutput: str
+        oneOutput: str  # one string, multiple lines (with \n at end of all but last line)
 
-        class_name1: str
-        class_name2: str
-        if class_name:
-            class_name1 = class_name
-            class_name2 = class_name
+        m21_obj1: m21.base.Music21Object | None
+        m21_obj2: m21.base.Music21Object | None
+        m21_obj1, m21_obj2 = op.get_m21_objs(score1, score2)
+
+        name1: str
+        name2: str
+        if name:
+            name1 = name
+            name2 = name
+        elif m21_obj1 is not None:
+            name1 = m21_obj1.classes[0]
+            name2 = m21_obj1.classes[0]
+        elif m21_obj2 is not None:
+            name1 = m21_obj2.classes[0]
+            name2 = m21_obj2.classes[0]
         else:
-            class_name1 = m21_obj1.classes[0]
-            class_name2 = m21_obj1.classes[0]
+            raise ValueError("bad call to _text_diff: op has no valid objects")
 
         if sub_name:
-            class_name1 += f":{sub_name}"
-            class_name2 += f":{sub_name}"
+            readable_str_name: str = Visualization.READABLE_STR_NAMES.get(sub_name, sub_name)
+            changedStr: str = ""
+            if sub_name == "info":
+                # only AnnExtra has infodict
+                assert isinstance(op.obj1, AnnExtra)
+                assert isinstance(op.obj2, AnnExtra)
+                changedStr = Visualization._dict_change_str(op.obj1.infodict, op.obj2.infodict)
+                name1 += f":{changedStr}"
+                name2 += f":{changedStr}"
+            elif sub_name == "style":
+                # every AnnObject has styledict
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                changedStr = Visualization._dict_change_str(op.obj1.styledict, op.obj2.styledict)
+                name2 += f":{changedStr}"
+            else:
+                # other sub_names just go in the output
+                name1 += f":{sub_name}"
+                name2 += f":{sub_name}"
 
         if m21_obj1 is not None:
+            assert op.obj1 is not None
+            note_idx: int = 0
+            if op.indexes is not None:
+                if isinstance(m21_obj1, m21.chord.ChordBase):
+                    if isinstance(op.indexes, int):
+                        note_idx = op.indexes
+                    else:
+                        note_idx = op.indexes[0]
+                else:
+                    # Can happen if imported xml has repeated xml:id values,
+                    # so getElementById returns an unexpected non-Chord.
+                    # Don't crash by looking for notes, just use whatever the
+                    # non-Chord object is.
+                    pass
+
             newLine: str = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
             oneOutput = newLine
-            newLine = f"-({class_name1}) {op.obj1.readable_str(sub_name)}"
+            readable: str = op.obj1.readable_str(
+                readable_str_name, idx=note_idx, changedStr=changedStr
+            )
+            newLine = f"-({name1}) {readable}"
             oneOutput += newLine
 
-        if m21_obj1 is not None and m21_obj2 is not None:
-            if op.obj1.offset != op.obj2.offset:
+        if m21_obj2 is not None:
+            assert op.obj2 is not None
+            # do we need a location_of(2)?  Yes if no obj1, and yes if obj1 offset is different.
+            if op.obj1 is None:
+                # This is the first line of the output
+                newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
+                oneOutput = newLine
+            elif op.obj1.offset != op.obj2.offset:
+                # not first line, and we need location_of(2)
                 outputList.append(oneOutput)
                 newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
                 oneOutput = newLine
             else:
+                # not first line, but no location_of(2) needed; just an EOL
                 oneOutput += "\n"
 
-        if m21_obj2 is not None:
-            newLine = f"+({class_name2}) {op.obj2.readable_str(sub_name)}"
+            note_idx = 0
+            if op.indexes is not None:
+                if isinstance(m21_obj1, m21.chord.ChordBase):
+                    if isinstance(op.indexes, int):
+                        note_idx = op.indexes
+                    else:
+                        note_idx = op.indexes[1]
+                else:
+                    # Can happen if imported xml has repeated xml:id values,
+                    # so getElementById returns an unexpected non-Chord.
+                    # Don't crash by looking for notes, just use whatever the
+                    # non-Chord object is.
+                    pass
+
+            readable = op.obj2.readable_str(
+                readable_str_name, idx=note_idx, changedStr=changedStr
+            )
+            newLine = f"+({name2}) {readable}"
             oneOutput += newLine
 
         outputList.append(oneOutput)
+        return outputList
 
     @staticmethod
     def get_text_output(
@@ -915,988 +983,415 @@ class Visualization:
         """
         output: str
         outputList: list[str] = []
-        oneOutput: str  # one string, multiple lines (with \n at end of all but last line)
 
         for op in op_list:
-            m21_obj1: m21.base.Music21Object | None
-            m21_obj2: m21.base.Music21Object | None
-            m21_obj1, m21_obj2 = op.get_m21_objs(score1, score2)
+            text_diff: list[str]
             # part
             if op.name == "inspart":
                 assert op.obj1 is None
-                assert m21_obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                outputList.extend(
-                    Visualization._text_diff(m21_obj1, m21_obj2, score1, score2,
-                        class_name="part")
-                )
-
-                88888
-                newLine: str = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+(part) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="part")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "delpart":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert op.obj2 is None
-                assert m21_obj2 is None
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(part) {op.obj1.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="part")
+                outputList.extend(text_diff)
                 continue
 
             # bar
             if op.name == "insbar":
                 assert op.obj1 is None
-                assert m21_obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+(measure) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="measure")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "delbar":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert op.obj2 is None
-                assert m21_obj2 is None
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(measure) {op.obj1.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="measure")
+                outputList.extend(text_diff)
                 continue
 
             # voices
             if op.name == "voiceins":
                 assert op.obj1 is None
-                assert m21_obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+(voice) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="voice")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "voicedel":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert op.obj2 is None
-                assert m21_obj2 is None
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(voice) {op.obj1.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="voice")
+                outputList.extend(text_diff)
                 continue
 
             # extra
             if op.name == "extrains":
                 assert op.obj1 is None
-                assert m21_obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+({m21_obj2.classes[0]}) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2)
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "extradel":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert op.obj2 is None
-                assert m21_obj2 is None
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({m21_obj1.classes[0]}) {op.obj1.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2)
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "extracontentedit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({m21_obj1.classes[0]}:content) {op.obj1.readable_str('content')}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+({m21_obj2.classes[0]}:content) {op.obj2.readable_str('content')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="content")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "extrasymboledit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({m21_obj1.classes[0]}:symbolic) {op.obj1.readable_str('symbolic')}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+({m21_obj2.classes[0]}:symbolic) {op.obj2.readable_str('symbolic')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="symbolic")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "extrainfoedit":
-                assert isinstance(op.obj1, AnnExtra)  # for infodict
-                assert isinstance(m21_obj1, m21.base.Music21Object)
-                assert isinstance(op.obj2, AnnExtra)  # for infodict
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                changedStr = Visualization._dict_change_str(op.obj1.infodict, op.obj2.infodict)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                info1: str = op.obj1.readable_str('info', changedStr=changedStr)
-                info2: str = op.obj2.readable_str('info', changedStr=changedStr)
-                newLine = f"-({m21_obj1.classes[0]}:{changedStr}) {info1}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+({m21_obj2.classes[0]}:{changedStr}) {info2}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="info")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "extraoffsetedit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({m21_obj1.classes[0]}:offset) {op.obj1.readable_str('offset')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
-
-                newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+({m21_obj2.classes[0]}:offset) {op.obj2.readable_str('offset')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="offset")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "extradurationedit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({m21_obj1.classes[0]}:dur) {op.obj1.readable_str('duration')}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+({m21_obj2.classes[0]}:dur) {op.obj2.readable_str('duration')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="dur")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "extrastyleedit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                changedStr = Visualization._dict_change_str(op.obj1.infodict, op.obj2.infodict)
-                newLine = f"@@ {Visualization._location_of(extra1, score1)} @@\n"
-                oneOutput = newLine
-                style1: str = op.obj1.readable_str('style', changedStr=changedStr)
-                style2: str = op.obj2.readable_str('style', changedStr=changedStr)
-                newLine = f"-({extra1.classes[0]}:{changedStr}) {style1}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(extra2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+({extra2.classes[0]}:{changedStr}) {style2}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="dur")
+                outputList.extend(text_diff)
                 continue
 
             # staff groups
             if op.name == "staffgrpins":
                 assert op.obj1 is None
-                assert m21_obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+(StaffGroup) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="StaffGroup")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "staffgrpdel":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert op.obj2 is None
-                assert m21_obj2 is None
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(StaffGroup) {op.obj1.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="StaffGroup")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "staffgrpnameedit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(StaffGroup:name) {op.obj1.readable_str('name')}\n"
-                oneOutput += newLine
-                newLine = f"+(StaffGroup:name) {op.obj2.readable_str('name')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="StaffGroup",
+                    sub_name="name")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "staffgrpabbreviationedit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(StaffGroup:abbr) {op.obj1.readable_str('abbr')}\n"
-                oneOutput += newLine
-                newLine = f"+(StaffGroup:abbr) {op.obj2.readable_str('abbr')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="StaffGroup",
+                    sub_name="abbr")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "staffgrpsymboledit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(StaffGroup:sym) {op.obj1.readable_str('sym')}\n"
-                oneOutput += newLine
-                newLine = f"+(StaffGroup:sym) {op.obj2.readable_str('sym')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="StaffGroup",
+                    sub_name="sym")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "staffgrpbartogetheredit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(StaffGroup:barline) {op.obj1.readable_str('barline')}\n"
-                oneOutput += newLine
-                newLine = f"+(StaffGroup:barline) {op.obj2.readable_str('barline')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="StaffGroup",
+                    sub_name="barline")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "staffgrppartindicesedit":
                 assert isinstance(op.obj1, AnnObject)
-                assert isinstance(m21_obj1, m21.base.Music21Object)
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
-                newLine = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(StaffGroup:parts) {op.obj1.readable_str('parts')}\n"
-                oneOutput += newLine
-                newLine = f"+(StaffGroup:parts) {op.obj2.readable_str('parts')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, name="StaffGroup",
+                    sub_name="parts")
+                outputList.extend(text_diff)
                 continue
-88888
+
             # note
             if op.name == "noteins":
                 assert op.obj1 is None
-                assert m21_obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                assert isinstance(m21_obj2, m21.base.Music21Object)
                 assert op.indexes is None or isinstance(op.indexes, int)
-                # The note that was inserted may in fact be a note within a chord,
-                # so be careful to use the chord and the note in that case for
-                # the appropriate operations.
-                if op.indexes is not None:
-                    if not isinstance(m21_obj2, m21.chord.ChordBase):
-                        # Can happen if imported xml has repeated xml:id values,
-                        # so getElementById returns an unexpected GeneralNote.
-                        # Don't crash, but we won't describe the note either.
-                        continue
-                    note2 = m21_obj2.notes[op.indexes]
-                else:
-                    note2 = m21_obj2
-                newLine = f"@@ {Visualization._location_of(noteOrChord2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+({note2.classes[0]}) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2)
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "notedel":
-                assert isinstance(op.obj1, AnnNote)
-                # The note that was deleted may in fact be a note within a chord,
-                # so be careful to use the chord and the note in that case for
-                # the appropriate operations.
-                noteOrChord1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert noteOrChord1 is not None
-                if len(op) >= 5 and op[4] is not None:
-                    if not isinstance(noteOrChord1, m21.chord.ChordBase):
-                        # Can happen if imported xml has repeated xml:id values,
-                        # so getElementById returns an unexpected GeneralNote.
-                        # Don't crash, but we won't color the note either.
-                        continue
-                    note1 = noteOrChord1.notes[op[4]]
-                else:
-                    note1 = noteOrChord1
-                newLine = f"@@ {Visualization._location_of(noteOrChord1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}) {op.obj1.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert op.obj2 is None
+                assert op.indexes is None or isinstance(op.indexes, int)
+                text_diff = Visualization._text_diff(op, score1, score2)
+                outputList.extend(text_diff)
                 continue
 
             # pitch
             if op.name == "pitchnameedit":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
                 assert isinstance(op.indexes, tuple)  # both indices must be there
                 assert len(op.indexes) == 2
                 assert isinstance(op.indexes[0], int)
                 assert isinstance(op.indexes[1], int)
-                chord1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord1 is not None
-                note1 = chord1
-                if not op.obj1.is_in_chord and "Chord" in chord1.classes:
-                    # report just the indexed note in the chord
-                    idx = op[4][0]
-                    note1 = chord1.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                chord2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord2 is not None
-                note2 = chord2
-                if not op.obj2.is_in_chord and "Chord" in chord2.classes:
-                    # report just the indexed note in the chord
-                    idx = op[4][1]
-                    note2 = chord2.notes[idx]
-                else:
-                    idx = 0
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:pitch) {op.obj1.readable_str('pitch', idx=idx)}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:pitch) {op.obj2.readable_str('pitch', idx=idx)}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="pitch")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "inspitch":
-                assert isinstance(op.obj2, AnnNote)
+                assert op.obj1 is None
+                assert isinstance(op.obj2, AnnObject)
                 assert isinstance(op.indexes, int)  # the index must be there
-                chord2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord2 is not None
-                note2 = chord2
-                if not op.obj2.is_in_chord and "Chord" in chord2.classes:
-                    # report just the indexed note in the chord
-                    idx = op[4][1]
-                    note2 = chord2.notes[idx]
-                else:
-                    idx = 0
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(chord2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+({note2.classes[0]}:pitch) {op.obj2.readable_str('pitch', idx=idx)}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="pitch")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "delpitch":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.indexes, tuple[int, int])  # the indices must be there
-                chord1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord1 is not None
-                note1 = chord1
-                if "Chord" in chord1.classes:
-                    # report just the indexed note in the chord
-                    idx = op[4][0]
-                    note1 = chord1.notes[idx]
-                else:
-                    idx = 0
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:pitch) {op.obj1.readable_str('pitch', idx=idx)}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                assert isinstance(op.indexes, tuple)  # both indices must be there
+                assert len(op.indexes) == 2
+                assert isinstance(op.indexes[0], int)
+                assert isinstance(op.indexes[1], int)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="pitch")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "headedit":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:head) {op.obj1.readable_str('head')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:head) {op.obj2.readable_str('head')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="head")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "graceedit":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:grace) {op.obj1.readable_str('grace')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:grace) {op.obj2.readable_str('grace')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="head")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "graceslashedit":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:graceslash) {op.obj1.readable_str('graceslash')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:graceslash) {op.obj2.readable_str('graceslash')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="graceslash")
+                outputList.extend(text_diff)
                 continue
 
             # beam
             if op.name in ("insbeam", "delbeam", "editbeam"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:flagsbeams) {op.obj1.readable_str('flagsbeams')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:flagsbeams) {op.obj2.readable_str('flagsbeams')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="flagsbeams")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "editnoteshape":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:noteshape) {op.obj1.readable_str('noteshape')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:noteshape) {op.obj2.readable_str('noteshape')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="noteshape")
+                outputList.extend(text_diff)
                 continue
 
             if op.name in ("editspace", "insspace", "delspace"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:spacebefore) {op.obj1.readable_str('spacebefore')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:spacebefore) {op.obj2.readable_str('spacebefore')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="spacebefore")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "editnoteheadfill":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:notefill) {op.obj1.readable_str('notefill')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:notefill) {op.obj2.readable_str('notefill')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="notefill")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "editnoteheadparenthesis":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:noteparen) {op.obj1.readable_str('noteparen')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:noteparen) {op.obj2.readable_str('noteparen')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="noteparen")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "editstemdirection":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:stemdir) {op.obj1.readable_str('stemdir')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:stemdir) {op.obj2.readable_str('stemdir')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="stemdir")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "editstyle":
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                sd1 = op.obj1.styledict
-                sd2 = op.obj2.styledict
-                changedStr = ""
-                for k1, v1 in sd1.items():
-                    if k1 not in sd2 or sd2[k1] != v1:
-                        if changedStr:
-                            changedStr += ","
-                        changedStr += k1
-
-                # one last thing: check for keys in sd2 that aren't in sd1
-                for k2 in sd2:
-                    if k2 not in sd1:
-                        if changedStr:
-                            changedStr += ","
-                        changedStr += k2
-
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                style1 = op.obj1.readable_str('style', changedStr=changedStr)
-                style2 = op.obj2.readable_str('style', changedStr=changedStr)
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:{changedStr}) {style1}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:{changedStr}) {style2}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="style")
+                outputList.extend(text_diff)
                 continue
 
             # accident
             if op.name in ("accidentins", "accidentdel", "accidentedit"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                assert isinstance(op.indexes, tuple[int, int])  # the indices must be there
-                chord1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord1 is not None
-                note1 = chord1
-                if "Chord" in chord1.classes:
-                    # report only the indexed note's accidental in the chord
-                    idx = op[4][0]
-                    note1 = chord1.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                chord2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord2 is not None
-                note2 = chord2
-                if "Chord" in chord2.classes:
-                    # report only the indexed note's accidental in the chord
-                    idx = op[4][1]
-                    note2 = chord2.notes[idx]
-                else:
-                    idx = 0
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:accid) {op.obj1.readable_str('accid', idx=idx)}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:accid) {op.obj2.readable_str('accid', idx=idx)}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                assert isinstance(op.indexes, tuple)  # both indices must be there
+                assert len(op.indexes) == 2
+                assert isinstance(op.indexes[0], int)
+                assert isinstance(op.indexes[1], int)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="accid")
+                outputList.extend(text_diff)
                 continue
 
             if op.name in ("dotins", "dotdel"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:dots) {op.obj1.readable_str('dots')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:dots) {op.obj2.readable_str('dots')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="dots")
+                outputList.extend(text_diff)
                 continue
 
             # tuplets
             if op.name in ("instuplet", "deltuplet", "edittuplet"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:tuplet) {op.obj1.readable_str('tuplet')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:tuplet) {op.obj2.readable_str('tuplet')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="tuplet")
+                outputList.extend(text_diff)
                 continue
 
             # ties
             if op.name in ("tieins", "tiedel"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                assert isinstance(op.indexes, tuple[int, int])  # the indices must be there
-                # Color the modified note here in both scores,
-                # using Visualization.INSERTED_COLOR
-                chord1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord1 is not None
-                note1 = chord1
-                if "Chord" in chord1.classes:
-                    # report just the indexed note in the chord
-                    idx = op[4][0]
-                    note1 = chord1.notes[idx]
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                chord2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert chord2 is not None
-                note2 = chord2
-                if "Chord" in chord2.classes:
-                    # report just the indexed note in the chord
-                    idx = op[4][1]
-                    note2 = chord2.notes[idx]
-                else:
-                    idx = 0
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(chord1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:tie) {op.obj1.readable_str('tie', idx=idx)}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:tie) {op.obj2.readable_str('tie', idx=idx)}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                assert isinstance(op.indexes, tuple)  # both indices must be there
+                assert len(op.indexes) == 2
+                assert isinstance(op.indexes[0], int)
+                assert isinstance(op.indexes[1], int)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="tie")
+                outputList.extend(text_diff)
                 continue
 
             # expressions
             if op.name in ("insexpression", "delexpression", "editexpression"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:expression) {op.obj1.readable_str('expression')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:expression) {op.obj2.readable_str('expression')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="expression")
+                outputList.extend(text_diff)
                 continue
 
             # articulations
             if op.name in ("insarticulation", "delarticulation", "editarticulation"):
-                assert isinstance(op.obj1, AnnNote)
-                assert isinstance(op.obj2, AnnNote)
-                note1 = score1.recurse().getElementById(op.obj1.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.general_note)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-({note1.classes[0]}:artic) {op.obj1.readable_str('artic')}\n"
-                oneOutput += newLine
-                newLine = f"+({note2.classes[0]}:artic) {op.obj2.readable_str('artic')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, sub_name="artic")
+                outputList.extend(text_diff)
                 continue
 
             # lyrics
             if op.name == "lyricins":
-                assert isinstance(op.obj2, AnnLyric)
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+(Lyric) {op.obj2.readable_str('')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert op.obj1 is None
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, name="Lyric")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "lyricdel":
-                assert isinstance(op.obj1, AnnLyric)
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(Lyric) {op.obj1.readable_str('')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert op.obj2 is None
+                text_diff = Visualization._text_diff(op, score1, score2, name="Lyric")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "lyricedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(Lyric:rawtext) {op.obj1.readable_str('rawtext')}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+(Lyric:rawtext) {op.obj2.readable_str('rawtext')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2,
+                    name="Lyric", sub_name="rawtext")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "lyricnumedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(Lyric:number) {op.obj1.readable_str('number')}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+(Lyric:number) {op.obj2.readable_str('number')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2,
+                    name="Lyric", sub_name="number")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "lyricidedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(Lyric:id) {op.obj1.readable_str('id')}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+(Lyric:id) {op.obj2.readable_str('id')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2,
+                    name="Lyric", sub_name="id")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "lyricoffsetedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(Lyric:offset) {op.obj1.readable_str('offset')}\n"
-                oneOutput += newLine
-                newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
-                oneOutput += newLine
-                newLine = f"+(Lyric:offset) {op.obj2.readable_str('offset')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2,
+                    name="Lyric", sub_name="offset")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "lyricstyleedit":
-                assert isinstance(op.obj1, AnnLyric)
-                assert isinstance(op.obj2, AnnLyric)
-                note1 = score1.recurse().getElementById(op.obj1.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note1 is not None
-                note2 = score2.recurse().getElementById(op.obj2.lyric_holder)  # type: ignore
-                if t.TYPE_CHECKING:
-                    assert note2 is not None
-                newLine = f"@@ {Visualization._location_of(note1, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(Lyric:style) {op.obj1.readable_str('style')}"
-                oneOutput += newLine
-                if op.obj1.offset != op.obj2.offset:
-                    outputList.append(oneOutput)
-                    newLine = f"@@ {Visualization._location_of(note2, score2)} @@\n"
-                    oneOutput = newLine
-                else:
-                    oneOutput += "\n"
-                newLine = f"+(Lyric:style) {op.obj2.readable_str('style')}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2,
+                    name="Lyric", sub_name="style")
+                outputList.extend(text_diff)
                 continue
 
             # metadata
             if op.name == "mditemins":
-                assert isinstance(op.obj2, AnnMetadataItem)
-                newLine = f"@@ {Visualization._location_of(score2.metadata, score2)} @@\n"
-                oneOutput = newLine
-                newLine = f"+(metadata) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert op.obj1 is None
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, name="metadata")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "mditemdel":
-                assert isinstance(op.obj1, AnnMetadataItem)
-                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(metadata) {op.obj1.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert op.obj2 is None
+                text_diff = Visualization._text_diff(op, score1, score2, name="metadata")
+                outputList.extend(text_diff)
                 continue
 
             if op.name == "mditemvalueedit":
-                assert isinstance(op.obj1, AnnMetadataItem)
-                assert isinstance(op.obj2, AnnMetadataItem)
-                newLine = f"@@ {Visualization._location_of(score1.metadata, score1)} @@\n"
-                oneOutput = newLine
-                newLine = f"-(metadata:value) {op.obj1.readable_str()}\n"
-                oneOutput += newLine
-                newLine = f"+(metadata:value) {op.obj2.readable_str()}"
-                oneOutput += newLine
-                outputList.append(oneOutput)
+                assert isinstance(op.obj1, AnnObject)
+                assert isinstance(op.obj2, AnnObject)
+                text_diff = Visualization._text_diff(op, score1, score2, name="metadata")
+                outputList.extend(text_diff)
                 continue
 
             print(
