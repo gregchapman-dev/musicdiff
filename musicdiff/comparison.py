@@ -342,7 +342,8 @@ class Comparison:
                 original, compare_to[1:], noteNode1, noteNode2, (ids[0], ids[1] + 1)
             )
             op_list.append(
-                DiffOperation("inspitch", noteNode1, noteNode2, M21Utils.pitch_size(compare_to[0]), ids)
+                DiffOperation("inspitch", noteNode1, noteNode2,
+                    M21Utils.pitch_size(compare_to[0]), ids)
             )
             cost += M21Utils.pitch_size(compare_to[0])
             return op_list, cost
@@ -352,7 +353,8 @@ class Comparison:
                 original[1:], compare_to, noteNode1, noteNode2, (ids[0] + 1, ids[1])
             )
             op_list.append(
-                DiffOperation("delpitch", noteNode1, noteNode2, M21Utils.pitch_size(original[0]), ids)
+                DiffOperation("delpitch", noteNode1, noteNode2,
+                    M21Utils.pitch_size(original[0]), ids)
             )
             cost += M21Utils.pitch_size(original[0])
             return op_list, cost
@@ -462,7 +464,9 @@ class Comparison:
         if len(original) == 0:
             op_list, cost = Comparison._block_diff_lin(original, compare_to[1:])
             cost += compare_to[0].notation_size()
-            op_list.append(DiffOperation("insbar", None, compare_to[0], compare_to[0].notation_size()))
+            op_list.append(
+                DiffOperation("insbar", None, compare_to[0], compare_to[0].notation_size())
+            )
             return op_list, cost
 
         if len(compare_to) == 0:
@@ -813,7 +817,9 @@ class Comparison:
                 )
             )
             cost += name_cost
-            op_list.append(DiffOperation("staffgrpnameedit", annStaffGroup1, annStaffGroup2, name_cost))
+            op_list.append(
+                DiffOperation("staffgrpnameedit", annStaffGroup1, annStaffGroup2, name_cost)
+            )
 
         # add for the abbreviation
         if annStaffGroup1.abbreviation != annStaffGroup2.abbreviation:
@@ -850,7 +856,8 @@ class Comparison:
             barTogether_cost: int = 1
             cost += barTogether_cost
             op_list.append(
-                DiffOperation("staffgrpbartogetheredit", annStaffGroup1, annStaffGroup2, barTogether_cost)
+                DiffOperation("staffgrpbartogetheredit", annStaffGroup1, annStaffGroup2,
+                    barTogether_cost)
             )
 
         # add for partIndices (sorted list of int)
@@ -865,7 +872,8 @@ class Comparison:
                 partIndices_cost = 1
             cost += partIndices_cost
             op_list.append(
-                DiffOperation("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2, partIndices_cost)
+                DiffOperation("staffgrppartindicesedit", annStaffGroup1, annStaffGroup2,
+                    partIndices_cost)
             )
 
         return op_list, cost
@@ -880,7 +888,9 @@ class Comparison:
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._inside_bars_diff_lin(original, compare_to[1:])
-            op_list.append(DiffOperation("noteins", None, compare_to[0], compare_to[0].notation_size()))
+            op_list.append(
+                DiffOperation("noteins", None, compare_to[0], compare_to[0].notation_size())
+            )
             cost += compare_to[0].notation_size()
             return op_list, cost
 
@@ -1212,7 +1222,10 @@ class Comparison:
 
     @staticmethod
     @_memoize_notes_set_distance
-    def _notes_set_distance(original: list[AnnNote], compare_to: list[AnnNote]) -> tuple[list[DiffOperation], int]:
+    def _notes_set_distance(
+        original: list[AnnNote],
+        compare_to: list[AnnNote]
+    ) -> tuple[list[DiffOperation], int]:
         """
         Gather up pairs of matching notes (using pitch, offset, graceness, and visual duration, in
         that order of importance).  If you can't find an exactly matching note, try again without
@@ -1281,13 +1294,17 @@ class Comparison:
         if unpaired_orig_notes:
             for an in unpaired_orig_notes:
                 cost += an.notation_size()
-                op_list.append(DiffOperation("notedel", an, None, an.notation_size(), an.note_idx_in_chord))
+                op_list.append(
+                    DiffOperation("notedel", an, None, an.notation_size(), an.note_idx_in_chord)
+                )
 
         # noteins
         if unpaired_comp_notes:
             for an in unpaired_comp_notes:
                 cost += an.notation_size()
-                op_list.append(DiffOperation("noteins", None, an, an.notation_size(), an.note_idx_in_chord))
+                op_list.append(
+                    DiffOperation("noteins", None, an, an.notation_size(), an.note_idx_in_chord)
+                )
 
         # notesub
         if paired_notes:
@@ -1306,7 +1323,10 @@ class Comparison:
 
     @staticmethod
     @_memoize_extras_set_distance
-    def _extras_set_distance(original: list[AnnExtra], compare_to: list[AnnExtra]) -> tuple[list[DiffOperation], int]:
+    def _extras_set_distance(
+        original: list[AnnExtra],
+        compare_to: list[AnnExtra]
+    ) -> tuple[list[DiffOperation], int]:
         """
         Gather up pairs of matching extras (using kind, offset, and visual duration, in
         that order of importance).  If you can't find an exactly matching extra, try again
@@ -1483,12 +1503,16 @@ class Comparison:
         # mditemdel
         for metadata_item in unpaired_orig_metadata_items:
             cost += metadata_item.notation_size()
-            op_list.append(DiffOperation("mditemdel", metadata_item, None, metadata_item.notation_size()))
+            op_list.append(
+                DiffOperation("mditemdel", metadata_item, None, metadata_item.notation_size())
+            )
 
         # mditemins
         for metadata_item in unpaired_comp_metadata_items:
             cost += metadata_item.notation_size()
-            op_list.append(DiffOperation("mditemins", None, metadata_item, metadata_item.notation_size()))
+            op_list.append(
+                DiffOperation("mditemins", None, metadata_item, metadata_item.notation_size())
+            )
 
         # mditemsub
         if paired_metadata_items:
@@ -1569,12 +1593,16 @@ class Comparison:
         # staffgrpdel
         for staff_group in unpaired_orig_staff_groups:
             cost += staff_group.notation_size()
-            op_list.append(DiffOperation("staffgrpdel", staff_group, None, staff_group.notation_size()))
+            op_list.append(
+                DiffOperation("staffgrpdel", staff_group, None, staff_group.notation_size())
+            )
 
         # staffgrpins
         for staff_group in unpaired_comp_staff_groups:
             cost += staff_group.notation_size()
-            op_list.append(DiffOperation("staffgrpins", None, staff_group, staff_group.notation_size()))
+            op_list.append(
+                DiffOperation("staffgrpins", None, staff_group, staff_group.notation_size())
+            )
 
         # staffgrpsub
         if paired_staff_groups:
@@ -1592,7 +1620,10 @@ class Comparison:
         return op_list, cost
 
     @staticmethod
-    def _voices_coupling_recursive(original: list[AnnVoice], compare_to: list[AnnVoice]) -> tuple[list[DiffOperation], int]:
+    def _voices_coupling_recursive(
+        original: list[AnnVoice],
+        compare_to: list[AnnVoice]
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compare all the possible voices permutations, considering also deletion and
         insertion (equation on office lens).
@@ -1606,7 +1637,9 @@ class Comparison:
             # insertion
             op_list, cost = Comparison._voices_coupling_recursive(original, compare_to[1:])
             # add for the inserted voice
-            op_list.append(DiffOperation("voiceins", None, compare_to[0], compare_to[0].notation_size()))
+            op_list.append(
+                DiffOperation("voiceins", None, compare_to[0], compare_to[0].notation_size())
+            )
             cost += compare_to[0].notation_size()
             return op_list, cost
 
@@ -1614,7 +1647,9 @@ class Comparison:
             # deletion
             op_list, cost = Comparison._voices_coupling_recursive(original[1:], compare_to)
             # add for the deleted voice
-            op_list.append(DiffOperation("voicedel", original[0], None, original[0].notation_size()))
+            op_list.append(
+                DiffOperation("voicedel", original[0], None, original[0].notation_size())
+            )
             cost += original[0].notation_size()
             return op_list, cost
 
@@ -1651,7 +1686,10 @@ class Comparison:
         return out
 
     @staticmethod
-    def annotated_scores_diff(score1: AnnScore, score2: AnnScore) -> tuple[list[DiffOperation], int]:
+    def annotated_scores_diff(
+        score1: AnnScore,
+        score2: AnnScore
+    ) -> tuple[list[DiffOperation], int]:
         '''
         Compare two annotated scores, computing an operations list and the cost of applying those
         operations to the first score to generate the second score.
