@@ -81,9 +81,9 @@ class DiffOperation:
         if self.obj2 is not None:
             if isinstance(self.obj2, AnnMetadataItem):
                 # special case: no m21_obj, so return the entire set of metadata instead
-                m21_obj2 = score1.metadata
+                m21_obj2 = score2.metadata
             else:
-                m21_obj2 = score1.recurse().getElementById(self.obj2.id)  # type: ignore
+                m21_obj2 = score2.recurse().getElementById(self.obj2.id)  # type: ignore
 
         return (m21_obj1, m21_obj2)
 
@@ -1315,7 +1315,7 @@ class Comparison:
             for an in unpaired_orig_notes:
                 cost += an.notation_size()
                 op_list.append(
-                    DiffOperation("notedel", an, None, an.notation_size(), an.note_idx_in_chord)
+                    DiffOperation("notedel", an, None, an.notation_size())
                 )
 
         # noteins
@@ -1323,7 +1323,7 @@ class Comparison:
             for an in unpaired_comp_notes:
                 cost += an.notation_size()
                 op_list.append(
-                    DiffOperation("noteins", None, an, an.notation_size(), an.note_idx_in_chord)
+                    DiffOperation("noteins", None, an, an.notation_size())
                 )
 
         # notesub

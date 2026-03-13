@@ -469,9 +469,10 @@ class Visualization:
         else:
             raise ValueError("bad call to _text_diff: op has no valid objects")
 
+        readable_str_subname: str = ""
+        changedStr: str = ""
         if sub_name:
-            readable_str_name: str = Visualization.READABLE_STR_NAMES.get(sub_name, sub_name)
-            changedStr: str = ""
+            readable_str_subname = Visualization.READABLE_STR_NAMES.get(sub_name, sub_name)
             if sub_name == "info":
                 # only AnnExtra has infodict
                 assert isinstance(op.obj1, AnnExtra)
@@ -509,7 +510,7 @@ class Visualization:
             newLine: str = f"@@ {Visualization._location_of(m21_obj1, score1)} @@\n"
             oneOutput = newLine
             readable: str = op.obj1.readable_str(
-                readable_str_name, idx=note_idx, changedStr=changedStr
+                readable_str_subname, idx=note_idx, changedStr=changedStr
             )
             newLine = f"-({name1}) {readable}"
             oneOutput += newLine
@@ -545,7 +546,7 @@ class Visualization:
                     pass
 
             readable = op.obj2.readable_str(
-                readable_str_name, idx=note_idx, changedStr=changedStr
+                readable_str_subname, idx=note_idx, changedStr=changedStr
             )
             newLine = f"+({name2}) {readable}"
             oneOutput += newLine
