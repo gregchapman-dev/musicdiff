@@ -54,7 +54,7 @@ class Visualization:
             str,
             str,
         ],
-        list[str] | None
+        list[str]
     ]
 
     @staticmethod
@@ -82,7 +82,7 @@ class Visualization:
             if op.name == "inspart":
                 assert op.obj1 is None
                 assert isinstance(op.obj2, m21.stream.Part)
-                Visualization._draw_diffs(op, opname="inserted", name="part")
+                Visualization._draw_diffs(score1, score2, op, opname="inserted", name="part")
                 continue
 
             if op.name == "delpart":
@@ -608,12 +608,12 @@ class Visualization:
         # the next set of params are only for drawing in the score (used here)
         opname: str = "",  # must be "inserted", "deleted", "changed"
         custom_text: str = "",  # replaces opname + name + sub_name
-                            # (e.g. "changed grace note" instead of "changed" + "note" + "grace")
+        # (e.g. "changed grace note" instead of "changed" + "note" + "grace")
         color_accidental_too: bool = False,
         # the next set of params are for both types of visualization
         name: str = "",  # name of object
         sub_name: str = "",  # e.g. "content" or "sym"
-    ) -> list[str] | None:
+    ) -> list[str]:
         m21_obj1: m21.base.Music21Object | None
         m21_obj2: m21.base.Music21Object | None
         m21_obj1, m21_obj2 = op.get_m21_objs(score1, score2)
@@ -677,7 +677,7 @@ class Visualization:
                 color_accidental_too=color_accidental_too
             )
 
-        return None
+        return []  # ignored by callers
 
     @staticmethod
     def _draw_diff(
@@ -1661,7 +1661,8 @@ class Visualization:
             if op.name == "lyricins":
                 assert op.obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                text_diff = vis_func(op, score1, score2, name="Lyric")
+                text_diff = vis_func(op, score1, score2,
+                    opname="inserted", name="lyric")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1669,7 +1670,8 @@ class Visualization:
             if op.name == "lyricdel":
                 assert isinstance(op.obj1, AnnObject)
                 assert op.obj2 is None
-                text_diff = vis_func(op, score1, score2, name="Lyric")
+                text_diff = vis_func(op, score1, score2,
+                    opname="deleted", name="lyric")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1678,7 +1680,8 @@ class Visualization:
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2,
-                    name="Lyric", sub_name="rawtext")
+                    opname="changed", name="lyric", sub_name="rawtext",
+                    custom_text="changed lyric")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1687,7 +1690,8 @@ class Visualization:
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2,
-                    name="Lyric", sub_name="number")
+                    opname="changed", name="lyric", sub_name="number",
+                    custom_text="changed lyric verse num")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1696,7 +1700,8 @@ class Visualization:
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2,
-                    name="Lyric", sub_name="id")
+                    opname="changed", name="lyric", sub_name="id",
+                    custom_text="changed lyric verse id")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1705,7 +1710,7 @@ class Visualization:
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2,
-                    name="Lyric", sub_name="offset")
+                    opname="changed", name="lyric", sub_name="offset")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1714,7 +1719,7 @@ class Visualization:
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2,
-                    name="Lyric", sub_name="style")
+                    opname="changed", name="lyric", sub_name="style")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1723,7 +1728,7 @@ class Visualization:
             if op.name == "mditemins":
                 assert op.obj1 is None
                 assert isinstance(op.obj2, AnnObject)
-                text_diff = vis_func(op, score1, score2, name="metadata")
+                text_diff = vis_func(op, score1, score2, name="metadata", opname="inserted")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1731,7 +1736,7 @@ class Visualization:
             if op.name == "mditemdel":
                 assert isinstance(op.obj1, AnnObject)
                 assert op.obj2 is None
-                text_diff = vis_func(op, score1, score2, name="metadata")
+                text_diff = vis_func(op, score1, score2, name="metadata", opname="deleted")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1739,13 +1744,13 @@ class Visualization:
             if op.name == "mditemvalueedit":
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
-                text_diff = vis_func(op, score1, score2, name="metadata")
+                text_diff = vis_func(op, score1, score2, name="metadata", opname="changed")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
 
             print(
-                f"Annotation type {op.name} not yet supported for text visualization",
+                f"Annotation type {op.name} not yet supported for visualization",
                 file=sys.stderr
             )
 
