@@ -43,6 +43,14 @@ class Visualization:
     """
     `CHANGED_COLOR` can be set to customize the rendered score markup that `mark_diffs` does.
     """
+
+    COLOR_FOR_OPNAME: dict[str, str] = {
+        "inserted": INSERTED_COLOR,
+        "deleted": DELETED_COLOR,
+        "changed": CHANGED_COLOR
+    }
+
+
     VisFunctionType = collections.abc.Callable[
         [
             DiffOperation,
@@ -79,12 +87,6 @@ class Visualization:
             score2,
             "draw"
         )
-
-    COLOR_FOR_OPNAME: dict[str, str] = {
-        "inserted": Visualization.INSERTED_COLOR,
-        "deleted": Visualization.DELETED_COLOR,
-        "changed": Visualization.CHANGED_COLOR
-    }
 
     @staticmethod
     def _draw_diffs(
