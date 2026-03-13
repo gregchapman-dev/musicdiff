@@ -476,8 +476,8 @@ class Comparison:
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
-        cost_dict = {}
-        op_list_dict = {}
+        cost_dict: dict[str, int] = {}
+        op_list_dict: dict[str, list[DiffOperation]] = {}
         # del-bar
         op_list_dict["delbar"], cost_dict["delbar"] = Comparison._block_diff_lin(
             original[1:], compare_to
@@ -545,7 +545,7 @@ class Comparison:
 
     @staticmethod
     @_memoize_lyrics_diff_lin
-    def _lyrics_diff_lin(original, compare_to):
+    def _lyrics_diff_lin(original, compare_to) -> tuple[list[DiffOperation], int]:
         # original and compare to are two lists of AnnLyric
         if len(original) == 0 and len(compare_to) == 0:
             return [], 0
@@ -565,28 +565,34 @@ class Comparison:
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
-        cost = {}
-        op_list = {}
+        cost_dict: dict[str, int] = {}
+        op_list_dict: dict[str, list[DiffOperation]] = {}
         # lyricdel
-        op_list["lyricdel"], cost["lyricdel"] = Comparison._lyrics_diff_lin(
+        op_list_dict["lyricdel"], cost_dict["lyricdel"] = Comparison._lyrics_diff_lin(
             original[1:], compare_to
         )
-        cost["lyricdel"] += original[0].notation_size()
-        op_list["lyricdel"].append(
-            ("lyricdel", original[0], None, original[0].notation_size())
+        cost_dict["lyricdel"] += original[0].notation_size()
+        op_list_dict["lyricdel"].append(
+            DiffOperation(
+                "lyricdel", original[0], None, original[0].notation_size()
+            )
         )
         # lyricins
-        op_list["lyricins"], cost["lyricins"] = Comparison._lyrics_diff_lin(
+        op_list_dict["lyricins"], cost_dict["lyricins"] = Comparison._lyrics_diff_lin(
             original, compare_to[1:]
         )
-        cost["lyricins"] += compare_to[0].notation_size()
-        op_list["lyricins"].append(
-            ("lyricins", None, compare_to[0], compare_to[0].notation_size())
+        cost_dict["lyricins"] += compare_to[0].notation_size()
+        op_list_dict["lyricins"].append(
+            DiffOperation(
+                "lyricins", None, compare_to[0], compare_to[0].notation_size()
+            )
         )
         # lyricsub
-        op_list["lyricsub"], cost["lyricsub"] = Comparison._lyrics_diff_lin(
+        op_list_dict["lyricsub"], cost_dict["lyricsub"] = Comparison._lyrics_diff_lin(
             original[1:], compare_to[1:]
         )
+        lyricsub_op: list[DiffOperation]
+        lyricsub_cost: int
         if (
             original[0] == compare_to[0]
         ):  # avoid call another function if they are equal
@@ -595,11 +601,11 @@ class Comparison:
             lyricsub_op, lyricsub_cost = (
                 Comparison._annotated_lyric_diff(original[0], compare_to[0])
             )
-        cost["lyricsub"] += lyricsub_cost
-        op_list["lyricsub"].extend(lyricsub_op)
+        cost_dict["lyricsub"] += lyricsub_cost
+        op_list_dict["lyricsub"].extend(lyricsub_op)
         # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
+        min_key = min(cost_dict, key=lambda k: cost_dict[k])
+        out = op_list_dict[min_key], cost_dict[min_key]
         return out
 
     @staticmethod
@@ -880,7 +886,7 @@ class Comparison:
 
     @staticmethod
     @_memoize_inside_bars_diff_lin
-    def _inside_bars_diff_lin(original, compare_to):
+    def _inside_bars_diff_lin(original, compare_to) -> tuple[list[DiffOperation], int]:
         # original and compare to are two lists of annotatedNote
         if len(original) == 0 and len(compare_to) == 0:
             return [], 0
@@ -902,39 +908,41 @@ class Comparison:
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
-        cost = {}
-        op_list = {}
+        cost_dict: dict[str, int] = {}
+        op_list_dict: dict[str, list[DiffOperation]] = {}
         # notedel
-        op_list["notedel"], cost["notedel"] = Comparison._inside_bars_diff_lin(
+        op_list_dict["notedel"], cost_dict["notedel"] = Comparison._inside_bars_diff_lin(
             original[1:], compare_to
         )
-        cost["notedel"] += original[0].notation_size()
-        op_list["notedel"].append(
+        cost_dict["notedel"] += original[0].notation_size()
+        op_list_dict["notedel"].append(
             DiffOperation("notedel", original[0], None, original[0].notation_size())
         )
         # noteins
-        op_list["noteins"], cost["noteins"] = Comparison._inside_bars_diff_lin(
+        op_list_dict["noteins"], cost_dict["noteins"] = Comparison._inside_bars_diff_lin(
             original, compare_to[1:]
         )
-        cost["noteins"] += compare_to[0].notation_size()
-        op_list["noteins"].append(
+        cost_dict["noteins"] += compare_to[0].notation_size()
+        op_list_dict["noteins"].append(
             DiffOperation("noteins", None, compare_to[0], compare_to[0].notation_size())
         )
         # notesub
-        op_list["notesub"], cost["notesub"] = Comparison._inside_bars_diff_lin(
+        op_list_dict["notesub"], cost_dict["notesub"] = Comparison._inside_bars_diff_lin(
             original[1:], compare_to[1:]
         )
+        notesub_op: list[DiffOperation]
+        notesub_cost: int
         if (
             original[0] == compare_to[0]
         ):  # avoid call another function if they are equal
             notesub_op, notesub_cost = [], 0
         else:
             notesub_op, notesub_cost = Comparison._annotated_note_diff(original[0], compare_to[0])
-        cost["notesub"] += notesub_cost
-        op_list["notesub"].extend(notesub_op)
+        cost_dict["notesub"] += notesub_cost
+        op_list_dict["notesub"].extend(notesub_op)
         # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
+        min_key = min(cost_dict, key=lambda k: cost_dict[k])
+        out = op_list_dict[min_key], cost_dict[min_key]
         return out
 
     @staticmethod
@@ -1118,34 +1126,40 @@ class Comparison:
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
-        cost = {}
-        op_list = {}
+        cost_dict: dict[str, int] = {}
+        op_list_dict: dict[str, list[DiffOperation]] = {}
         # delwhich
-        op_list["del" + which], cost["del" + which] = Comparison._beamtuplet_levenshtein_diff(
-            original[1:], compare_to, note1, note2, which
+        op_list_dict["del" + which], cost_dict["del" + which] = (
+            Comparison._beamtuplet_levenshtein_diff(
+                original[1:], compare_to, note1, note2, which
+            )
         )
-        cost["del" + which] += 1
-        op_list["del" + which].append(DiffOperation("del" + which, note1, note2, 1))
+        cost_dict["del" + which] += 1
+        op_list_dict["del" + which].append(DiffOperation("del" + which, note1, note2, 1))
         # inswhich
-        op_list["ins" + which], cost["ins" + which] = Comparison._beamtuplet_levenshtein_diff(
-            original, compare_to[1:], note1, note2, which
+        op_list_dict["ins" + which], cost_dict["ins" + which] = (
+            Comparison._beamtuplet_levenshtein_diff(
+                original, compare_to[1:], note1, note2, which
+            )
         )
-        cost["ins" + which] += 1
-        op_list["ins" + which].append(DiffOperation("ins" + which, note1, note2, 1))
+        cost_dict["ins" + which] += 1
+        op_list_dict["ins" + which].append(DiffOperation("ins" + which, note1, note2, 1))
         # editwhich
-        op_list["edit" + which], cost["edit" + which] = Comparison._beamtuplet_levenshtein_diff(
-            original[1:], compare_to[1:], note1, note2, which
+        op_list_dict["edit" + which], cost_dict["edit" + which] = (
+            Comparison._beamtuplet_levenshtein_diff(
+                original[1:], compare_to[1:], note1, note2, which
+            )
         )
         if original[0] == compare_to[0]:
             beam_diff_op_list = []
             beam_diff_cost = 0
         else:
-            beam_diff_op_list, beam_diff_cost = [("edit" + which, note1, note2, 1)], 1
-        cost["edit" + which] += beam_diff_cost
-        op_list["edit" + which].extend(beam_diff_op_list)
+            beam_diff_op_list, beam_diff_cost = [DiffOperation("edit" + which, note1, note2, 1)], 1
+        cost_dict["edit" + which] += beam_diff_cost
+        op_list_dict["edit" + which].extend(beam_diff_op_list)
         # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
+        min_key = min(cost_dict, key=lambda k: cost_dict[k])
+        out = op_list_dict[min_key], cost_dict[min_key]
         return out
 
     @staticmethod
@@ -1187,37 +1201,43 @@ class Comparison:
             return op_list, cost
 
         # compute the cost and the op_list for the many possibilities of recursion
-        cost = {}
-        op_list = {}
+        cost_dict: dict[str, int] = {}
+        op_list_dict: dict[str, list[DiffOperation]] = {}
         # delwhich
-        op_list["del" + which], cost["del" + which] = Comparison._generic_levenshtein_diff(
-            original[1:], compare_to, note1, note2, which
+        op_list_dict["del" + which], cost_dict["del" + which] = (
+            Comparison._generic_levenshtein_diff(
+                original[1:], compare_to, note1, note2, which
+            )
         )
-        cost["del" + which] += 1
-        op_list["del" + which].append(DiffOperation("del" + which, note1, note2, 1))
+        cost_dict["del" + which] += 1
+        op_list_dict["del" + which].append(DiffOperation("del" + which, note1, note2, 1))
         # inswhich
-        op_list["ins" + which], cost["ins" + which] = Comparison._generic_levenshtein_diff(
-            original, compare_to[1:], note1, note2, which
+        op_list_dict["ins" + which], cost_dict["ins" + which] = (
+            Comparison._generic_levenshtein_diff(
+                original, compare_to[1:], note1, note2, which
+            )
         )
-        cost["ins" + which] += 1
-        op_list["ins" + which].append(DiffOperation("ins" + which, note1, note2, 1))
+        cost_dict["ins" + which] += 1
+        op_list_dict["ins" + which].append(DiffOperation("ins" + which, note1, note2, 1))
         # editwhich
-        op_list["edit" + which], cost["edit" + which] = Comparison._generic_levenshtein_diff(
-            original[1:], compare_to[1:], note1, note2, which
+        op_list_dict["edit" + which], cost_dict["edit" + which] = (
+            Comparison._generic_levenshtein_diff(
+                original[1:], compare_to[1:], note1, note2, which
+            )
         )
         if original[0] == compare_to[0]:  # to avoid perform the diff
             generic_diff_op_list = []
             generic_diff_cost = 0
         else:
             generic_diff_op_list, generic_diff_cost = (
-                [("edit" + which, note1, note2, 1)],
+                [DiffOperation("edit" + which, note1, note2, 1)],
                 1,
             )
-        cost["edit" + which] += generic_diff_cost
-        op_list["edit" + which].extend(generic_diff_op_list)
+        cost_dict["edit" + which] += generic_diff_cost
+        op_list_dict["edit" + which].extend(generic_diff_op_list)
         # compute the minimum of the possibilities
-        min_key = min(cost, key=cost.get)
-        out = op_list[min_key], cost[min_key]
+        min_key = min(cost_dict, key=lambda k: cost_dict[k])
+        out = op_list_dict[min_key], cost_dict[min_key]
         return out
 
     @staticmethod
