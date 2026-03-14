@@ -324,7 +324,7 @@ class Comparison:
         noteNode1: AnnNote,
         noteNode2: AnnNote,
         ids: tuple[int, int]
-    ):
+    ) -> tuple[list[DiffOperation], int]:
         """
         Compute the levenshtein distance between two sequences of pitches.
         Arguments:
@@ -547,20 +547,30 @@ class Comparison:
     @_memoize_lyrics_diff_lin
     def _lyrics_diff_lin(original, compare_to) -> tuple[list[DiffOperation], int]:
         # original and compare to are two lists of AnnLyric
+        op_list: list[DiffOperation]
+        cost: int
         if len(original) == 0 and len(compare_to) == 0:
             return [], 0
 
         if len(original) == 0:
             cost = 0
             op_list, cost = Comparison._lyrics_diff_lin(original, compare_to[1:])
-            op_list.append(("lyricins", None, compare_to[0], compare_to[0].notation_size()))
+            op_list.append(
+                DiffOperation(
+                    "lyricins", None, compare_to[0], compare_to[0].notation_size()
+                )
+            )
             cost += compare_to[0].notation_size()
             return op_list, cost
 
         if len(compare_to) == 0:
             cost = 0
             op_list, cost = Comparison._lyrics_diff_lin(original[1:], compare_to)
-            op_list.append(("lyricdel", original[0], None, original[0].notation_size()))
+            op_list.append(
+                DiffOperation(
+                    "lyricdel", original[0], None, original[0].notation_size()
+                )
+            )
             cost += original[0].notation_size()
             return op_list, cost
 
@@ -887,6 +897,9 @@ class Comparison:
     @staticmethod
     @_memoize_inside_bars_diff_lin
     def _inside_bars_diff_lin(original, compare_to) -> tuple[list[DiffOperation], int]:
+        cost: int = 0
+        op_list: list[DiffOperation] = []
+
         # original and compare to are two lists of annotatedNote
         if len(original) == 0 and len(compare_to) == 0:
             return [], 0
@@ -1103,6 +1116,9 @@ class Comparison:
             note2 {AnnNote} -- the note for referencing in the score
             which -- a string: "beam" or "tuplet" depending what we are comparing
         """
+        cost: int = 0
+        op_list: list[DiffOperation] = []
+
         if which not in ("beam", "tuplet"):
             raise ValueError("Argument 'which' must be either 'beam' or 'tuplet'")
 
@@ -1181,6 +1197,9 @@ class Comparison:
             note2 {AnnNote} -- the note for referencing in the score
             which -- a string: e.g. "articulation" depending what we are comparing
         """
+        cost: int = 0
+        op_list: list[DiffOperation] = []
+
         if len(original) == 0 and len(compare_to) == 0:
             return [], 0
 
@@ -1650,6 +1669,9 @@ class Comparison:
         original [list] -- a list of Voice
         compare_to [list] -- a list of Voice
         """
+        cost: int = 0
+        op_list: list[DiffOperation] = []
+
         if len(original) == 0 and len(compare_to) == 0:  # stop the recursion
             return [], 0
 
