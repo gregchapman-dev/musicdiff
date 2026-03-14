@@ -10,7 +10,7 @@
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
-__docformat__ = "google"
+__docformat__ = 'google'
 
 import sys
 import os
@@ -42,7 +42,7 @@ def _getInputExtensionsList() -> list[str]:
 def _printSupportedInputFormats() -> None:
     c = m21.converter.Converter()
     inList = c.subConvertersList('input')
-    print("Supported input formats are:", file=sys.stderr)
+    print('Supported input formats are:', file=sys.stderr)
     for subc in inList:
         if subc.registerInputExtensions:
             print('\tformats   : ' + ', '.join(subc.registerFormats)
@@ -193,7 +193,7 @@ def diff(
 
     total_cost: int = 0
 
-    # if both "scores" are actually Scores, the lists will be of length 1.
+    # if both 'scores' are actually Scores, the lists will be of length 1.
     # If one or both are Opuses, the lists will be sized to fit the larger
     # of the two, with the list for the shorter Opus (or maybe just a Score)
     # padded with empty Scores, so the lists have the same length.
@@ -396,7 +396,7 @@ def diff_ml_training(
     # sort metrics_list the way you want it to appear in the csv file.
     # I like it sorted by omr_ned (ascending), so the omr_ned == 0.0 entries
     # are together at the top, and the omr_ned == 1.0 entries are together
-    # at the bottom.  Within each group of "same omr_ned", sort by filename.
+    # at the bottom.  Within each group of 'same omr_ned', sort by filename.
     def natsortkey(path: str):
         # splits path into chunks of digits and non-digits. Converts the digit
         # chunks to integers for numerical comparison and the non-digit chunks

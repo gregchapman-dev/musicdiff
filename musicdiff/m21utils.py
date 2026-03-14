@@ -30,8 +30,8 @@ from musicdiff import DetailLevel
 class PitchInfo:
     def __init__(
         self,
-        name: str,  # "An"-"Gn", or "R" for rests, or "N" for staff position
-        accidental: str = "None",  # always "None" for rests
+        name: str,  # 'An'-'Gn', or 'R' for rests, or 'N' for staff position
+        accidental: str = 'None',  # always 'None' for rests
         tied: bool = False  # always False for rests
     ):
         self.name = name
@@ -40,10 +40,10 @@ class PitchInfo:
 
     def __str__(self) -> str:
         output: str = self.name
-        if self.accidental != "None":
+        if self.accidental != 'None':
             output += self.accidental
         if self.tied:
-            output += ", tied"
+            output += ', tied'
         return output
 
 
@@ -65,38 +65,38 @@ class M21Utils:
                 else:
                     type_num: float = M21Utils.get_type_num(n.duration)
                     nFlags: int = int(math.log(type_num / 4, 2))
-                    flags: list[str] = ["partial"] * nFlags
+                    flags: list[str] = ['partial'] * nFlags
                     _beam_list.append(flags)
         return _beam_list
 
 
     @staticmethod
     def generalNote_to_string(gn: m21.note.GeneralNote) -> str:
-        """
+        '''
         Return the NoteString with R or N, notehead number and dots.
         Does not consider the ties (because of music21 ties encoding).
         Arguments:
             gn {music21 general note} -- [description]
         Returns:
             String -- the noteString
-        """
-        out_string = ""
+        '''
+        out_string = ''
         # add generalNote type (Rest or Note)
         if gn.isRest:
-            out_string += "R"
+            out_string += 'R'
         else:
-            out_string += "N"
+            out_string += 'N'
         # add notehead information (4,2,1,1/2, etc...).
         # 4 means a black note, 2 white, 1 whole etc...
         type_number = Fraction(m21.duration.convertTypeToNumber(gn.duration.type))
         if type_number >= 4:
-            out_string += "4"
+            out_string += '4'
         else:
             out_string += str(type_number)
         # add the dot
         n_of_dots = gn.duration.dots
         for _ in range(n_of_dots):
-            out_string += "*"
+            out_string += '*'
         return out_string
 
     @staticmethod
@@ -156,7 +156,7 @@ class M21Utils:
                     theName += 'lower=' + expr.lowerAccidental.name
                 theName += ')'
 
-            # if diffing style, include placement (None, "above", "below")
+            # if diffing style, include placement (None, 'above', 'below')
             if DetailLevel.includesStyle(detail):
                 placement = None
                 if hasattr(expr, 'placement'):
@@ -188,7 +188,7 @@ class M21Utils:
                     assert expr.accidental is not None
                 theName += f' ({expr.accidental.name})'
 
-            # if diffing style, include placement (None, "above", "below")
+            # if diffing style, include placement (None, 'above', 'below')
             if DetailLevel.includesStyle(detail):
                 placement = None
                 if hasattr(expr, 'placement'):
@@ -253,7 +253,7 @@ class M21Utils:
     ) -> str:
         theName: str = artic.name
 
-        # if diffing style, include placement (None, "above", "below")
+        # if diffing style, include placement (None, 'above', 'below')
         if DetailLevel.includesStyle(detail):
             placement: str | None = None
             if hasattr(artic, 'placement'):
@@ -289,20 +289,20 @@ class M21Utils:
     ) -> PitchInfo:
         if isinstance(note, m21.note.Rest):
             # special case, returns quickly
-            rest_name: str = "R"
+            rest_name: str = 'R'
             if DetailLevel.includesStyle(detail):
                 # Rest position is style, not substance
                 # rest.stepShift is the number of lines/spaces above/below middle of staff.
                 # We can use it directly in our annotation.
                 if note.stepShift > 0:
-                    rest_name = f"R+{note.stepShift}"
+                    rest_name = f'R+{note.stepShift}'
                 elif note.stepShift < 0:
-                    rest_name = f"R{note.stepShift}"
+                    rest_name = f'R{note.stepShift}'
             return PitchInfo(rest_name)
 
         # must be Note or Unpitched
         note_pitch: str
-        note_accidental: str = "None"
+        note_accidental: str = 'None'
         if isinstance(note, m21.note.Unpitched):
             # TODO: Unpitched + NoteStaffPosition
             # use the displayName (e.g. 'G4') with no accidental
@@ -312,7 +312,7 @@ class M21Utils:
             if DetailLevel.includesNoteStaffPosition(detail):
                 # we annotate the note's vertical position in the staff (mid-staff == 0)
                 mid_line: int = M21Utils.get_mid_line(curr_clef, lines_per_staff)
-                note_pitch = f"N{note.pitch.diatonicNoteNum - mid_line}"
+                note_pitch = f'N{note.pitch.diatonicNoteNum - mid_line}'
             else:
                 # we annotate the note's pitch name (including octave, but not accidental)
                 note_pitch = note.pitch.step + str(note.pitch.octave)
@@ -332,43 +332,43 @@ class M21Utils:
                 # 'if-absolutely-necessary', 'even-tied'
                 displayType: str | None = note.pitch.accidental.displayType
                 if displayType is None:
-                    displayType = "normal"
+                    displayType = 'normal'
 
-                if displayType in ("always", "even-tied"):
+                if displayType in ('always', 'even-tied'):
                     note_accidental = note.pitch.accidental.name
-                elif displayType == "never":
-                    note_accidental = "None"
-                elif displayType in ("normal", "if-absolutely-necessary"):
+                elif displayType == 'never':
+                    note_accidental = 'None'
+                elif displayType in ('normal', 'if-absolutely-necessary'):
                     # Complete guess: the accidental will be displayed
                     # This will be wrong if this is not the first such note in the measure.
                     note_accidental = note.pitch.accidental.name
-                elif displayType == "unless-repeated":
+                elif displayType == 'unless-repeated':
                     # Guess that the note is not repeated
                     note_accidental = note.pitch.accidental.name
 
             # TODO: we should append editorial style info to note_accidental here ('paren', etc)
         else:
             # Chords and other non-Note/Rest/Unpitched should never get here!
-            raise ValueError("wrong type object passed to note_to_pitch_info")
+            raise ValueError('wrong type object passed to note_to_pitch_info')
 
         note_tie: bool = False
         if DetailLevel.includesTies(detail):
             # add tie information
-            note_tie = note.tie is not None and note.tie.type in ("start", "continue")
+            note_tie = note.tie is not None and note.tie.type in ('start', 'continue')
 
         return PitchInfo(note_pitch, note_accidental, note_tie)
 
     @staticmethod
     def pitch_size(pitch: PitchInfo) -> int:
-        """Compute the size of a pitch.
+        '''Compute the size of a pitch.
         Arguments:
             pitch {[triple]} -- a triple (pitchname,accidental,tie)
-        """
+        '''
         size = 0
         # add for the pitchname
         size += 1
         # add for the accidental
-        if pitch.accidental != "None":
+        if pitch.accidental != 'None':
             size += 1
         # add for the tie
         if pitch.tied:
@@ -377,10 +377,10 @@ class M21Utils:
 
     @staticmethod
     def generalNote_info(gn: m21.note.GeneralNote) -> dict[str, int | str | list]:
-        """
+        '''
         Get a json of informations about a general note.
         The fields of the json are
-        type: ("chord", "rest", or "note"),
+        type: ('chord', 'rest', or 'note'),
         pitches: list of pitch strings
         noteHead (also for rests): string
         dots: integer
@@ -388,42 +388,42 @@ class M21Utils:
         Does not consider the ties (because of music21 ties encoding).
         Arguments:
             gn {music21 general note} -- the general note to have the information
-        """
+        '''
         # pitches and type info
         pitches: list[tuple[str, m21.pitch.Accidental | None]]
         gn_type: str
         if isinstance(gn, m21.chord.ChordBase):
             gnPitches: tuple[m21.pitch.Pitch, ...] = gn.pitches
-            if hasattr(gn, "sortDiatonicAscending"):
+            if hasattr(gn, 'sortDiatonicAscending'):
                 gnPitches = gn.sortDiatonicAscending().pitches
             pitches = [
                 (p.step + str(p.octave), p.accidental)
                 for p in gnPitches
             ]
-            gn_type = "chord"
+            gn_type = 'chord'
         elif gn.isRest:
-            pitches = [("A0", None)]  # pitch is set to ["A0"] for rests
-            gn_type = "rest"
+            pitches = [('A0', None)]  # pitch is set to ['A0'] for rests
+            gn_type = 'rest'
         elif isinstance(gn, m21.note.Note):
             pitches = [
                 (gn.pitch.step + str(gn.pitch.octave), gn.pitch.accidental)
             ]  # a list with  one pitch inside
-            gn_type = "note"
+            gn_type = 'note'
         else:
-            raise TypeError("The generalNote must be a Chord, a Rest or a Note")
+            raise TypeError('The generalNote must be a Chord, a Rest or a Note')
 
         # notehead information (4,2,1,1/2, etc...). 4 means a black note, 2 white, 1 whole etc...
         type_number = Fraction(m21.duration.convertTypeToNumber(gn.duration.type))
         if type_number >= 4:
-            note_head = "4"
+            note_head = '4'
         else:
             note_head = str(type_number)
 
         gn_info: dict[str, int | str | list] = {
-            "type": gn_type,
-            "pitches": pitches,
-            "noteHead": note_head,
-            "dots": gn.duration.dots,
+            'type': gn_type,
+            'pitches': pitches,
+            'noteHead': note_head,
+            'dots': gn.duration.dots,
         }
         return gn_info
 
@@ -474,9 +474,9 @@ class M21Utils:
         _rest_or_note: list[str] = []
         for n in note_list:
             if n.isRest:
-                _rest_or_note.append("R")
+                _rest_or_note.append('R')
             else:
-                _rest_or_note.append("N")
+                _rest_or_note.append('N')
         return _rest_or_note
 
     @staticmethod
@@ -484,13 +484,13 @@ class M21Utils:
         note_list: list[m21.note.GeneralNote],
         detail: DetailLevel | int
     ) -> list[list[str]]:
-        """
+        '''
         Create a mod_beam_list that take into account also the single notes with a type > 4
-        """
+        '''
         _beam_list: list[list[str]] = M21Utils.get_beamings(note_list, detail)
         _type_list: list[float] = M21Utils.get_type_nums(note_list)
         if not DetailLevel.includesBeams(detail):
-            # _beam_list has "partial" for every flag, no fixups required
+            # _beam_list has 'partial' for every flag, no fixups required
             return _beam_list
 
         # return an actual (fixed up) beam list
@@ -511,15 +511,15 @@ class M21Utils:
                         and len(_beam_list) > i + 1
                         and len(_beam_list[i + 1]) > ii
                         and (
-                            _beam_list[i + 1][ii] == "continue"
-                            or _beam_list[i + 1][ii] == "stop"
+                            _beam_list[i + 1][ii] == 'continue'
+                            or _beam_list[i + 1][ii] == 'stop'
                         )
-                    ):  # in case of "beamed" rests, the next note is beamed at the same level):
-                        _mod_beam_list[i].append("continue")
+                    ):  # in case of 'beamed' rests, the next note is beamed at the same level):
+                        _mod_beam_list[i].append('continue')
                     else:
-                        _mod_beam_list[i].append("partial")
+                        _mod_beam_list[i].append('partial')
 
-        # change the single "start" and "stop" with partial (since MEI parser is
+        # change the single 'start' and 'stop' with partial (since MEI parser is
         # not working properly)
         new_mod_beam_list: list[list[str]] = copy.copy(_mod_beam_list)
         max_beam_len: int = max([len(t) for t in _mod_beam_list])
@@ -528,25 +528,25 @@ class M21Utils:
                 if (
                     M21Utils.safe_get(
                         _mod_beam_list[note_index], beam_depth
-                    ) == "start"
+                    ) == 'start'
                     and M21Utils.safe_get(
                         M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth
                     ) is None
                 ):
-                    new_mod_beam_list[note_index][beam_depth] = "partial"
+                    new_mod_beam_list[note_index][beam_depth] = 'partial'
                 elif (
                     M21Utils.safe_get(
                         _mod_beam_list[note_index], beam_depth
-                    ) == "stop"
+                    ) == 'stop'
                     and M21Utils.safe_get(
                         M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth
                     ) is None
                 ):
-                    new_mod_beam_list[note_index][beam_depth] = "partial"
+                    new_mod_beam_list[note_index][beam_depth] = 'partial'
                 elif (
                     M21Utils.safe_get(
                         _mod_beam_list[note_index], beam_depth
-                    ) == "continue"
+                    ) == 'continue'
                     and M21Utils.safe_get(
                         M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth
                     ) is None
@@ -554,11 +554,11 @@ class M21Utils:
                         M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth
                     ) is None
                 ):
-                    new_mod_beam_list[note_index][beam_depth] = "partial"
+                    new_mod_beam_list[note_index][beam_depth] = 'partial'
                 elif (
                     M21Utils.safe_get(
                         _mod_beam_list[note_index], beam_depth
-                    ) == "continue"
+                    ) == 'continue'
                     and M21Utils.safe_get(
                         M21Utils.safe_get(_mod_beam_list, note_index - 1), beam_depth
                     ) is None
@@ -566,7 +566,7 @@ class M21Utils:
                         M21Utils.safe_get(_mod_beam_list, note_index + 1), beam_depth
                     ) is not None
                 ):
-                    new_mod_beam_list[note_index][beam_depth] = "start"
+                    new_mod_beam_list[note_index][beam_depth] = 'start'
 
         return new_mod_beam_list
 
@@ -602,41 +602,41 @@ class M21Utils:
         note_list: list[m21.note.GeneralNote],
         detail: DetailLevel | int
     ) -> list[list[str]]:
-        """
+        '''
         for each note return a list of tuple(str, str) with the tuplet type string and a string
         representation of what is visible.
-        """
+        '''
         str_list: list[list[str]] = []
         for n in note_list:
             tuplet_info_list_for_note: list[str] = []
             for tup in n.duration.tuplets:
                 # notes that don't start a tuplet have no info that anyone looks at
-                new_info: str = ""
-                if tup.type == "start":
+                new_info: str = ''
+                if tup.type == 'start':
                     # music21 only pays attention to number and bracket visibility/placement
                     # on the start note of a tuplet.  TODO: Should I pass in/use result of
                     # get_tuplets_type?  It has more (implied) starts than the actual tuplets do.
                     if DetailLevel.includesStyle(detail):
                         # what number(s) are shown?
-                        if tup.tupletActualShow in ("number", "both"):
-                            if tup.tupletNormalShow in ("number", "both"):
+                        if tup.tupletActualShow in ('number', 'both'):
+                            if tup.tupletNormalShow in ('number', 'both'):
                                 new_info = (str(tup.numberNotesActual)
-                                    + ":" + str(tup.numberNotesNormal))
+                                    + ':' + str(tup.numberNotesNormal))
                             else:  # just a number for the tuplets
                                 new_info = str(tup.numberNotesActual)
                         else:
-                            if tup.tupletNormalShow in ("number", "both"):
-                                new_info = ":" + str(tup.numberNotesNormal)
+                            if tup.tupletNormalShow in ('number', 'both'):
+                                new_info = ':' + str(tup.numberNotesNormal)
                             else:  # no number shown
-                                new_info = ""
+                                new_info = ''
 
                         # append bracketing and placement to the number(s)
 
                         # if the brackets are drawn explicitly, add B
                         if tup.bracket:
-                            new_info = new_info + "B"
+                            new_info = new_info + 'B'
 
-                        # placement (None, "above", "below")
+                        # placement (None, 'above', 'below')
                         if tup.placement is not None:
                             new_info = new_info + tup.placement
                     else:
@@ -652,38 +652,38 @@ class M21Utils:
     def get_tuplets_type(
         note_list: list[m21.note.GeneralNote]
     ) -> list[list[str]]:
-        """
+        '''
         for each note return a list of tuple(str, str), with the first string filled in with
         the type of the tuplets for the note
-        """
+        '''
         tuplets_list: list[list[str | None]] = [
             [tup.type for tup in n.duration.tuplets] for n in note_list  # type: ignore
         ]
         new_tuplets_list = copy.deepcopy(tuplets_list)
 
-        # now correct the missing of "start" and add "continue" for clarity
+        # now correct the missing of 'start' and add 'continue' for clarity
         max_tupl_len = max([len(t) for t in tuplets_list])
         for ii in range(max_tupl_len):
             start_index = None
             # stop_index = None
             for i, note_tuplets in enumerate(tuplets_list):
                 if len(note_tuplets) > ii:
-                    if note_tuplets[ii] == "start":
+                    if note_tuplets[ii] == 'start':
                         # Some medieval music has weirdly nested triplets that
                         # end up in music21 with two starts in a row.
                         start_index = ii
                     elif note_tuplets[ii] is None:
-                        # replace any None with "start" or "continue"
+                        # replace any None with 'start' or 'continue'
                         if start_index is None:
                             start_index = ii
-                            new_tuplets_list[i][ii] = "start"
+                            new_tuplets_list[i][ii] = 'start'
                         else:
-                            new_tuplets_list[i][ii] = "continue"
-                    elif note_tuplets[ii] in ("stop", "startStop"):
+                            new_tuplets_list[i][ii] = 'continue'
+                    elif note_tuplets[ii] in ('stop', 'startStop'):
                         start_index = None
                     else:
-                        raise TypeError("Invalid tuplet type")
-        # we have replaced any None with "start" or "continue"
+                        raise TypeError('Invalid tuplet type')
+        # we have replaced any None with 'start' or 'continue'
         return t.cast(list[list[str]], new_tuplets_list)
 
 
@@ -692,10 +692,10 @@ class M21Utils:
         measureOrVoice: m21.stream.Measure | m21.stream.Voice,
         recurse: bool = False
     ) -> list[m21.note.GeneralNote]:
-        """
+        '''
         :param measureOrVoice: a music21 measure or voice
         :return: a list of visible notes, including grace notes, inside the measure
-        """
+        '''
         out: list[m21.note.GeneralNote] = []
         gnIterator: m21.stream.iterator.StreamIterator | m21.stream.iterator.RecursiveIterator
         if recurse:
@@ -1038,9 +1038,9 @@ class M21Utils:
     @staticmethod
     def note_to_string(note: m21.note.GeneralNote) -> str:
         if note.isRest:
-            _str = "R"
+            _str = 'R'
         else:
-            _str = "N"
+            _str = 'N'
         return _str
 
     @staticmethod
@@ -1465,7 +1465,7 @@ class M21Utils:
         if t.TYPE_CHECKING:
             assert isinstance(mm, m21.tempo.MetronomeMark)
 
-        # ignore "playback only" metronome marks (they are not printed)
+        # ignore 'playback only' metronome marks (they are not printed)
         if not mm.text and (not mm.number or mm.numberImplicit):
             return None
 
@@ -1516,7 +1516,7 @@ class M21Utils:
         if t.TYPE_CHECKING:
             assert isinstance(mm, m21.tempo.MetronomeMark)
 
-        # ignore "playback only" metronome marks (they are not printed)
+        # ignore 'playback only' metronome marks (they are not printed)
         if not mm.text and (not mm.number or mm.numberImplicit):
             return None
 
@@ -2227,7 +2227,7 @@ class M21Utils:
         if isinstance(cs, m21.harmony.NoChord):
             printedStr: str = cs.chordKindStr
             if printedStr:
-                printedStr = ' ("' + printedStr + '")'
+                printedStr = " ('" + printedStr + "')"
             return f'N.C.{printedStr}'
 
         root: str = cs.root().name
@@ -2509,5 +2509,5 @@ class M21Utils:
             num = abs(num)
         if wholeNum:
             num -= abs(wholeNum) * den
-            return f"{wholeNum} {num}/{den}"
-        return f"{num}/{den}"
+            return f'{wholeNum} {num}/{den}'
+        return f'{num}/{den}'

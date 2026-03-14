@@ -12,7 +12,7 @@
 # License:       MIT, see LICENSE
 # ------------------------------------------------------------------------------
 
-__docformat__ = "google"
+__docformat__ = 'google'
 
 import html
 from fractions import Fraction
@@ -44,9 +44,9 @@ class AnnObject:
         self.offset: OffsetQL | None = None
         self.duration: OffsetQL | None = None
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
         # will be overridden by every derived class (AnnNote et al)
-        return ""
+        return ''
 
 class AnnNote(AnnObject):
     def __init__(
@@ -60,7 +60,7 @@ class AnnNote(AnnObject):
         chord_offset: OffsetQL | None = None,  # only set if this note is inside a chord
         detail: DetailLevel | int = DetailLevel.Default,
     ) -> None:
-        """
+        '''
         Extend music21 GeneralNote with some precomputed, easily compared information about it.
 
         Args:
@@ -76,7 +76,7 @@ class AnnNote(AnnObject):
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
-        """
+        '''
         super().__init__(general_note)
         self.is_in_chord: bool = False
         self.note_idx_in_chord: int | None = None
@@ -102,20 +102,20 @@ class AnnNote(AnnObject):
         self.note_is_grace: bool = False
 
         # fullNameSuffix is only for text output, it is not involved in comparison at all.
-        # It is of the form "Dotted Quarter Rest", etc.
+        # It is of the form 'Dotted Quarter Rest', etc.
         self.fullNameSuffix: str = general_note.duration.fullName
         if isinstance(general_note, m21.note.Rest):
-            self.fullNameSuffix += " Rest"
+            self.fullNameSuffix += ' Rest'
         elif isinstance(general_note, m21.chord.ChordBase):
             if parent_chord is None:
-                self.fullNameSuffix += " Chord"
+                self.fullNameSuffix += ' Chord'
             else:
                 # we're actually annotating one of the notes in the chord
-                self.fullNameSuffix += " Note"
+                self.fullNameSuffix += ' Note'
         elif isinstance(general_note, (m21.note.Note, m21.note.Unpitched)):
-            self.fullNameSuffix += " Note"
+            self.fullNameSuffix += ' Note'
         else:
-            self.fullNameSuffix += " Note"
+            self.fullNameSuffix += ' Note'
         self.fullNameSuffix = self.fullNameSuffix.lower()
 
         if not DetailLevel.includesVoicing(detail):
@@ -188,13 +188,13 @@ class AnnNote(AnnObject):
         self.pitches: list[PitchInfo]
         if isinstance(general_note, m21.chord.ChordBase):
             notes: tuple[m21.note.NotRest, ...] = general_note.notes
-            if hasattr(general_note, "sortDiatonicAscending"):
+            if hasattr(general_note, 'sortDiatonicAscending'):
                 # PercussionChords don't have this, Chords do
                 notes = general_note.sortDiatonicAscending().notes
             self.pitches = []
             for p in notes:
                 if not isinstance(p, (m21.note.Note, m21.note.Unpitched)):
-                    raise TypeError("The chord must contain only Note or Unpitched")
+                    raise TypeError('The chord must contain only Note or Unpitched')
                 self.pitches.append(M21Utils.note_to_pitch_info(
                     p, curr_clef, LINES_PER_STAFF, detail
                 ))
@@ -204,7 +204,7 @@ class AnnNote(AnnObject):
                 general_note, curr_clef, LINES_PER_STAFF, detail
             )]
         else:
-            raise TypeError("The generalNote must be a Chord, a Rest, a Note, or an Unpitched")
+            raise TypeError('The generalNote must be a Chord, a Rest, a Note, or an Unpitched')
 
         dur: m21.duration.Duration = carrier.duration
         # note head
@@ -280,12 +280,12 @@ class AnnNote(AnnObject):
         self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnNote`.
 
         Returns:
             int: The notation size of the annotated note
-        """
+        '''
         if self._cached_notation_size is None:
             size: int = 0
             # add for the pitches
@@ -332,217 +332,217 @@ class AnnNote(AnnObject):
 
         return self._cached_notation_size
 
-    def get_identifying_string(self, name: str = "") -> str:
-        string: str = ""
-        if self.fullNameSuffix.endswith("rest"):
+    def get_identifying_string(self, name: str = '') -> str:
+        string: str = ''
+        if self.fullNameSuffix.endswith('rest'):
             string = self.fullNameSuffix
-        elif self.fullNameSuffix.endswith("note"):
+        elif self.fullNameSuffix.endswith('note'):
             string = self.pitches[0].name
-            if self.pitches[0].accidental != "None":
-                string += " " + self.pitches[0].accidental
-            string += " (" + self.fullNameSuffix + ")"
-        elif self.fullNameSuffix.endswith("chord"):
-            string = "["
+            if self.pitches[0].accidental != 'None':
+                string += ' ' + self.pitches[0].accidental
+            string += ' (' + self.fullNameSuffix + ')'
+        elif self.fullNameSuffix.endswith('chord'):
+            string = '['
             for p in self.pitches:  # add for pitches
                 string += p.name  # pitch name and octave
-                if p.accidental != "None":
-                    string += " " + p.accidental  # pitch accidental
-                string += ","
+                if p.accidental != 'None':
+                    string += ' ' + p.accidental  # pitch accidental
+                string += ','
             string = string[:-1]  # delete the last comma
-            string += "] (" + self.fullNameSuffix + ")"
+            string += '] (' + self.fullNameSuffix + ')'
         return string
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
         string: str = self.get_identifying_string(name)
-        if name == "pitch":
-            # this is only for "pitch", not for "" (pitches are in identifying string)
-            if self.fullNameSuffix.endswith("chord"):
-                string += f", pitch[{idx}]={self.pitches[idx].name}"
+        if name == 'pitch':
+            # this is only for 'pitch', not for '' (pitches are in identifying string)
+            if self.fullNameSuffix.endswith('chord'):
+                string += f', pitch[{idx}]={self.pitches[idx].name}'
             return string
 
-        if name == "accid":
-            # this is only for "accid" (indexed in a chord), not for "", or for "accid" on a note
+        if name == 'accid':
+            # this is only for 'accid' (indexed in a chord), not for '', or for 'accid' on a note
             # (accidental is in identifying string)
-            if self.fullNameSuffix.endswith("chord"):
-                string += f", accid[{idx}]={self.pitches[idx].accidental}"
+            if self.fullNameSuffix.endswith('chord'):
+                string += f', accid[{idx}]={self.pitches[idx].accidental}'
             return string
 
-        if name == "head":
-            # this is only for "head", not for "" (head is implied by identifying string)
+        if name == 'head':
+            # this is only for 'head', not for '' (head is implied by identifying string)
             if self.note_head == 4:
-                string += ", head=normal"
+                string += ', head=normal'
             else:
-                string += f", head={m21.duration.typeFromNumDict[float(self.note_head)]}"
+                string += f', head={m21.duration.typeFromNumDict[float(self.note_head)]}'
             if name:
                 return string
 
-        if name == "dots":
-            # this is only for "dots", not for "" (dots is in identifying string)
-            string += f", dots={self.dots}"
+        if name == 'dots':
+            # this is only for 'dots', not for '' (dots is in identifying string)
+            string += f', dots={self.dots}'
             return string
 
-        if not name or name == "flagsbeams":
+        if not name or name == 'flagsbeams':
             numBeams: int = len(self.beamings)
-            # Flags are implied by identifying string, so do not belong when name=="".
-            # And "no beams" is boring for name=="".  Non-zero beams, though, we always
+            # Flags are implied by identifying string, so do not belong when name==''.
+            # And 'no beams' is boring for name==''.  Non-zero beams, though, we always
             # want to see.
             if numBeams == 0:
                 if name:
-                    string += ", no flags/beams"
+                    string += ', no flags/beams'
                     return string
-            elif all(b == "partial" for b in self.beamings):
+            elif all(b == 'partial' for b in self.beamings):
                 if name:
                     if numBeams == 1:
-                        string += f", {numBeams} flag"
+                        string += f', {numBeams} flag'
                     else:
-                        string += f", {numBeams} flags"
+                        string += f', {numBeams} flags'
                     return string
             else:
                 # it's beams, not flags
                 if numBeams == 1:
-                    string += f", {numBeams} beam="
+                    string += f', {numBeams} beam='
                 else:
-                    string += f", {numBeams} beams=["
+                    string += f', {numBeams} beams=['
                 for i, b in enumerate(self.beamings):
                     if i > 0:
-                        string += ", "
+                        string += ', '
                     string += b
                 if numBeams > 1:
-                    string += "]"
+                    string += ']'
                 if name:
                     return string
 
-        if not name or name == "tuplet":
+        if not name or name == 'tuplet':
             if name or self.tuplets:
-                string += ", tuplets=["
+                string += ', tuplets=['
                 for i, (tup, ti) in enumerate(zip(self.tuplets, self.tuplet_info)):
                     if i > 0:
-                        string += ", "
-                    if ti != "":
-                        ti = "(" + ti + ")"
+                        string += ', '
+                    if ti != '':
+                        ti = '(' + ti + ')'
                     string += tup + ti
 
-                string += "]"
+                string += ']'
                 if name:
                     return string
 
-        if not name or name == "tie":
+        if not name or name == 'tie':
             if self.pitches[idx].tied:
-                string += ", tied"
+                string += ', tied'
             elif name:
-                string += ", not tied"
+                string += ', not tied'
             if name:
                 return string
 
 
-        if not name or name == "grace":
+        if not name or name == 'grace':
             if not name:
                 if self.graceType:
-                    string += f", grace={self.graceType}"
+                    string += f', grace={self.graceType}'
             else:
-                string += f", grace={self.graceType}"
+                string += f', grace={self.graceType}'
             if name:
                 return string
 
-        if not name or name == "graceslash":
+        if not name or name == 'graceslash':
             if self.graceType:
                 if self.graceSlash:
-                    string += ", with grace slash"
+                    string += ', with grace slash'
                 else:
-                    string += ", with no grace slash"
+                    string += ', with no grace slash'
             if name:
                 return string
 
-        if not name or name == "noteshape":
+        if not name or name == 'noteshape':
             if not name:
-                if self.noteshape != "normal":
-                    string += f", noteshape={self.noteshape}"
+                if self.noteshape != 'normal':
+                    string += f', noteshape={self.noteshape}'
             else:
-                string += f", noteshape={self.noteshape}"
+                string += f', noteshape={self.noteshape}'
             if name:
                 return string
 
-        if not name or name == "notefill":
+        if not name or name == 'notefill':
             if not name:
                 if self.noteheadFill is not None:
-                    string += f", noteheadFill={self.noteheadFill}"
+                    string += f', noteheadFill={self.noteheadFill}'
             else:
-                string += f", noteheadFill={self.noteheadFill}"
+                string += f', noteheadFill={self.noteheadFill}'
             if name:
                 return string
 
-        if not name or name == "noteparen":
+        if not name or name == 'noteparen':
             if not name:
                 if self.noteheadParenthesis:
-                    string += f", noteheadParenthesis={self.noteheadParenthesis}"
+                    string += f', noteheadParenthesis={self.noteheadParenthesis}'
             else:
-                string += f", noteheadParenthesis={self.noteheadParenthesis}"
+                string += f', noteheadParenthesis={self.noteheadParenthesis}'
             if name:
                 return string
 
-        if not name or name == "stemdir":
+        if not name or name == 'stemdir':
             if not name:
-                if self.stemDirection != "unspecified":
-                    string += f", stemDirection={self.stemDirection}"
+                if self.stemDirection != 'unspecified':
+                    string += f', stemDirection={self.stemDirection}'
             else:
-                string += f", stemDirection={self.stemDirection}"
+                string += f', stemDirection={self.stemDirection}'
             if name:
                 return string
 
-        if not name or name == "spacebefore":
+        if not name or name == 'spacebefore':
             if not name:
                 if self.gap_dur != 0:
-                    string += f", spacebefore={self.gap_dur}"
+                    string += f', spacebefore={self.gap_dur}'
             else:
-                string += f", spacebefore={self.gap_dur}"
+                string += f', spacebefore={self.gap_dur}'
             if name:
                 return string
 
-        if not name or name == "artic":
+        if not name or name == 'artic':
             if name or self.articulations:
-                string += ", articulations=["
+                string += ', articulations=['
                 for i, artic in enumerate(self.articulations):
                     if i > 0:
-                        string += ", "
+                        string += ', '
                     string += artic
-                string += "]"
+                string += ']'
             if name:
                 return string
 
-        if not name or name == "expression":
+        if not name or name == 'expression':
             if name or self.expressions:
-                string += ", expressions=["
+                string += ', expressions=['
                 for i, exp in enumerate(self.expressions):
                     if i > 0:
-                        string += ", "
+                        string += ', '
                     string += exp
-                string += "]"
+                string += ']'
             if name:
                 return string
 
-        if not name or name == "style":
+        if not name or name == 'style':
             if name or self.styledict:
                 allOfThem: bool = False
                 changedKeys: list[str] = []
                 if changedStr:
-                    changedKeys = changedStr.split(",")
+                    changedKeys = changedStr.split(',')
                 else:
                     changedKeys = [str(k) for k in self.styledict]
                     allOfThem = True
 
                 if allOfThem:
-                    string += ", style={"
+                    string += ', style={'
                 else:
-                    string += ", changedStyle={"
+                    string += ', changedStyle={'
 
                 needsComma: bool = False
                 for i, k in enumerate(changedKeys):
                     if k in self.styledict:
                         if needsComma:
-                            string += ", "
-                        string += f"{k}:{self.styledict[k]}"
+                            string += ', '
+                        string += f'{k}:{self.styledict[k]}'
                         needsComma = True
-                string += "}"
+                string += '}'
             if name:
                 return string
 
@@ -552,103 +552,103 @@ class AnnNote(AnnObject):
         # must include a unique id for memoization!
         # we use the music21 id of the general note.
         return (
-            f"GeneralNote({self.id}),G:{self.gap_dur},"
-            + f"P:{self.pitches},H:{self.note_head},D:{self.dots},"
-            + f"B:{self.beamings},T:{self.tuplets},TI:{self.tuplet_info},"
-            + f"A:{self.articulations},E:{self.expressions},"
-            + f"S:{self.styledict}"
+            f'GeneralNote({self.id}),G:{self.gap_dur},'
+            + f'P:{self.pitches},H:{self.note_head},D:{self.dots},'
+            + f'B:{self.beamings},T:{self.tuplets},TI:{self.tuplet_info},'
+            + f'A:{self.articulations},E:{self.expressions},'
+            + f'S:{self.styledict}'
         )
 
     def __str__(self) -> str:
-        """
+        '''
         Returns:
             str: the representation of the Annotated note. Does not consider MEI id
-        """
-        string: str = "["
+        '''
+        string: str = '['
         for p in self.pitches:  # add for pitches
             string += p.name
-            if p.accidental != "None":
+            if p.accidental != 'None':
                 string += p.accidental
             if p.tied:
-                string += "T"
-            string += ","
+                string += 'T'
+            string += ','
         string = string[:-1]  # delete the last comma
-        string += "]"
+        string += ']'
         string += str(self.note_head)  # add for notehead
         for _ in range(self.dots):  # add for dots
-            string += "*"
+            string += '*'
         if self.graceType:
             string += self.graceType
             if self.graceSlash:
-                string += "/"
+                string += '/'
         if len(self.beamings) > 0:  # add for beaming
-            string += "B"
+            string += 'B'
             for b in self.beamings:
-                if b == "start":
-                    string += "sr"
-                elif b == "continue":
-                    string += "co"
-                elif b == "stop":
-                    string += "sp"
-                elif b == "partial":
-                    string += "pa"
+                if b == 'start':
+                    string += 'sr'
+                elif b == 'continue':
+                    string += 'co'
+                elif b == 'stop':
+                    string += 'sp'
+                elif b == 'partial':
+                    string += 'pa'
                 else:
-                    raise ValueError(f"Incorrect beaming type: {b}")
+                    raise ValueError(f'Incorrect beaming type: {b}')
 
         if len(self.tuplets) > 0:  # add for tuplets
-            string += "T"
+            string += 'T'
             for tup, ti in zip(self.tuplets, self.tuplet_info):
-                if ti != "":
-                    ti = "(" + ti + ")"
-                if tup == "start":
-                    string += "sr" + ti
-                elif tup == "continue":
-                    string += "co" + ti
-                elif tup == "stop":
-                    string += "sp" + ti
-                elif tup == "startStop":
-                    string += "ss" + ti
+                if ti != '':
+                    ti = '(' + ti + ')'
+                if tup == 'start':
+                    string += 'sr' + ti
+                elif tup == 'continue':
+                    string += 'co' + ti
+                elif tup == 'stop':
+                    string += 'sp' + ti
+                elif tup == 'startStop':
+                    string += 'ss' + ti
                 else:
-                    raise ValueError(f"Incorrect tuplet type: {tup}")
+                    raise ValueError(f'Incorrect tuplet type: {tup}')
 
         if len(self.articulations) > 0:  # add for articulations
             for a in self.articulations:
-                string += " " + a
+                string += ' ' + a
         if len(self.expressions) > 0:  # add for expressions
             for e in self.expressions:
-                string += " " + e
+                string += ' ' + e
 
-        if self.noteshape != "normal":
-            string += f" noteshape={self.noteshape}"
+        if self.noteshape != 'normal':
+            string += f' noteshape={self.noteshape}'
         if self.noteheadFill is not None:
-            string += f" noteheadFill={self.noteheadFill}"
+            string += f' noteheadFill={self.noteheadFill}'
         if self.noteheadParenthesis:
-            string += f" noteheadParenthesis={self.noteheadParenthesis}"
-        if self.stemDirection != "unspecified":
-            string += f" stemDirection={self.stemDirection}"
+            string += f' noteheadParenthesis={self.noteheadParenthesis}'
+        if self.stemDirection != 'unspecified':
+            string += f' stemDirection={self.stemDirection}'
 
         # gap_dur
         if self.gap_dur != 0:
-            string += f" spaceBefore={self.gap_dur}"
+            string += f' spaceBefore={self.gap_dur}'
 
         # and then the style fields
         for i, (k, v) in enumerate(self.styledict.items()):
             if i == 0:
-                string += " "
+                string += ' '
             if i > 0:
-                string += ","
-            string += f"{k}={v}"
+                string += ','
+            string += f'{k}={v}'
 
         return string
 
     def get_note_ids(self) -> list[str | int]:
-        """
+        '''
         Computes a list of the GeneralNote ids for this `AnnNote`.  Since there
         is only one GeneralNote here, this will always be a single-element list.
 
         Returns:
             [int]: A list containing the single GeneralNote id for this note.
-        """
+        '''
         return [self.id]
 
     def __eq__(self, other) -> bool:
@@ -664,7 +664,7 @@ class AnnExtra(AnnObject):
         score: m21.stream.Score,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
-        """
+        '''
         Extend music21 non-GeneralNote and non-Stream objects with some precomputed,
         easily compared information about it.
 
@@ -682,17 +682,17 @@ class AnnExtra(AnnObject):
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
-        """
+        '''
         super().__init__(extra)
         self.kind: str = M21Utils.extra_to_kind(extra)
 
         # kind-specific fields (set to None if not relevant)
 
         # content is a string that (if not None) should be counted as 1 symbol per character
-        # (e.g. "con fiero")
+        # (e.g. 'con fiero')
         self.content: str | None = M21Utils.extra_to_string(extra, self.kind, detail)
 
-        # symbolic is a string that (if not None) should be counted as 1 symbol (e.g. "G2+8")
+        # symbolic is a string that (if not None) should be counted as 1 symbol (e.g. 'G2+8')
         self.symbolic: str | None = M21Utils.extra_to_symbolic(extra, self.kind, detail)
 
         # offset and/or duration are sometimes relevant
@@ -711,7 +711,7 @@ class AnnExtra(AnnObject):
                 if M21Utils.has_style(extra):
                     # includes extra.placement if present
 
-                    # special case: MM with text='SMUFLNote = nnn" is being annotated as if there is
+                    # special case: MM with text='SMUFLNote = nnn' is being annotated as if there is
                     # no text, so none of the text style stuff should be added.
                     smuflTextSuppressed: bool = False
                     if (isinstance(extra, m21.tempo.MetronomeMark)
@@ -730,12 +730,12 @@ class AnnExtra(AnnObject):
         self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnExtra`.
 
         Returns:
             int: The notation size of the annotated extra
-        """
+        '''
         if self._cached_notation_size is None:
             cost: int = 0
             if self.content is not None:
@@ -751,109 +751,109 @@ class AnnExtra(AnnObject):
 
         return self._cached_notation_size
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = self.content or ""
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
+        string: str = self.content or ''
         if self.symbolic:
             if string:
-                string += " "
+                string += ' '
             string += self.symbolic
-        if self.infodict and name != "info":
+        if self.infodict and name != 'info':
             for i, k in enumerate(self.infodict):
                 if string:
-                    string += " "
-                string += f"{k}:{self.infodict[k]}"
+                    string += ' '
+                string += f'{k}:{self.infodict[k]}'
 
-        if name == "":
+        if name == '':
             if self.duration is not None:
                 if string:
-                    string += " "
-                string += f"dur={M21Utils.ql_to_string(self.duration)}"
+                    string += ' '
+                string += f'dur={M21Utils.ql_to_string(self.duration)}'
             return string
 
-        if name == "content":
+        if name == 'content':
             if self.content is None:
-                return ""
+                return ''
             return self.content
 
-        if name == "symbolic":
+        if name == 'symbolic':
             if self.symbolic is None:
-                return ""
+                return ''
             return self.symbolic
 
-        if name == "offset":
+        if name == 'offset':
             if self.offset is None:
-                return ""
+                return ''
             if string:
-                string += " "
-            string += f"offset={M21Utils.ql_to_string(self.offset)}"
+                string += ' '
+            string += f'offset={M21Utils.ql_to_string(self.offset)}'
             return string
 
-        if name == "duration":
+        if name == 'duration':
             if self.duration is None:
-                return ""
+                return ''
             if string:
-                string += " "
-            string += f"dur={M21Utils.ql_to_string(self.duration)}"
+                string += ' '
+            string += f'dur={M21Utils.ql_to_string(self.duration)}'
             return string
 
-        if name == "info":
+        if name == 'info':
             changedKeys: list[str] = changedStr.split(',')
             if not changedKeys:
                 if string:
-                    string += " "
-                string += "changedInfo={}"
+                    string += ' '
+                string += 'changedInfo={}'
                 return string
 
             if string:
-                string += " "
-            string += "changedInfo={"
+                string += ' '
+            string += 'changedInfo={'
 
             needsComma: bool = False
             for i, k in enumerate(changedKeys):
                 if k in self.infodict:
                     if needsComma:
-                        string += ", "
-                    string += f"{k}:{self.infodict[k]}"
+                        string += ', '
+                    string += f'{k}:{self.infodict[k]}'
                     needsComma = True
-            string += "}"
+            string += '}'
             return string
 
-        if name == "style":
+        if name == 'style':
             changedKeys = changedStr.split(',')
             if not changedKeys:
                 if string:
-                    string += " "
-                string += "changedStyle={}"
+                    string += ' '
+                string += 'changedStyle={}'
                 return string
 
             if string:
-                string += " "
-            string += "changedStyle={"
+                string += ' '
+            string += 'changedStyle={'
 
             needsComma = False
             for i, k in enumerate(changedKeys):
                 if k in self.styledict:
                     if needsComma:
-                        string += ", "
-                    string += f"{k}:{self.styledict[k]}"
+                        string += ', '
+                    string += f'{k}:{self.styledict[k]}'
                     needsComma = True
-            string += "}"
+            string += '}'
             return string
 
-        return ""  # should never get here
+        return ''  # should never get here
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the extra.
-        output: str = f"Extra({self.id}):"
+        output: str = f'Extra({self.id}):'
         output += str(self)
         return output
 
     def __str__(self) -> str:
-        """
+        '''
         Returns:
             str: the compared representation of the AnnExtra. Does not consider music21 id.
-        """
+        '''
         string = f'{self.kind}'
         if self.content:
             string += f',content={self.content}'
@@ -888,7 +888,7 @@ class AnnLyric(AnnObject):
         measure: m21.stream.Measure,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
-        """
+        '''
         Extend a lyric from a music21 GeneralNote with some precomputed, easily
         compared information about it.
 
@@ -904,13 +904,13 @@ class AnnLyric(AnnObject):
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
-        """
+        '''
         super().__init__(lyric_holder)
 
         # for comparison: lyric, number, identifier, offset, styledict
-        self.lyric: str = ""
+        self.lyric: str = ''
         self.number: int = 0
-        self.identifier: str = ""
+        self.identifier: str = ''
         self.offset = lyric_holder.getOffsetInHierarchy(measure)
 
         # ignore .syllabic and .text, what is visible is .rawText (and there
@@ -936,12 +936,12 @@ class AnnLyric(AnnObject):
         self._cached_notation_size: int | None = None
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnLyric`.
 
         Returns:
             int: The notation size of the annotated lyric
-        """
+        '''
         if self._cached_notation_size is None:
             size: int = len(self.lyric)
             size += 1  # for offset
@@ -955,56 +955,56 @@ class AnnLyric(AnnObject):
 
         return self._cached_notation_size
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = f'"{self.lyric}"'
-        if name == "":
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
+        string: str = f"'{self.lyric}'"
+        if name == '':
             if self.number is not None:
-                string += f", num={self.number}"
-            if self.identifier:  # not None and != ""
-                string += f", id={self.identifier}"
+                string += f', num={self.number}'
+            if self.identifier:  # not None and != ''
+                string += f', id={self.identifier}'
             if self.styledict:
-                string += f" style={self.styledict}"
+                string += f' style={self.styledict}'
             return string
 
-        if name == "rawtext":
+        if name == 'rawtext':
             return string
 
-        if name == "offset":
+        if name == 'offset':
             if self.offset is not None:
-                string += f" offset={M21Utils.ql_to_string(self.offset)}"
+                string += f' offset={M21Utils.ql_to_string(self.offset)}'
             return string
 
-        if name == "num":
-            string += f", num={self.number}"
+        if name == 'num':
+            string += f', num={self.number}'
             return string
 
-        if name == "id":
-            string += f", id={self.identifier}"
+        if name == 'id':
+            string += f', id={self.identifier}'
             return string
 
-        if name == "style":
-            string += f" style={self.styledict}"
+        if name == 'style':
+            string += f' style={self.styledict}'
             return string
 
-        return ""  # should never get here
+        return ''  # should never get here
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the general note
         # that holds the lyric, plus the lyric
         # number within that general note.
-        output: str = f"Lyric({self.id}[{self.number}]):"
+        output: str = f'Lyric({self.id}[{self.number}]):'
         output += str(self)
         return output
 
     def __str__(self) -> str:
-        """
+        '''
         Returns:
             str: the compared representation of the AnnLyric. Does not consider music21 id.
-        """
+        '''
         string = (
-            f"{self.lyric},num={self.number},id={self.identifier}"
-            + f",off={self.offset},style={self.styledict}"
+            f'{self.lyric},num={self.number},id={self.identifier}'
+            + f',off={self.offset},style={self.styledict}'
         )
         return string
 
@@ -1020,7 +1020,7 @@ class AnnVoice(AnnObject):
         enclosingMeasure: m21.stream.Measure,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
-        """
+        '''
         Extend music21 Voice with some precomputed, easily compared information about it.
         Only ever called if detail includes Voicing.
 
@@ -1033,7 +1033,7 @@ class AnnVoice(AnnObject):
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
-        """
+        '''
         super().__init__(voice)
         note_list: list[m21.note.GeneralNote] = []
 
@@ -1049,10 +1049,10 @@ class AnnVoice(AnnObject):
             self.en_beam_list = M21Utils.get_enhance_beamings(
                 note_list,
                 detail
-            )  # beams ("partial" can mean partial beam or just a flag)
+            )  # beams ('partial' can mean partial beam or just a flag)
             self.tuplet_list = M21Utils.get_tuplets_type(
                 note_list
-            )  # corrected tuplets (with "start" and "continue")
+            )  # corrected tuplets (with 'start' and 'continue')
             self.tuplet_info = M21Utils.get_tuplets_info(note_list, detail)
             # create a list of notes with beaming and tuplets information attached
             self.annot_notes = []
@@ -1096,65 +1096,65 @@ class AnnVoice(AnnObject):
         return self.precomputed_str == other.precomputed_str
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnVoice`.
 
         Returns:
             int: The notation size of the annotated voice
-        """
+        '''
         if self._cached_notation_size is None:
             self._cached_notation_size = sum([an.notation_size() for an in self.annot_notes])
         return self._cached_notation_size
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = "["
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
+        string: str = '['
         for an in self.annot_notes:
             string += an.readable_str()
-            string += ","
+            string += ','
 
-        if string[-1] == ",":
+        if string[-1] == ',':
             # delete the last comma
             string = string[:-1]
 
-        string += "]"
+        string += ']'
         return string
 
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the voice.
-        string: str = f"Voice({self.id}):"
-        string += "["
+        string: str = f'Voice({self.id}):'
+        string += '['
         for an in self.annot_notes:
             string += repr(an)
-            string += ","
+            string += ','
 
-        if string[-1] == ",":
+        if string[-1] == ',':
             # delete the last comma
             string = string[:-1]
 
-        string += "]"
+        string += ']'
         return string
 
     def __str__(self) -> str:
-        string = "["
+        string = '['
         for an in self.annot_notes:
             string += str(an)
-            string += ","
+            string += ','
 
-        if string[-1] == ",":
+        if string[-1] == ',':
             # delete the last comma
             string = string[:-1]
 
-        string += "]"
+        string += ']'
         return string
 
     def get_note_ids(self) -> list[str | int]:
-        """
+        '''
         Computes a list of the GeneralNote ids for this `AnnVoice`.
 
         Returns:
             [int]: A list containing the GeneralNote ids contained in this voice
-        """
+        '''
         return [an.id for an in self.annot_notes]
 
 
@@ -1167,7 +1167,7 @@ class AnnMeasure(AnnObject):
         spannerBundle: m21.spanner.SpannerBundle,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
-        """
+        '''
         Extend music21 Measure with some precomputed, easily compared information about it.
 
         Args:
@@ -1182,7 +1182,7 @@ class AnnMeasure(AnnObject):
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
-        """
+        '''
         super().__init__(measure)
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
         self.n_of_elements: int = 0
@@ -1219,10 +1219,10 @@ class AnnMeasure(AnnObject):
                 en_beam_list = M21Utils.get_enhance_beamings(
                     note_list,
                     detail
-                )  # beams ("partial" can mean partial beam or just a flag)
+                )  # beams ('partial' can mean partial beam or just a flag)
                 tuplet_list = M21Utils.get_tuplets_type(
                     note_list
-                )  # corrected tuplets (with "start" and "continue")
+                )  # corrected tuplets (with 'start' and 'continue')
                 tuplet_info = M21Utils.get_tuplets_info(note_list, detail)
 
                 # create a list of notes with beaming and tuplets information attached
@@ -1304,7 +1304,7 @@ class AnnMeasure(AnnObject):
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the measure.
-        output: str = f"Measure({self.id}):"
+        output: str = f'Measure({self.id}):'
         if self.includes_voicing:
             output += str([repr(v) for v in self.voices_list])
         else:
@@ -1339,17 +1339,17 @@ class AnnMeasure(AnnObject):
         return self.precomputed_str == other.precomputed_str
         # return all([v[0] == v[1] for v in zip(self.voices_list, other.voices_list)])
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = f"measure {self.measureNumber}"
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
+        string: str = f'measure {self.measureNumber}'
         return string
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnMeasure`.
 
         Returns:
             int: The notation size of the annotated measure
-        """
+        '''
         if self._cached_notation_size is None:
             if self.includes_voicing:
                 self._cached_notation_size = (
@@ -1366,12 +1366,12 @@ class AnnMeasure(AnnObject):
         return self._cached_notation_size
 
     def get_note_ids(self) -> list[str | int]:
-        """
+        '''
         Computes a list of the GeneralNote ids for this `AnnMeasure`.
 
         Returns:
             [int]: A list containing the GeneralNote ids contained in this measure
-        """
+        '''
         notes_id = []
         if self.includes_voicing:
             for v in self.voices_list:
@@ -1391,7 +1391,7 @@ class AnnPart(AnnObject):
         spannerBundle: m21.spanner.SpannerBundle,
         detail: DetailLevel | int = DetailLevel.Default
     ):
-        """
+        '''
         Extend music21 Part/PartStaff with some precomputed, easily compared information about it.
 
         Args:
@@ -1406,11 +1406,11 @@ class AnnPart(AnnObject):
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
-        """
+        '''
         super().__init__(part)
         self.part_idx: int = part_idx
         self.bar_list: list[AnnMeasure] = []
-        for measure in part.getElementsByClass("Measure"):
+        for measure in part.getElementsByClass('Measure'):
             # create the bar objects
             ann_bar = AnnMeasure(measure, part, score, spannerBundle, detail)
             if ann_bar.n_of_elements > 0:
@@ -1436,17 +1436,17 @@ class AnnPart(AnnObject):
 
         return all(b[0] == b[1] for b in zip(self.bar_list, other.bar_list))
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = f"part {self.part_idx}"
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
+        string: str = f'part {self.part_idx}'
         return string
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnPart`.
 
         Returns:
             int: The notation size of the annotated part
-        """
+        '''
         if self._cached_notation_size is None:
             self._cached_notation_size = sum([b.notation_size() for b in self.bar_list])
         return self._cached_notation_size
@@ -1454,17 +1454,17 @@ class AnnPart(AnnObject):
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the part.
-        output: str = f"Part({self.id}):"
+        output: str = f'Part({self.id}):'
         output += str([repr(b) for b in self.bar_list])
         return output
 
     def get_note_ids(self) -> list[str | int]:
-        """
+        '''
         Computes a list of the GeneralNote ids for this `AnnPart`.
 
         Returns:
             [int]: A list containing the GeneralNote ids contained in this part
-        """
+        '''
         notes_id = []
         for b in self.bar_list:
             notes_id.extend(b.get_note_ids())
@@ -1478,9 +1478,9 @@ class AnnStaffGroup(AnnObject):
         part_to_index: dict[m21.stream.Part, int],
         detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
-        """
+        '''
         Take a StaffGroup and store it as an annotated object.
-        """
+        '''
         super().__init__(staff_group)
         self.name: str = staff_group.name or ''
         self.abbreviation: str = staff_group.abbreviation or ''
@@ -1507,21 +1507,21 @@ class AnnStaffGroup(AnnObject):
         self._cached_notation_size: int | None = None
 
     def __str__(self) -> str:
-        output: str = "StaffGroup"
+        output: str = 'StaffGroup'
         if self.name and self.abbreviation:
-            output += f"({self.name},{self.abbreviation})"
+            output += f'({self.name},{self.abbreviation})'
         elif self.name:
-            output += f"({self.name})"
+            output += f'({self.name})'
         elif self.abbreviation:
-            output += f"(,{self.abbreviation})"
+            output += f'(,{self.abbreviation})'
         else:
-            output += "(,)"
+            output += '(,)'
 
-        output += f", partIndices={self.part_indices}"
+        output += f', partIndices={self.part_indices}'
         if self.symbol is not None:
-            output += f", symbol={self.symbol}"
+            output += f', symbol={self.symbol}'
         if self.barTogether is not None:
-            output += f", barTogether={self.barTogether}"
+            output += f', barTogether={self.barTogether}'
         return output
 
     def __eq__(self, other) -> bool:
@@ -1550,40 +1550,40 @@ class AnnStaffGroup(AnnObject):
 
         return True
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
-        string: str = f"StaffGroup{self.part_indices}"
-        if name == "":
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
+        string: str = f'StaffGroup{self.part_indices}'
+        if name == '':
             return string
 
-        if name == "name":
-            string += f" name={self.name}"
+        if name == 'name':
+            string += f' name={self.name}'
             return string
 
-        if name == "abbr":
-            string += f" abbr={self.abbreviation}"
+        if name == 'abbr':
+            string += f' abbr={self.abbreviation}'
             return string
 
-        if name == "sym":
-            string += f" sym={self.symbol}"
+        if name == 'sym':
+            string += f' sym={self.symbol}'
             return string
 
-        if name == "barline":
-            string += f" barTogether={self.barTogether}"
+        if name == 'barline':
+            string += f' barTogether={self.barTogether}'
             return string
 
-        if name == "parts":
+        if name == 'parts':
             # main string already has parts in it
             return string
 
-        return ""
+        return ''
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnStaffGroup`.
 
         Returns:
             int: The notation size of the annotated staff group
-        """
+        '''
         # There are 5 main visible things about a StaffGroup:
         #   name, abbreviation, symbol shape, barline type, and which staves it encloses
         if self._cached_notation_size is None:
@@ -1599,10 +1599,10 @@ class AnnStaffGroup(AnnObject):
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the staff group.
-        output: str = f"StaffGroup({self.id}):"
-        output += f" name={self.name}, abbrev={self.abbreviation},"
-        output += f" symbol={self.symbol}, barTogether={self.barTogether}"
-        output += f", partIndices={self.part_indices}"
+        output: str = f'StaffGroup({self.id}):'
+        output += f' name={self.name}, abbrev={self.abbreviation},'
+        output += f' symbol={self.symbol}, barTogether={self.barTogether}'
+        output += f', partIndices={self.part_indices}'
         return output
 
 
@@ -1664,7 +1664,7 @@ class AnnMetadataItem(AnnObject):
 
         return True
 
-    def readable_str(self, name: str = "", idx: int = 0, changedStr: str = "") -> str:
+    def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
         return str(self)
 
     def __str__(self) -> str:
@@ -1674,17 +1674,17 @@ class AnnMetadataItem(AnnObject):
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # We use id(self), because there is no music21 object here.
-        output: str = f"MetadataItem({self.id}):"
+        output: str = f'MetadataItem({self.id}):'
         output += self.key + ':' + str(self.value)
         return output
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnMetadataItem`.
 
         Returns:
             int: The notation size of the annotated metadata item
-        """
+        '''
         if self._cached_notation_size is None:
             size: int = len(self.value)
             self._cached_notation_size = size
@@ -1704,9 +1704,9 @@ class AnnScore(AnnObject):
         score: m21.stream.Score,
         detail: DetailLevel | int = DetailLevel.Default
     ) -> None:
-        """
+        '''
         Take a music21 score and store it as a sequence of Full Trees.
-        The hierarchy is "score -> parts -> measures -> voices -> notes"
+        The hierarchy is 'score -> parts -> measures -> voices -> notes'
         Args:
             score (music21.stream.Score): The music21 score
             detail (DetailLevel | int): What level of detail to use during the diff.
@@ -1715,14 +1715,14 @@ class AnnScore(AnnObject):
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 Style, Metadata, Voicing, or NoteStaffPosition.
-        """
+        '''
         super().__init__(score)
         self.part_list: list[AnnPart] = []
         self.staff_group_list: list[AnnStaffGroup] = []
         self.metadata_items_list: list[AnnMetadataItem] = []
         self.num_syntax_errors_fixed: int = 0
 
-        if hasattr(score, "c21_syntax_errors_fixed"):
+        if hasattr(score, 'c21_syntax_errors_fixed'):
             self.num_syntax_errors_fixed = score.c21_syntax_errors_fixed  # type: ignore
 
         spannerBundle: m21.spanner.SpannerBundle = score.spannerBundle
@@ -1796,7 +1796,7 @@ class AnnScore(AnnObject):
                         'humdrum:RLN', 'humdrum:PUB'):
                     # Don't compare metadata items that should never be transferred
                     # from one file to another.  'humdrum:EMD' is a modification
-                    # description entry, humdrum:EST is "current encoding status"
+                    # description entry, humdrum:EST is 'current encoding status'
                     # (i.e. complete or some value of not complete), 'humdrum:VTS'
                     # is a checksum of the Humdrum file, 'humdrum:RLN' is the
                     # extended ASCII encoding of the Humdrum file, 'humdrum:PUB'
@@ -1829,12 +1829,12 @@ class AnnScore(AnnObject):
         return all(p[0] == p[1] for p in zip(self.part_list, other.part_list))
 
     def notation_size(self) -> int:
-        """
+        '''
         Compute a measure of how many symbols are displayed in the score for this `AnnScore`.
 
         Returns:
             int: The notation size of the annotated score
-        """
+        '''
         if self._cached_notation_size is None:
             size: int = sum([p.notation_size() for p in self.part_list])
             size += sum([sg.notation_size() for sg in self.staff_group_list])
@@ -1845,17 +1845,17 @@ class AnnScore(AnnObject):
     def __repr__(self) -> str:
         # must include a unique id for memoization!
         # we use the music21 id of the score.
-        output: str = f"Score({self.id}):"
+        output: str = f'Score({self.id}):'
         output += str(repr(p) for p in self.part_list)
         return output
 
     def get_note_ids(self) -> list[str | int]:
-        """
+        '''
         Computes a list of the GeneralNote ids for this `AnnScore`.
 
         Returns:
             [int]: A list containing the GeneralNote ids contained in this score
-        """
+        '''
         notes_id = []
         for p in self.part_list:
             notes_id.extend(p.get_note_ids())
