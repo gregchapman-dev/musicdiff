@@ -490,6 +490,7 @@ class Visualization:
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 changedStr = Visualization._dict_change_str(op.obj1.styledict, op.obj2.styledict)
+                name1 += f":{changedStr}"
                 name2 += f":{changedStr}"
             else:
                 # other sub_names just go in the output
