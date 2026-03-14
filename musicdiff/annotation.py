@@ -956,7 +956,7 @@ class AnnLyric(AnnObject):
         return self._cached_notation_size
 
     def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
-        string: str = f"'{self.lyric}'"
+        string: str = f'"{self.lyric}"'
         if name == '':
             if self.number is not None:
                 string += f', num={self.number}'
