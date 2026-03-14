@@ -455,19 +455,16 @@ class Visualization:
         m21_obj2: m21.base.Music21Object | None
         m21_obj1, m21_obj2 = op.get_m21_objs(score1, score2)
 
-        name1: str
-        name2: str
+        name1: str = ""
+        name2: str = ""
         if name:
             name1 = name
             name2 = name
-        elif m21_obj1 is not None:
-            name1 = m21_obj1.classes[0]
-            name2 = m21_obj1.classes[0]
-        elif m21_obj2 is not None:
-            name1 = m21_obj2.classes[0]
-            name2 = m21_obj2.classes[0]
         else:
-            raise ValueError("bad call to _text_diff: op has no valid objects")
+            if m21_obj1 is not None:
+                name1 = m21_obj1.classes[0]
+            if m21_obj2 is not None:
+                name2 = m21_obj2.classes[0]
 
         readable_str_subname: str = ""
         changedStr: str = ""
