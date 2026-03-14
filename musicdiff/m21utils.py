@@ -2227,7 +2227,7 @@ class M21Utils:
         if isinstance(cs, m21.harmony.NoChord):
             printedStr: str = cs.chordKindStr
             if printedStr:
-                printedStr = " ('" + printedStr + "')"
+                printedStr = ' ("' + printedStr + '")''
             return f'N.C.{printedStr}'
 
         root: str = cs.root().name
