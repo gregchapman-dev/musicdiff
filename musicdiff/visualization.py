@@ -1238,7 +1238,8 @@ class Visualization:
             if op.name == "mditemvalueedit":
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
-                text_diff = vis_func(op, score1, score2, name="metadata", opname="changed")
+                text_diff = vis_func(op, score1, score2,
+                    name="metadata", opname="changed", sub_name="value")
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
