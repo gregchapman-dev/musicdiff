@@ -23,7 +23,7 @@ from fractions import Fraction
 import music21 as m21
 from music21.common import OffsetQL, opFrac
 
-from musicdiff.annotation import AnnScore, AnnExtra, AnnObject
+from musicdiff.annotation import AnnScore, AnnExtra, AnnNote, AnnObject
 from musicdiff.comparison import DiffOperation
 from musicdiff import M21Utils
 from musicdiff import DetailLevel
@@ -463,8 +463,16 @@ class Visualization:
         else:
             if m21_obj1 is not None:
                 name1 = m21_obj1.classes[0]
+                if isinstance(op.obj1, AnnNote):
+                    if op.obj1.is_in_chord:
+                        assert isinstance(m21_obj1, m21.chord.ChordBase)
+                        name1 = m21_obj1.notes[0].classes[0]
             if m21_obj2 is not None:
                 name2 = m21_obj2.classes[0]
+                if isinstance(op.obj2, AnnNote):
+                    if op.obj2.is_in_chord:
+                        assert isinstance(m21_obj2, m21.chord.ChordBase)
+                        name2 = m21_obj2.notes[0].classes[0]
 
         readable_str_subname: str = ""
         changedStr: str = ""
