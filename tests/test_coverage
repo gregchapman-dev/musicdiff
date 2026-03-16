@@ -1,0 +1,9 @@
+#!/bin/zsh
+python tests/test_coverage.py tests/coverage_score_list.txt >& /dev/null
+diff -q tests/coverage_output.txt tests/expected_coverage_output.txt >/dev/null 2>&1
+if [[ $? -ne 0 ]]; then
+    bbdiff tests/coverage_output.txt tests/expected_coverage_output.txt
+    print "Test failure: test_coverage"
+else
+    print "Test success: test_coverage"
+fi

@@ -1,0 +1,28 @@
+# delete part and change staffgroup parts (by deleting one)
+numDiffs = 3
+{"OMR-ED": "28", "numSymbolsInPredicted": "155", "numSymbolsInGroundTruth": "130", "numSymbolsInBoth": "285", "OMR-NED": "0.09824561403508772"}
+--- score1
++++ score2
+@@ measure 0, staff 0, beat 0.0 @@
+-(StaffGroup:parts) StaffGroup[0, 1, 2]
++(StaffGroup:parts) StaffGroup[0, 1]
+@@ measure 0, staff 0, beat 0.0 @@
+-(metadata:value) movementName:ThreePartsOrgan.musicxml
++(metadata:value) movementName:TwoPartsOrgan.musicxml
+@@ measure 0, staff 3, beat 1.0 @@
+-(part) part 2
+
+# insert part and change staffgroup parts (by adding one)
+numDiffs = 3
+{"OMR-ED": "28", "numSymbolsInPredicted": "130", "numSymbolsInGroundTruth": "155", "numSymbolsInBoth": "285", "OMR-NED": "0.09824561403508772"}
+--- score1
++++ score2
+@@ measure 0, staff 0, beat 0.0 @@
+-(StaffGroup:parts) StaffGroup[0, 1]
++(StaffGroup:parts) StaffGroup[0, 1, 2]
+@@ measure 0, staff 0, beat 0.0 @@
+-(metadata:value) movementName:TwoPartsOrgan.musicxml
++(metadata:value) movementName:ThreePartsOrgan.musicxml
+@@ measure 0, staff 3, beat 1.0 @@
++(part) part 2
+

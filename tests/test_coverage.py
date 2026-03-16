@@ -18,8 +18,8 @@ def compareListOfScorePairs(
     listFilePath: Path,
     detail: DetailLevel | int = DEFAULT_DETAIL_LEVEL
 ):
-    outputPath = Path(str(listFilePath.parent) + 'coverage_output.txt')
-    with open(outputPath, encoding='utf-8') as outputf:
+    outputPath = Path('/tmp/coverage_output.txt')
+    with open(outputPath, 'w', encoding='utf-8') as outputf:
         pairList: list[str] = []
         with open(listFilePath, encoding='utf-8') as listf:
             s: str = listf.read()

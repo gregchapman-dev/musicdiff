@@ -1,0 +1,5 @@
+# delete part and change staffgroup parts (by deleting one)
+/Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/ThreePartsOrgan.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/TwoPartsOrgan.musicxml
+
+# insert part and change staffgroup parts (by adding one)
+/Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/TwoPartsOrgan.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/ThreePartsOrgan.musicxml
