@@ -1,6 +1,6 @@
 # delete part and change staffgroup parts (by deleting one)
-numDiffs = 3
-{"OMR-ED": "28", "numSymbolsInPredicted": "155", "numSymbolsInGroundTruth": "130", "numSymbolsInBoth": "285", "OMR-NED": "0.09824561403508772"}
+numDiffs = 7
+{"OMR-ED": "34", "numSymbolsInPredicted": "149", "numSymbolsInGroundTruth": "130", "numSymbolsInBoth": "279", "OMR-NED": "0.12186379928315412"}
 --- score1
 +++ score2
 @@ measure 0, staff 0, beat 0.0 @@
@@ -11,10 +11,18 @@ numDiffs = 3
 +(metadata:value) movementName:TwoPartsOrgan.musicxml
 @@ measure 0, staff 3, beat 1.0 @@
 -(part) part 2
+@@ measure 8, staff 1, beat 5.0 @@
+-(Barline) final
+@@ measure 8, staff 2, beat 5.0 @@
+-(Barline) final
+@@ measure 9, staff 1, beat 1.0 @@
++(measure) measure 9
+@@ measure 9, staff 2, beat 1.0 @@
++(measure) measure 9
 
 # insert part and change staffgroup parts (by adding one)
-numDiffs = 3
-{"OMR-ED": "28", "numSymbolsInPredicted": "130", "numSymbolsInGroundTruth": "155", "numSymbolsInBoth": "285", "OMR-NED": "0.09824561403508772"}
+numDiffs = 7
+{"OMR-ED": "34", "numSymbolsInPredicted": "130", "numSymbolsInGroundTruth": "149", "numSymbolsInBoth": "279", "OMR-NED": "0.12186379928315412"}
 --- score1
 +++ score2
 @@ measure 0, staff 0, beat 0.0 @@
@@ -25,4 +33,12 @@ numDiffs = 3
 +(metadata:value) movementName:ThreePartsOrgan.musicxml
 @@ measure 0, staff 3, beat 1.0 @@
 +(part) part 2
+@@ measure 8, staff 1, beat 5.0 @@
++(Barline) final
+@@ measure 8, staff 2, beat 5.0 @@
++(Barline) final
+@@ measure 9, staff 1, beat 1.0 @@
+-(measure) measure 9
+@@ measure 9, staff 2, beat 1.0 @@
+-(measure) measure 9
 
