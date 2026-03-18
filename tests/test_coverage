@@ -1,4 +1,12 @@
 #!/bin/zsh
+# For actual coverage analysis (as opposed to testing musicdiff's output),
+# do the following:
+# coverage erase
+# coverage run --source=. tests/test_coverage.py tests/coverage_score_list.txt
+# coverage report  # for a simple percentage report
+# coverage html
+# ... then open the resulting index.html in Safari and explore the code to see
+# ... which lines have not been run.
 python tests/test_coverage.py tests/coverage_score_list.txt >& /dev/null
 diff -q /tmp/coverage_output.txt tests/expected_coverage_output.txt >/dev/null 2>&1
 if [[ $? -ne 0 ]]; then
