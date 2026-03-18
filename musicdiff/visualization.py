@@ -970,7 +970,7 @@ class Visualization:
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2,
                     opname='changed', sub_name='stemdir', custom_text='changed stem direction')
-                text_diff = vis_func(op, score1, score2, sub_name='stemdir')
+                text_diff = vis_func(op, score1, score2, opname='changed', sub_name='stemdir')
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue

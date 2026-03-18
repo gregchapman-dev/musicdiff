@@ -38,6 +38,9 @@ def compareListOfScorePairs(
                 raise ValueError(f'bad line in input: "{pair}"')
             path1 = Path(twoFiles[0])
             path2 = Path(twoFiles[1])
+            print(str(path1.name) + ' vs ' + str(path2.name))
+            print(str(path1.name) + ' vs ' + str(path2.name), file=outputf)
+            outputf.flush()
             compareOnePair(path1, path2, outputf, detail)
 
         outputf.flush()
@@ -78,11 +81,6 @@ def compareOnePair(
     except KeyboardInterrupt:
         results.flush()
         sys.exit(0)
-    except Exception as e:
-        print(f': score creation crash: {e}')
-        print(f': score creation crash: {e}', file=results)
-        results.flush()
-        raise
 
     if not isinstance(score1, m21.stream.Score):
         print(': score1 is not a Score')
@@ -148,11 +146,6 @@ def compareOnePair(
     except KeyboardInterrupt:
         results.flush()
         sys.exit(0)
-    except Exception as e:
-        print(f'musicdiff crashed: {e}')
-        print(f'musicdiff crashed: {e}', file=results)
-        results.flush()
-        raise
 
 # ------------------------------------------------------------------------------
 

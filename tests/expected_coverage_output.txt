@@ -1,6 +1,7 @@
 # delete part and change staffgroup parts (by deleting one)
-numDiffs = 7
-{"OMR-ED": "34", "numSymbolsInPredicted": "149", "numSymbolsInGroundTruth": "130", "numSymbolsInBoth": "279", "OMR-NED": "0.12186379928315412"}
+ThreePartsOrgan.musicxml vs TwoPartsOrgan.musicxml
+numDiffs = 11
+{"OMR-ED": "39", "numSymbolsInPredicted": "166", "numSymbolsInGroundTruth": "147", "numSymbolsInBoth": "313", "OMR-NED": "0.12460063897763578"}
 --- score1
 +++ score2
 @@ measure 0, staff 0, beat 0.0 @@
@@ -11,6 +12,18 @@ numDiffs = 7
 +(metadata:value) movementName:TwoPartsOrgan.musicxml
 @@ measure 0, staff 3, beat 1.0 @@
 -(part) part 2
+@@ measure 1, staff 1, beat 1.5 @@
+-(Note:flagsbeams) C5 (eighth note), 1 beam=continue
++(Note:flagsbeams) C5 (eighth note), 1 beam=stop
+@@ measure 1, staff 1, beat 2.0 @@
+-(Note:flagsbeams) C5 (eighth note), 1 beam=continue
++(Note:flagsbeams) C5 (eighth note), 1 flag
+@@ measure 1, staff 1, beat 2.0 @@
+-(Note:stemdir) C5 (eighth note), stemDirection=down
++(Note:stemdir) C5 (eighth note), stemDirection=up
+@@ measure 1, staff 1, beat 2.5 @@
+-(Note:flagsbeams) C5 (eighth note), 1 beam=stop
++(Note:flagsbeams) C5 (eighth note), 1 flag
 @@ measure 8, staff 1, beat 5.0 @@
 -(Barline) final
 @@ measure 8, staff 2, beat 5.0 @@
@@ -21,8 +34,9 @@ numDiffs = 7
 +(measure) measure 9
 
 # insert part and change staffgroup parts (by adding one)
-numDiffs = 7
-{"OMR-ED": "34", "numSymbolsInPredicted": "130", "numSymbolsInGroundTruth": "149", "numSymbolsInBoth": "279", "OMR-NED": "0.12186379928315412"}
+TwoPartsOrgan.musicxml vs ThreePartsOrgan.musicxml
+numDiffs = 11
+{"OMR-ED": "39", "numSymbolsInPredicted": "147", "numSymbolsInGroundTruth": "166", "numSymbolsInBoth": "313", "OMR-NED": "0.12460063897763578"}
 --- score1
 +++ score2
 @@ measure 0, staff 0, beat 0.0 @@
@@ -33,6 +47,18 @@ numDiffs = 7
 +(metadata:value) movementName:ThreePartsOrgan.musicxml
 @@ measure 0, staff 3, beat 1.0 @@
 +(part) part 2
+@@ measure 1, staff 1, beat 1.5 @@
+-(Note:flagsbeams) C5 (eighth note), 1 beam=stop
++(Note:flagsbeams) C5 (eighth note), 1 beam=continue
+@@ measure 1, staff 1, beat 2.0 @@
+-(Note:flagsbeams) C5 (eighth note), 1 flag
++(Note:flagsbeams) C5 (eighth note), 1 beam=continue
+@@ measure 1, staff 1, beat 2.0 @@
+-(Note:stemdir) C5 (eighth note), stemDirection=up
++(Note:stemdir) C5 (eighth note), stemDirection=down
+@@ measure 1, staff 1, beat 2.5 @@
+-(Note:flagsbeams) C5 (eighth note), 1 flag
++(Note:flagsbeams) C5 (eighth note), 1 beam=stop
 @@ measure 8, staff 1, beat 5.0 @@
 +(Barline) final
 @@ measure 8, staff 2, beat 5.0 @@
