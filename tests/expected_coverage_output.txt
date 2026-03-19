@@ -1,7 +1,7 @@
 # delete part and change staffgroup parts (by deleting one)
 ThreePartsOrgan.musicxml vs TwoPartsOrgan.musicxml
-numDiffs = 11
-{"OMR-ED": "39", "numSymbolsInPredicted": "166", "numSymbolsInGroundTruth": "147", "numSymbolsInBoth": "313", "OMR-NED": "0.12460063897763578"}
+numDiffs = 30
+{"OMR-ED": "95", "numSymbolsInPredicted": "206", "numSymbolsInGroundTruth": "231", "numSymbolsInBoth": "437", "OMR-NED": "0.21739130434782608"}
 --- score1
 +++ score2
 @@ measure 0, staff 0, beat 0.0 @@
@@ -12,6 +12,14 @@ numDiffs = 11
 +(metadata:value) movementName:TwoPartsOrgan.musicxml
 @@ measure 0, staff 3, beat 1.0 @@
 -(part) part 2
+@@ measure 1, staff 1, beat 1.0 @@
++(MetronomeMark) Half=80.0
+@@ measure 1, staff 1, beat 1.0 @@
+-(KeySignature:flats/sharps,sharp0) changedInfo={flats/sharps:none}
++(KeySignature:flats/sharps,sharp0) changedInfo={sharp0:F}
+@@ measure 1, staff 1, beat 1.0 @@
+-(TimeSignature:numerator,denominator,symbol) changedInfo={numerator:4, denominator:4}
++(TimeSignature:numerator,denominator,symbol) changedInfo={symbol:common}
 @@ measure 1, staff 1, beat 1.5 @@
 -(Note:flagsbeams) C5 (eighth note), 1 beam=continue
 +(Note:flagsbeams) C5 (eighth note), 1 beam=stop
@@ -24,10 +32,47 @@ numDiffs = 11
 @@ measure 1, staff 1, beat 2.5 @@
 -(Note:flagsbeams) C5 (eighth note), 1 beam=stop
 +(Note:flagsbeams) C5 (eighth note), 1 flag
+@@ measure 1, staff 2, beat 1.0 @@
+-(KeySignature:flats/sharps,sharp0) changedInfo={flats/sharps:none}
++(KeySignature:flats/sharps,sharp0) changedInfo={sharp0:F}
+@@ measure 1, staff 2, beat 1.0 @@
+-(TimeSignature:numerator,denominator,symbol) changedInfo={numerator:4, denominator:4}
++(TimeSignature:numerator,denominator,symbol) changedInfo={symbol:common}
+@@ measure 2, staff 2, beat 1.0 @@
++(PedalMark) pedalType:sustain pedalForm:symbol dur=4.0
+@@ measure 3, staff 1, beat 1.0 @@
++(Note) F5 (eighth note), grace=unacc, with grace slash, stemDirection=up
+@@ measure 3, staff 1, beat 1.0 @@
++(Slur) dur=4.0
+@@ measure 3, staff 1, beat 1.0 @@
++(Slur) dur=8.0
+@@ measure 3, staff 2, beat 1.0 @@
+-(Note:accid) E3 (whole note)
++(Note:accid) E3 double-flat (whole note)
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:accid) G5 (whole note)
++(Note:accid) G5 sharp (whole note)
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:artic) G5 (whole note), articulations=[]
++(Note:artic) G5 sharp (whole note), articulations=[strong accent]
+@@ measure 5, staff 1, beat 1.0 @@
++(Dynamic) f
+@@ measure 5, staff 2, beat 1.0 @@
++(Dynamic) pp
+@@ measure 7, staff 1, beat 1.0 @@
++(Ottava) 8va dur=4.0
+@@ measure 8, staff 1, beat 1.0 @@
++(RepeatBracket) 1. measurecount:1 dur=4.0
 @@ measure 8, staff 1, beat 5.0 @@
 -(Barline) final
+@@ measure 8, staff 1, beat 5.0 @@
++(Repeat) final repeatdirection:end
+@@ measure 8, staff 2, beat 1.0 @@
++(RepeatBracket) 1. measurecount:1 dur=4.0
 @@ measure 8, staff 2, beat 5.0 @@
 -(Barline) final
+@@ measure 8, staff 2, beat 5.0 @@
++(Repeat) final repeatdirection:end
 @@ measure 9, staff 1, beat 1.0 @@
 +(measure) measure 9
 @@ measure 9, staff 2, beat 1.0 @@
@@ -35,8 +80,8 @@ numDiffs = 11
 
 # insert part and change staffgroup parts (by adding one)
 TwoPartsOrgan.musicxml vs ThreePartsOrgan.musicxml
-numDiffs = 11
-{"OMR-ED": "39", "numSymbolsInPredicted": "147", "numSymbolsInGroundTruth": "166", "numSymbolsInBoth": "313", "OMR-NED": "0.12460063897763578"}
+numDiffs = 30
+{"OMR-ED": "95", "numSymbolsInPredicted": "231", "numSymbolsInGroundTruth": "206", "numSymbolsInBoth": "437", "OMR-NED": "0.21739130434782608"}
 --- score1
 +++ score2
 @@ measure 0, staff 0, beat 0.0 @@
@@ -47,6 +92,14 @@ numDiffs = 11
 +(metadata:value) movementName:ThreePartsOrgan.musicxml
 @@ measure 0, staff 3, beat 1.0 @@
 +(part) part 2
+@@ measure 1, staff 1, beat 1.0 @@
+-(MetronomeMark) Half=80.0
+@@ measure 1, staff 1, beat 1.0 @@
+-(KeySignature:sharp0,flats/sharps) changedInfo={sharp0:F}
++(KeySignature:sharp0,flats/sharps) changedInfo={flats/sharps:none}
+@@ measure 1, staff 1, beat 1.0 @@
+-(TimeSignature:symbol,numerator,denominator) changedInfo={symbol:common}
++(TimeSignature:symbol,numerator,denominator) changedInfo={numerator:4, denominator:4}
 @@ measure 1, staff 1, beat 1.5 @@
 -(Note:flagsbeams) C5 (eighth note), 1 beam=stop
 +(Note:flagsbeams) C5 (eighth note), 1 beam=continue
@@ -59,8 +112,45 @@ numDiffs = 11
 @@ measure 1, staff 1, beat 2.5 @@
 -(Note:flagsbeams) C5 (eighth note), 1 flag
 +(Note:flagsbeams) C5 (eighth note), 1 beam=stop
+@@ measure 1, staff 2, beat 1.0 @@
+-(KeySignature:sharp0,flats/sharps) changedInfo={sharp0:F}
++(KeySignature:sharp0,flats/sharps) changedInfo={flats/sharps:none}
+@@ measure 1, staff 2, beat 1.0 @@
+-(TimeSignature:symbol,numerator,denominator) changedInfo={symbol:common}
++(TimeSignature:symbol,numerator,denominator) changedInfo={numerator:4, denominator:4}
+@@ measure 2, staff 2, beat 1.0 @@
+-(PedalMark) pedalType:sustain pedalForm:symbol dur=4.0
+@@ measure 3, staff 1, beat 1.0 @@
+-(Note) F5 (eighth note), grace=unacc, with grace slash, stemDirection=up
+@@ measure 3, staff 1, beat 1.0 @@
+-(Slur) dur=4.0
+@@ measure 3, staff 1, beat 1.0 @@
+-(Slur) dur=8.0
+@@ measure 3, staff 2, beat 1.0 @@
+-(Note:accid) E3 double-flat (whole note)
++(Note:accid) E3 (whole note)
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:accid) G5 sharp (whole note)
++(Note:accid) G5 (whole note)
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:artic) G5 sharp (whole note), articulations=[strong accent]
++(Note:artic) G5 (whole note), articulations=[]
+@@ measure 5, staff 1, beat 1.0 @@
+-(Dynamic) f
+@@ measure 5, staff 2, beat 1.0 @@
+-(Dynamic) pp
+@@ measure 7, staff 1, beat 1.0 @@
+-(Ottava) 8va dur=4.0
+@@ measure 8, staff 1, beat 1.0 @@
+-(RepeatBracket) 1. measurecount:1 dur=4.0
+@@ measure 8, staff 1, beat 5.0 @@
+-(Repeat) final repeatdirection:end
 @@ measure 8, staff 1, beat 5.0 @@
 +(Barline) final
+@@ measure 8, staff 2, beat 1.0 @@
+-(RepeatBracket) 1. measurecount:1 dur=4.0
+@@ measure 8, staff 2, beat 5.0 @@
+-(Repeat) final repeatdirection:end
 @@ measure 8, staff 2, beat 5.0 @@
 +(Barline) final
 @@ measure 9, staff 1, beat 1.0 @@
