@@ -1,5 +1,11 @@
-# delete part and change staffgroup parts (by deleting one)
+# Organ Score
 /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/ThreePartsOrgan.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/TwoPartsOrgan.musicxml
 
-# insert part and change staffgroup parts (by adding one)
+# Organ Score
 /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/TwoPartsOrgan.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/ThreePartsOrgan.musicxml
+
+# Beethoven piano sonata #1 movement 1 (b has been edited)
+# /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1a.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1b.musicxml
+
+# Beethoven piano sonata #1 movement 1 (b has been edited)
+# /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1b.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1a.musicxml
