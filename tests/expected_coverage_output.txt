@@ -1,9 +1,12 @@
 # Organ Score
 ThreePartsOrgan.musicxml vs TwoPartsOrgan.musicxml
-numDiffs = 15
-{"OMR-ED": "65", "numSymbolsInPredicted": "206", "numSymbolsInGroundTruth": "206", "numSymbolsInBoth": "412", "OMR-NED": "0.15776699029126215"}
+numDiffs = 16
+{"OMR-ED": "72", "numSymbolsInPredicted": "206", "numSymbolsInGroundTruth": "201", "numSymbolsInBoth": "407", "OMR-NED": "0.1769041769041769"}
 --- score1
 +++ score2
+@@ measure 0, staff 0, beat 0.0 @@
+-(StaffGroup:name) StaffGroup[0, 1, 2] name=Pipe Organ
++(StaffGroup:name) StaffGroup[0, 1] name=Piano
 @@ measure 0, staff 0, beat 0.0 @@
 -(StaffGroup:parts) StaffGroup[0, 1, 2]
 +(StaffGroup:parts) StaffGroup[0, 1]
@@ -43,10 +46,13 @@ numDiffs = 15
 
 # Organ Score
 TwoPartsOrgan.musicxml vs ThreePartsOrgan.musicxml
-numDiffs = 15
-{"OMR-ED": "65", "numSymbolsInPredicted": "206", "numSymbolsInGroundTruth": "206", "numSymbolsInBoth": "412", "OMR-NED": "0.15776699029126215"}
+numDiffs = 16
+{"OMR-ED": "72", "numSymbolsInPredicted": "201", "numSymbolsInGroundTruth": "206", "numSymbolsInBoth": "407", "OMR-NED": "0.1769041769041769"}
 --- score1
 +++ score2
+@@ measure 0, staff 0, beat 0.0 @@
+-(StaffGroup:name) StaffGroup[0, 1] name=Piano
++(StaffGroup:name) StaffGroup[0, 1, 2] name=Pipe Organ
 @@ measure 0, staff 0, beat 0.0 @@
 -(StaffGroup:parts) StaffGroup[0, 1]
 +(StaffGroup:parts) StaffGroup[0, 1, 2]
