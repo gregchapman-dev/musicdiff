@@ -127,13 +127,15 @@ class Visualization:
                 note_idx2 = op.indexes[1]
 
 
-        if sub_name in ('symbolic', 'content'):
+        if sub_name in ('symbolic', 'content', 'info'):
             # e.g. "changed Barline symbolic" should actually be "changed Barline"
             # e.g. "changed TextExpression content" should actually be "changed TextExpression"
+            # e.g. "changed KeySignature info" should actually be "changed KeySignature"
             sub_name = ''
-        elif sub_name in ('style', 'info'):
-            # 88888 need to replace sub_name below with changeStr
-            pass
+        elif sub_name == 'style':
+            change_str: str = Visualization._dict_change_str(op.obj1.styledict, op.obj2.styledict)
+            if change_str:
+                sub_name = change_str
 
         if m21_obj1 is not None:
             obj1_text: str = custom_text

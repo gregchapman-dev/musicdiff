@@ -2,7 +2,7 @@
 # For actual coverage analysis (as opposed to testing musicdiff's output),
 # do the following:
 # coverage erase
-# coverage run --source=. tests/test_coverage.py tests/coverage_score_list.txt
+# coverage run --source=. tests/test_coverage.py tests/coverage_score_list.txt >& /dev/null
 # coverage report  # for a simple percentage report
 # coverage html
 # ... then open the resulting index.html in Safari and explore the code to see

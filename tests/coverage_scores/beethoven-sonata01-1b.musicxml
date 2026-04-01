@@ -6872,7 +6872,7 @@
       </note>
       <direction placement="below">
         <direction-type>
-          <words enclosure="none" font-style="italic" valign="middle">con espressione</words>
+          <words enclosure="none" font-style="italic" valign="middle">con espress.</words>
         </direction-type>
         <staff>1</staff>
       </direction>
@@ -24002,7 +24002,7 @@
       </note>
       <direction placement="below">
         <direction-type>
-          <words enclosure="none" font-style="italic">con espressione</words>
+          <words enclosure="none" font-style="italic">con espress.</words>
         </direction-type>
         <staff>1</staff>
       </direction>
