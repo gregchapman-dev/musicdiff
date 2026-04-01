@@ -85,8 +85,34 @@ numDiffs = 15
 -(measure) measure 9
 
 # Beethoven piano sonata #1 movement 1 (b has been edited)
-# /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1a.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1b.musicxml
+beethoven-sonata01-1a.musicxml vs beethoven-sonata01-1b.musicxml
+numDiffs = 3
+{"OMR-ED": "8", "numSymbolsInPredicted": "6363", "numSymbolsInGroundTruth": "6366", "numSymbolsInBoth": "12729", "OMR-NED": "0.000628486134024668"}
+--- score1
++++ score2
+@@ measure 1, staff 1, beat 3.0 @@
+-(Barline:symbolic) double
++(Barline:symbolic) dashed
+@@ measure 1, staff 2, beat 3.0 @@
+-(Barline:symbolic) double
++(Barline:symbolic) dashed
+@@ measure 140, staff 1, beat 2.0 @@
+-(TextExpression:content) con espress.
++(TextExpression:content) con espressione
 
 # Beethoven piano sonata #1 movement 1 (b has been edited)
-# /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1b.musicxml /Users/gregc/Documents/Code/musicdiff/tests/coverage_scores/beethoven-sonata01-1a.musicxml
+beethoven-sonata01-1b.musicxml vs beethoven-sonata01-1a.musicxml
+numDiffs = 3
+{"OMR-ED": "8", "numSymbolsInPredicted": "6366", "numSymbolsInGroundTruth": "6363", "numSymbolsInBoth": "12729", "OMR-NED": "0.000628486134024668"}
+--- score1
++++ score2
+@@ measure 1, staff 1, beat 3.0 @@
+-(Barline:symbolic) dashed
++(Barline:symbolic) double
+@@ measure 1, staff 2, beat 3.0 @@
+-(Barline:symbolic) dashed
++(Barline:symbolic) double
+@@ measure 140, staff 1, beat 2.0 @@
+-(TextExpression:content) con espressione
++(TextExpression:content) con espress.
 

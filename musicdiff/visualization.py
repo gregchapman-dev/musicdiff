@@ -127,7 +127,13 @@ class Visualization:
                 note_idx2 = op.indexes[1]
 
 
-        # 88888 need to notice sub_name = style and replace sub_name below with changeStr
+        if sub_name in ('symbolic', 'content'):
+            # e.g. "changed Barline symbolic" should actually be "changed Barline"
+            # e.g. "changed TextExpression content" should actually be "changed TextExpression"
+            sub_name = ''
+        elif sub_name in ('style', 'info'):
+            # 88888 need to replace sub_name below with changeStr
+            pass
 
         if m21_obj1 is not None:
             obj1_text: str = custom_text
