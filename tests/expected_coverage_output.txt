@@ -86,8 +86,8 @@ numDiffs = 15
 
 # Beethoven piano sonata #1 movement 1 (b has been edited)
 beethoven-sonata01-1a.musicxml vs beethoven-sonata01-1b.musicxml
-numDiffs = 4
-{"OMR-ED": "9", "numSymbolsInPredicted": "6363", "numSymbolsInGroundTruth": "6360", "numSymbolsInBoth": "12723", "OMR-NED": "0.0007073803348266918"}
+numDiffs = 7
+{"OMR-ED": "13", "numSymbolsInPredicted": "6363", "numSymbolsInGroundTruth": "6359", "numSymbolsInBoth": "12722", "OMR-NED": "0.001021851910077032"}
 --- score1
 +++ score2
 @@ measure 1, staff 1, beat 3.0 @@
@@ -96,6 +96,15 @@ numDiffs = 4
 @@ measure 1, staff 2, beat 3.0 @@
 -(Barline:symbolic) double
 +(Barline:symbolic) dashed
+@@ measure 4, staff 1, beat 1.0 @@
+-(Slur:dur) dur=3.0
++(Slur:dur) dur=2.0
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:grace) C5 (eighth note), grace=unacc
++(Note:grace) C5 (eighth note), grace=acc
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:graceslash) C5 (eighth note), with grace slash
++(Note:graceslash) C5 (eighth note), with no grace slash
 @@ measure 41, staff 1, beat 2.0 @@
 -(TextExpression:content) con espressione
 +(TextExpression:content) con espress.
@@ -105,8 +114,8 @@ numDiffs = 4
 
 # Beethoven piano sonata #1 movement 1 (b has been edited)
 beethoven-sonata01-1b.musicxml vs beethoven-sonata01-1a.musicxml
-numDiffs = 4
-{"OMR-ED": "9", "numSymbolsInPredicted": "6360", "numSymbolsInGroundTruth": "6363", "numSymbolsInBoth": "12723", "OMR-NED": "0.0007073803348266918"}
+numDiffs = 7
+{"OMR-ED": "13", "numSymbolsInPredicted": "6359", "numSymbolsInGroundTruth": "6363", "numSymbolsInBoth": "12722", "OMR-NED": "0.001021851910077032"}
 --- score1
 +++ score2
 @@ measure 1, staff 1, beat 3.0 @@
@@ -115,6 +124,15 @@ numDiffs = 4
 @@ measure 1, staff 2, beat 3.0 @@
 -(Barline:symbolic) dashed
 +(Barline:symbolic) double
+@@ measure 4, staff 1, beat 1.0 @@
+-(Slur:dur) dur=2.0
++(Slur:dur) dur=3.0
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:grace) C5 (eighth note), grace=acc
++(Note:grace) C5 (eighth note), grace=unacc
+@@ measure 5, staff 1, beat 1.0 @@
+-(Note:graceslash) C5 (eighth note), with no grace slash
++(Note:graceslash) C5 (eighth note), with grace slash
 @@ measure 41, staff 1, beat 2.0 @@
 -(TextExpression:content) con espress.
 +(TextExpression:content) con espressione

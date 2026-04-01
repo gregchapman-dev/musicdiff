@@ -636,6 +636,7 @@
         <beam number="2">end</beam>
         <notations>
           <tuplet number="1" type="stop" />
+          <slur number="2" type="stop" />
         </notations>
       </note>
       <note id="note-zpyeskylfc">
@@ -648,7 +649,6 @@
         <type>quarter</type>
         <staff>1</staff>
         <notations>
-          <slur number="2" type="stop" />
           <articulations>
             <staccato />
           </articulations>
@@ -821,7 +821,7 @@
         <sound dynamics="107" />
       </direction>
       <note id="note-zpyeskyqwu">
-        <grace slash="yes" />
+        <grace slash="no" />
         <pitch>
           <step>C</step>
           <octave>5</octave>
