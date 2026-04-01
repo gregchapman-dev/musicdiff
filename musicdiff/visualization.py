@@ -727,7 +727,9 @@ class Visualization:
                     outputList.extend(text_diff)
                 continue
 
-            if op.name == 'extraoffsetedit':
+            if op.name == 'extraoffsetedit':  # pragma: no cover
+                # cannot happen because we don't compare extras unless they are
+                # at the same offset
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2, opname='changed', sub_name='offset')
