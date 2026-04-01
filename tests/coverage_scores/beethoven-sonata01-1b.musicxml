@@ -6872,7 +6872,7 @@
       </note>
       <direction placement="below">
         <direction-type>
-          <words enclosure="none" font-style="italic" valign="middle">con espress.</words>
+          <words enclosure="none" valign="middle">con espress.</words>
         </direction-type>
         <staff>1</staff>
       </direction>
