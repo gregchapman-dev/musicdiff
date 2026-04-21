@@ -7521,7 +7521,7 @@
       </direction>
       <note id="note-zpyesgrzns">
         <pitch>
-          <step>E</step>
+          <step>B</step>
           <alter>-1</alter>
           <octave>5</octave>
         </pitch>
@@ -8176,31 +8176,11 @@
           <alter>-1</alter>
           <octave>4</octave>
         </pitch>
-        <duration>10080</duration>
+        <duration>20160</duration>
         <voice>1</voice>
-        <type>quarter</type>
+        <type>half</type>
         <stem>down</stem>
         <staff>1</staff>
-        <notations>
-          <articulations>
-            <staccato />
-          </articulations>
-        </notations>
-      </note>
-      <note id="note-zpyeshgsbo">
-        <pitch>
-          <step>C</step>
-          <octave>5</octave>
-        </pitch>
-        <duration>10080</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <staff>1</staff>
-        <notations>
-          <articulations>
-            <staccato />
-          </articulations>
-        </notations>
       </note>
       <note id="note-zpyeshgtgy">
         <pitch>
@@ -8387,7 +8367,7 @@
       <note id="note-zpyeshhbdw">
         <chord />
         <pitch>
-          <step>C</step>
+          <step>F</step>
           <octave>4</octave>
         </pitch>
         <duration>10080</duration>
