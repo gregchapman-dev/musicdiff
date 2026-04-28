@@ -16,7 +16,7 @@ __docformat__ = 'google'
 from pathlib import Path
 import sys
 import re
-# import typing as t
+import typing as t
 import collections
 from fractions import Fraction
 
@@ -109,6 +109,7 @@ class Visualization:
         note_idx1: int | None = None
         note_idx2: int | None = None
         if op.indexes is not None:
+            # we have pitch indexes within an AnnNote (which is a Chord)
             if isinstance(op.indexes, int):
                 if op.obj1 is not None and op.obj2 is None:
                     note_idx1 = op.indexes
@@ -125,7 +126,24 @@ class Visualization:
                 assert isinstance(op.indexes[1], int)
                 note_idx1 = op.indexes[0]
                 note_idx2 = op.indexes[1]
-
+        else:
+            # This is an AnnNote that is a Note within a Chord.
+            if isinstance(op.obj1, AnnNote) and op.obj1.is_in_chord:
+                if t.TYPE_CHECKING:
+                    assert isinstance(m21_obj1, m21.chord.ChordBase)
+                note_idx1 = op.obj1.note_idx_in_chord
+                if not name:
+                    if t.TYPE_CHECKING:
+                        assert isinstance(note_idx1, int)
+                    name = m21_obj1.notes[note_idx1].classes[0]
+            if isinstance(op.obj2, AnnNote) and op.obj2.is_in_chord:
+                if t.TYPE_CHECKING:
+                    assert isinstance(m21_obj2, m21.chord.ChordBase)
+                note_idx2 = op.obj2.note_idx_in_chord
+                if not name:
+                    if t.TYPE_CHECKING:
+                        assert isinstance(note_idx2, int)
+                    name = m21_obj2.notes[note_idx2].classes[0]
 
         if sub_name in ('symbolic', 'content', 'info'):
             # e.g. "changed Barline symbolic" should actually be "changed Barline"
@@ -133,7 +151,13 @@ class Visualization:
             # e.g. "changed KeySignature info" should actually be "changed KeySignature"
             sub_name = ''
         elif sub_name == 'style':
-            change_str: str = Visualization._dict_change_str(op.obj1.styledict, op.obj2.styledict)
+            styledict1: dict[str, str] = {}
+            styledict2: dict[str, str] = {}
+            if op.obj1 is not None:
+                styledict1 = op.obj1.styledict
+            if op.obj2 is not None:
+                styledict2 = op.obj2.styledict
+            change_str: str = Visualization._dict_change_str(styledict1, styledict2)
             if change_str:
                 sub_name = change_str
 
