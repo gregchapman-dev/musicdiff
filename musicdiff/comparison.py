@@ -1000,8 +1000,8 @@ class Comparison:
                 op_list.append(DiffOperation('dotdel', annNote1, annNote2, dots_diff))
             else:
                 op_list.append(DiffOperation('dotins', annNote1, annNote2, dots_diff))
-        if annNote1.graceType != annNote2.graceType:
-            # accented vs unaccented vs not a grace note (delete the wrong, add the right)
+        if annNote1.note_is_grace != annNote2.note_is_grace:
+            # grace vs not a grace note (delete the wrong, add the right)
             cost += 2
             op_list.append(DiffOperation('graceedit', annNote1, annNote2, 2))
         if annNote1.graceSlash != annNote2.graceSlash:
@@ -1292,8 +1292,8 @@ class Comparison:
                     continue
                 if Comparison._areDifferentEnough(orig_n.note_offset, comp_n.note_offset):
                     continue
-                if orig_n.note_is_grace != comp_n.note_is_grace:
-                    continue
+                # if orig_n.note_is_grace != comp_n.note_is_grace:
+                #     continue
                 if fallback is None:
                     fallback = comp_n
                     fallback_i = i

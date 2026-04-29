@@ -129,10 +129,9 @@ class AnnNote(AnnObject):
             else:
                 self.note_offset = chord_offset
 
-            # visual duration and graceness
+            # visual duration
             self.note_dur_type = carrier.duration.type
             self.note_dur_dots = carrier.duration.dots
-            self.note_is_grace = carrier.duration.isGrace
 
         if DetailLevel.includesStyle(detail):
             # we will take style from the individual note, and then override with
@@ -219,27 +218,11 @@ class AnnNote(AnnObject):
         # dots
         self.dots: int = dur.dots
         # graceness
-        self.graceType: str = ''
-        self.graceSlash: bool | None = False
-        if isinstance(dur, m21.duration.AppoggiaturaDuration):
-            self.graceType = 'acc'
-            self.graceSlash = dur.slash
-        elif isinstance(dur, m21.duration.GraceDuration):
-            # might be accented or unaccented.  duration.slash isn't always reliable
-            # (historically), but we can use it as a fallback.
-            # Check duration.stealTimePrevious and duration.stealTimeFollowing first.
-            if dur.stealTimePrevious is not None:
-                self.graceType = 'unacc'
-            elif dur.stealTimeFollowing is not None:
-                self.graceType = 'acc'
-            elif dur.slash is True:
-                self.graceType = 'unacc'
-            elif dur.slash is False:
-                self.graceType = 'acc'
-            else:
-                # by default, GraceDuration with no other indications (slash is None)
-                # is assumed to be unaccented.
-                self.graceType = 'unacc'
+        self.note_is_grace = dur.isGrace
+        self.graceSlash: bool | None = None
+        if dur.isGrace:
+            if t.TYPE_CHECKING:
+                assert isinstance(dur, m21.duration.GraceDuration)
             self.graceSlash = dur.slash
 
         # The following (articulations, expressions) only occur once per chord
@@ -305,7 +288,7 @@ class AnnNote(AnnObject):
             # add for the expressions
             size += len(self.expressions)
             # add 1 if it's a gracenote, and 1 more if there's a grace slash
-            if self.graceType:
+            if self.note_is_grace:
                 size += 1
                 if self.graceSlash is True:
                     size += 1
@@ -437,15 +420,15 @@ class AnnNote(AnnObject):
 
         if not name or name == 'grace':
             if not name:
-                if self.graceType:
-                    string += f', grace={self.graceType}'
+                if self.note_is_grace:
+                    string += f', grace={self.note_is_grace}'
             else:
-                string += f', grace={self.graceType}'
+                string += f', grace={self.note_is_grace}'
             if name:
                 return string
 
         if not name or name == 'graceslash':
-            if self.graceType:
+            if self.note_is_grace:
                 if self.graceSlash:
                     string += ', with grace slash'
                 else:
@@ -577,8 +560,8 @@ class AnnNote(AnnObject):
         string += str(self.note_head)  # add for notehead
         for _ in range(self.dots):  # add for dots
             string += '*'
-        if self.graceType:
-            string += self.graceType
+        if self.note_is_grace:
+            string += 'G'
             if self.graceSlash:
                 string += '/'
         if len(self.beamings) > 0:  # add for beaming
