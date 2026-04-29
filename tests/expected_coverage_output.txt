@@ -106,8 +106,8 @@ numDiffs = 13
 -(Slur:dur) dur=3.0
 +(Slur:dur) dur=2.0
 @@ measure 5, staff 1, beat 1.0 @@
--(Note:graceslash) C5 (eighth note), with grace slash
-+(Note:graceslash) C5 (eighth note), with no grace slash
+-(Note:grace) C5 (eighth note), grace=slash
++(Note:grace) C5 (eighth note), grace=noslash
 @@ measure 41, staff 1, beat 2.0 @@
 -(TextExpression:content) con espressione
 +(TextExpression:content) con espress.
@@ -147,8 +147,8 @@ numDiffs = 13
 -(Slur:dur) dur=2.0
 +(Slur:dur) dur=3.0
 @@ measure 5, staff 1, beat 1.0 @@
--(Note:graceslash) C5 (eighth note), with no grace slash
-+(Note:graceslash) C5 (eighth note), with grace slash
+-(Note:grace) C5 (eighth note), grace=noslash
++(Note:grace) C5 (eighth note), grace=slash
 @@ measure 41, staff 1, beat 2.0 @@
 -(TextExpression:content) con espress.
 +(TextExpression:content) con espressione

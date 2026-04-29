@@ -903,7 +903,7 @@ class Visualization:
                 assert isinstance(op.obj1, AnnObject)
                 assert isinstance(op.obj2, AnnObject)
                 text_diff = vis_func(op, score1, score2,
-                    opname='changed', sub_name='grace', custom_text='changed graceness')
+                    opname='changed', sub_name='grace', custom_text='changed grace type')
                 if text_diff is not None:
                     outputList.extend(text_diff)
                 continue
@@ -1466,8 +1466,7 @@ class Visualization:
         'accidentdel': 'wrong accidental OMR-ED',
         'accidentedit': 'wrong accidental OMR-ED',
         'editstemdirection': 'wrong note stem OMR-ED',
-        'graceedit': 'wrong graceness OMR-ED',
-        'graceslashedit': 'wrong graceness OMR-ED',
+        'graceedit': 'wrong grace type OMR-ED',
         'editnoteshape': 'wrong note head OMR-ED',
         'editnoteheadfill': 'wrong note head OMR-ED',
         'editnoteheadparenthesis': 'wrong note head OMR-ED',
