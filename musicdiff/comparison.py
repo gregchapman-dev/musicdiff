@@ -1282,7 +1282,7 @@ class Comparison:
         '''
         Gather up pairs of matching notes (using pitch, offset, graceness, and visual duration, in
         that order of importance).  If you can't find an exactly matching note, try again without
-        visual duration.
+        graceness and visual duration.
         original [list] -- a list of AnnNote (which are never chords)
         compare_to [list] -- a list of AnnNote (which are never chords)
         '''
@@ -1310,6 +1310,10 @@ class Comparison:
                     fallback = comp_n
                     fallback_i = i
 
+                # graceness (optional)
+                if orig_n.graceness != comp_n.graceness:
+                    continue
+                # visual duration: type and dots (optional)
                 if orig_n.note_dur_type != comp_n.note_dur_type:
                     continue
                 if orig_n.note_dur_dots != comp_n.note_dur_dots:
