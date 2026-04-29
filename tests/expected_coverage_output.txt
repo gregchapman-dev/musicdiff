@@ -92,8 +92,8 @@ numDiffs = 16
 
 # Beethoven piano sonata #1 movement 1 (b has been edited)
 beethoven-sonata01-1a.musicxml vs beethoven-sonata01-1b.musicxml
-numDiffs = 7
-{"OMR-ED": "13", "numSymbolsInPredicted": "6363", "numSymbolsInGroundTruth": "6359", "numSymbolsInBoth": "12722", "OMR-NED": "0.001021851910077032"}
+numDiffs = 13
+{"OMR-ED": "25", "numSymbolsInPredicted": "6363", "numSymbolsInGroundTruth": "6355", "numSymbolsInBoth": "12718", "OMR-NED": "0.001965717880169838"}
 --- score1
 +++ score2
 @@ measure 1, staff 1, beat 3.0 @@
@@ -106,9 +106,6 @@ numDiffs = 7
 -(Slur:dur) dur=3.0
 +(Slur:dur) dur=2.0
 @@ measure 5, staff 1, beat 1.0 @@
--(Note:grace) C5 (eighth note), grace=unacc
-+(Note:grace) C5 (eighth note), grace=acc
-@@ measure 5, staff 1, beat 1.0 @@
 -(Note:graceslash) C5 (eighth note), with grace slash
 +(Note:graceslash) C5 (eighth note), with no grace slash
 @@ measure 41, staff 1, beat 2.0 @@
@@ -117,11 +114,27 @@ numDiffs = 7
 @@ measure 41, staff 1, beat 2.0 @@
 -(TextExpression:fontStyle) con espressione changedStyle={fontStyle:italic}
 +(TextExpression:fontStyle) con espress. changedStyle={}
+@@ measure 45, staff 1, beat 1.0 @@
+-(Note) E5 (quarter note)
+@@ measure 45, staff 1, beat 1.0 @@
++(Note) B5 (quarter note)
+@@ measure 49, staff 1, beat 1.0 @@
+-(Note:head) A4 (quarter note), head=normal
++(Note:head) A4 (half note), head=half
+@@ measure 49, staff 1, beat 1.0 @@
+-(Note:artic) A4 (quarter note), articulations=[staccato]
++(Note:artic) A4 (half note), articulations=[]
+@@ measure 49, staff 1, beat 1.5 @@
+-(Note) C5 (quarter note), articulations=[staccato]
+@@ measure 50, staff 2, beat 1.5 @@
+-(Note) C4 (quarter note)
+@@ measure 50, staff 2, beat 1.5 @@
++(Note) F4 (quarter note)
 
 # Beethoven piano sonata #1 movement 1 (b has been edited)
 beethoven-sonata01-1b.musicxml vs beethoven-sonata01-1a.musicxml
-numDiffs = 7
-{"OMR-ED": "13", "numSymbolsInPredicted": "6359", "numSymbolsInGroundTruth": "6363", "numSymbolsInBoth": "12722", "OMR-NED": "0.001021851910077032"}
+numDiffs = 13
+{"OMR-ED": "25", "numSymbolsInPredicted": "6355", "numSymbolsInGroundTruth": "6363", "numSymbolsInBoth": "12718", "OMR-NED": "0.001965717880169838"}
 --- score1
 +++ score2
 @@ measure 1, staff 1, beat 3.0 @@
@@ -134,9 +147,6 @@ numDiffs = 7
 -(Slur:dur) dur=2.0
 +(Slur:dur) dur=3.0
 @@ measure 5, staff 1, beat 1.0 @@
--(Note:grace) C5 (eighth note), grace=acc
-+(Note:grace) C5 (eighth note), grace=unacc
-@@ measure 5, staff 1, beat 1.0 @@
 -(Note:graceslash) C5 (eighth note), with no grace slash
 +(Note:graceslash) C5 (eighth note), with grace slash
 @@ measure 41, staff 1, beat 2.0 @@
@@ -145,4 +155,20 @@ numDiffs = 7
 @@ measure 41, staff 1, beat 2.0 @@
 -(TextExpression:fontStyle) con espress. changedStyle={}
 +(TextExpression:fontStyle) con espressione changedStyle={fontStyle:italic}
+@@ measure 45, staff 1, beat 1.0 @@
+-(Note) B5 (quarter note)
+@@ measure 45, staff 1, beat 1.0 @@
++(Note) E5 (quarter note)
+@@ measure 49, staff 1, beat 1.0 @@
+-(Note:head) A4 (half note), head=half
++(Note:head) A4 (quarter note), head=normal
+@@ measure 49, staff 1, beat 1.0 @@
+-(Note:artic) A4 (half note), articulations=[]
++(Note:artic) A4 (quarter note), articulations=[staccato]
+@@ measure 49, staff 1, beat 1.5 @@
++(Note) C5 (quarter note), articulations=[staccato]
+@@ measure 50, staff 2, beat 1.5 @@
+-(Note) F4 (quarter note)
+@@ measure 50, staff 2, beat 1.5 @@
++(Note) C4 (quarter note)
 

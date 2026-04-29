@@ -1000,14 +1000,28 @@ class Comparison:
                 op_list.append(DiffOperation('dotdel', annNote1, annNote2, dots_diff))
             else:
                 op_list.append(DiffOperation('dotins', annNote1, annNote2, dots_diff))
-        if annNote1.note_is_grace != annNote2.note_is_grace:
-            # grace vs not a grace note (delete the wrong, add the right)
-            cost += 2
-            op_list.append(DiffOperation('graceedit', annNote1, annNote2, 2))
-        if annNote1.graceSlash != annNote2.graceSlash:
-            # add or delete the slash
-            cost += 1
-            op_list.append(DiffOperation('graceslashedit', annNote1, annNote2, 1))
+        if annNote1.graceness != annNote2.graceness:
+            graceCost: int = 0
+            # not grace vs grace without slash vs grace with slash
+            if not annNote1.graceness:
+                if annNote2.graceness == 'noslash':
+                    # changed non-grace to unslashed grace (delete + add)
+                    graceCost = 2
+                elif annNote2.graceness == 'slash':
+                    # changed non-grace to slashed grace (delete + add + add slash)
+                    graceCost = 3
+            elif not annNote2.graceness:
+                if annNote1.graceness == 'noslash':
+                    # changed unslashed grace to non-grace (delete + add)
+                    graceCost = 2
+                elif annNote1.graceness == 'slash':
+                    # changed slashed grace to non-grace (delete slash + delete + add)
+                    graceCost = 3
+            else:
+                # deleted or added slash to existing grace note (delete or add)
+                graceCost = 1
+            cost += graceCost
+            op_list.append(DiffOperation('graceedit', annNote1, annNote2, graceCost))
         # add for the beamings
         if annNote1.beamings != annNote2.beamings:
             beam_op_list, beam_cost = Comparison._beamtuplet_levenshtein_diff(
@@ -1292,8 +1306,6 @@ class Comparison:
                     continue
                 if Comparison._areDifferentEnough(orig_n.note_offset, comp_n.note_offset):
                     continue
-                # if orig_n.note_is_grace != comp_n.note_is_grace:
-                #     continue
                 if fallback is None:
                     fallback = comp_n
                     fallback_i = i

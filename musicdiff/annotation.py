@@ -99,7 +99,7 @@ class AnnNote(AnnObject):
         self.note_offset: OffsetQL = 0.
         self.note_dur_type: str = ''
         self.note_dur_dots: int = 0
-        self.note_is_grace: bool = False
+        self.graceness: str = ''  # '', 'slash', 'noslash'
 
         # fullNameSuffix is only for text output, it is not involved in comparison at all.
         # It is of the form 'Dotted Quarter Rest', etc.
@@ -218,12 +218,13 @@ class AnnNote(AnnObject):
         # dots
         self.dots: int = dur.dots
         # graceness
-        self.note_is_grace = dur.isGrace
-        self.graceSlash: bool | None = None
         if dur.isGrace:
             if t.TYPE_CHECKING:
                 assert isinstance(dur, m21.duration.GraceDuration)
-            self.graceSlash = dur.slash
+            if dur.slash:
+                self.graceness = 'slash'
+            else:
+                self.graceness = 'noslash'
 
         # The following (articulations, expressions) only occur once per chord
         # or standalone note, so we only want to annotate them once.  We annotate them
@@ -288,9 +289,9 @@ class AnnNote(AnnObject):
             # add for the expressions
             size += len(self.expressions)
             # add 1 if it's a gracenote, and 1 more if there's a grace slash
-            if self.note_is_grace:
+            if self.graceness:
                 size += 1
-                if self.graceSlash is True:
+                if self.graceness == 'slash':
                     size += 1
             # add 1 for abnormal note shape (diamond, etc)
             if self.noteshape != 'normal':
@@ -420,19 +421,13 @@ class AnnNote(AnnObject):
 
         if not name or name == 'grace':
             if not name:
-                if self.note_is_grace:
-                    string += f', grace={self.note_is_grace}'
+                if self.graceness:
+                    string += f', grace={self.graceness}'
             else:
-                string += f', grace={self.note_is_grace}'
-            if name:
-                return string
-
-        if not name or name == 'graceslash':
-            if self.note_is_grace:
-                if self.graceSlash:
-                    string += ', with grace slash'
+                if self.graceness:
+                    string += f', grace={self.graceness}'
                 else:
-                    string += ', with no grace slash'
+                    string += ', grace=False'
             if name:
                 return string
 
@@ -560,9 +555,9 @@ class AnnNote(AnnObject):
         string += str(self.note_head)  # add for notehead
         for _ in range(self.dots):  # add for dots
             string += '*'
-        if self.note_is_grace:
+        if self.graceness:
             string += 'G'
-            if self.graceSlash:
+            if self.graceness == 'slash':
                 string += '/'
         if len(self.beamings) > 0:  # add for beaming
             string += 'B'
