@@ -199,7 +199,7 @@
         <staff>2</staff>
       </note>
       <barline id="barline-zpyesmzesu" location="right">
-        <bar-style>dashed</bar-style>
+        <bar-style>none</bar-style>
       </barline>
     </measure>
     <!--========================= Measure 2 ==========================-->

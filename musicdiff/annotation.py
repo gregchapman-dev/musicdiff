@@ -1237,6 +1237,18 @@ class AnnMeasure(AnnObject):
 
             self.n_of_elements = len(self.annot_notes)
 
+        # Before getting the extras, if the measure has no rightBarline,
+        # set it to a 'regular' barline (that is what no rightBarline
+        # _means_).  This avoids all sorts of confusion when comparing
+        # None (i.e. a regular barline) and 'none' (which is ignored/None
+        # because it means no barline at all). Because of this fixup,
+        # it's always 'regular' vs. 'none'/None, and everything falls
+        # out correctly.  Note that we don't do this for leftBarline
+        # because None there means just use the right barline from the
+        # previous measure.
+        if measure.rightBarline is None:
+            measure.rightBarline = m21.bar.Barline('regular')
+
         self.extras_list: list[AnnExtra] = []
         for extra in M21Utils.get_extras(measure, part, score, spannerBundle, detail):
             self.extras_list.append(AnnExtra(extra, measure, score, detail))
