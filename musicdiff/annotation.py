@@ -950,6 +950,9 @@ class AnnLyric(AnnObject):
         if name == 'offset':
             if self.offset is not None:
                 string += f' offset={M21Utils.ql_to_string(self.offset)}'
+            else:
+                # will this ever happen?
+                string += ' offset=None'
             return string
 
         if name == 'num':

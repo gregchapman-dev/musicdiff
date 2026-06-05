@@ -243,7 +243,7 @@ class Comparison:
                     history.append((0, a_lines[x - 1][1]))  # add originalstep
 
                 # Chew up as many diagonal moves as we can - these correspond to common lines,
-                # and they're considered 'free' by the algorithm because we want to maximize
+                # and they're considered "free" by the algorithm because we want to maximize
                 # the number of these in the output.
                 while x < a_max and y < b_max and a_lines[x][0] == b_lines[y][0]:
                     x += 1
