@@ -102,6 +102,10 @@ class Visualization:
         name: str = '',  # name of object
         sub_name: str = '',  # e.g. 'content' or 'sym'
     ) -> list[str]:
+        if name == 'metadata':
+            # someday we will draw some of the metadata changes
+            return []
+
         m21_obj1: m21.base.Music21Object | None
         m21_obj2: m21.base.Music21Object | None
         m21_obj1, m21_obj2 = op.get_m21_objs()
@@ -505,6 +509,13 @@ class Visualization:
                     if op.obj2.is_in_chord:
                         assert isinstance(m21_obj2, m21.chord.ChordBase)
                         name2 = m21_obj2.notes[0].classes[0]
+
+        if name == 'metadata':
+            # change m21_obj1/m21_obj2 to score1.metadata and score2.metadata
+            if m21_obj1 is not None:
+                m21_obj1 = score1.metadata
+            if m21_obj2 is not None:
+                m21_obj2 = score2.metadata
 
         readable_str_subname: str = ''
         changedStr: str = ''

@@ -54,7 +54,7 @@ class AnnObject:
 
     def get_object(self) -> m21.base.Music21Object | None:
         if self.ref is None:
-            return None
+            return self
         return self.ref()  # may also return None if referenced obj is gone
 
 
