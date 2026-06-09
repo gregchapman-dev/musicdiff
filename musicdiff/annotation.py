@@ -18,6 +18,7 @@ import html
 from fractions import Fraction
 import typing as t
 import copy
+import weakref
 
 import music21 as m21
 from music21.common import OffsetQL, opFrac
@@ -32,13 +33,16 @@ LINES_PER_STAFF: int = 5
 class AnnObject:
     def __init__(self, m21Obj: m21.base.Music21Object | None = None):
         self.styledict: dict[str, str] = {}
-        self.id: str | int
+        self.id: int
+        self.ref: weakref.ref | None
 
         if m21Obj is not None:
-            self.id = m21Obj.id
+            self.id = id(m21Obj)
+            self.ref = weakref.ref(m21Obj)
         else:
             # currently only AnnMetadataItem has no m21 obj
             self.id = id(self)
+            self.ref = None
 
         # offset and/or duration are sometimes relevant in AnnObject
         self.offset: OffsetQL | None = None
@@ -47,6 +51,12 @@ class AnnObject:
     def readable_str(self, name: str = '', idx: int = 0, changedStr: str = '') -> str:
         # will be overridden by every derived class (AnnNote et al)
         return ''
+
+    def get_object(self) -> m21.base.Music21Object | None:
+        if self.ref is None:
+            return None
+        return self.ref()  # may also return None if referenced obj is gone
+
 
 class AnnNote(AnnObject):
     def __init__(
@@ -82,7 +92,8 @@ class AnnNote(AnnObject):
         self.note_idx_in_chord: int | None = None
         if parent_chord is not None:
             # This is what visualization uses to color the note red (chord id and note idx)
-            self.id = parent_chord.id
+            self.id = id(parent_chord)
+            self.ref = weakref.ref(parent_chord)
             self.is_in_chord = True
             self.note_idx_in_chord = parent_chord.notes.index(general_note)
 
@@ -1008,6 +1019,7 @@ class AnnVoice(AnnObject):
         Args:
             voice (music21.stream.Voice or Measure): The music21 voice to extend. This
                 can be a Measure, but only if it contains no Voices.
+            enclosingMeasure (m21.stream.Measure): the enclosing Measure.
             detail (DetailLevel | int): What level of detail to use during the diff.
                 Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
@@ -1153,7 +1165,7 @@ class AnnMeasure(AnnObject):
 
         Args:
             measure (music21.stream.Measure): The music21 Measure to extend.
-            part (music21.stream.Part): the enclosing music21 Part
+            part (music21.stream.Part): the enclosing music21 Part.
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
                 in the score.
@@ -1259,7 +1271,6 @@ class AnnMeasure(AnnObject):
 
         # For correct comparison, sort the extras_list, so that any extras
         # that all have the same offset are sorted alphabetically.
-        # 888 need to sort by class here?  Or not at all?
         self.extras_list.sort(key=lambda e: (e.kind, e.offset))
 
         self.lyrics_list: list[AnnLyric] = []

@@ -65,25 +65,15 @@ class DiffOperation:
 
     def get_m21_objs(
         self,
-        score1: m21.stream.Score,
-        score2: m21.stream.Score
     ) -> tuple[m21.base.Music21Object | None, m21.base.Music21Object | None]:
         m21_obj1: m21.base.Music21Object | None = None
         m21_obj2: m21.base.Music21Object | None = None
 
         if self.obj1 is not None:
-            if isinstance(self.obj1, AnnMetadataItem):
-                # special case: no m21_obj, so return the entire set of metadata instead
-                m21_obj1 = score1.metadata
-            else:
-                m21_obj1 = score1.recurse().getElementById(self.obj1.id)  # type: ignore
+            m21_obj1 = self.obj1.get_object()
 
         if self.obj2 is not None:
-            if isinstance(self.obj2, AnnMetadataItem):
-                # special case: no m21_obj, so return the entire set of metadata instead
-                m21_obj2 = score2.metadata
-            else:
-                m21_obj2 = score2.recurse().getElementById(self.obj2.id)  # type: ignore
+            m21_obj2 = self.obj2.get_object()
 
         return (m21_obj1, m21_obj2)
 

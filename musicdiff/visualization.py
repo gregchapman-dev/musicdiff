@@ -104,7 +104,7 @@ class Visualization:
     ) -> list[str]:
         m21_obj1: m21.base.Music21Object | None
         m21_obj2: m21.base.Music21Object | None
-        m21_obj1, m21_obj2 = op.get_m21_objs(score1, score2)
+        m21_obj1, m21_obj2 = op.get_m21_objs()
 
         note_idx1: int | None = None
         note_idx2: int | None = None
@@ -485,7 +485,7 @@ class Visualization:
 
         m21_obj1: m21.base.Music21Object | None
         m21_obj2: m21.base.Music21Object | None
-        m21_obj1, m21_obj2 = op.get_m21_objs(score1, score2)
+        m21_obj1, m21_obj2 = op.get_m21_objs()
 
         name1: str = ''
         name2: str = ''
