@@ -54,7 +54,7 @@ class AnnObject:
 
     def get_object(self) -> m21.base.Music21Object | None:
         if self.ref is None:
-            return self
+            return self  # type: ignore
         return self.ref()  # may also return None if referenced obj is gone
 
 
@@ -331,6 +331,8 @@ class AnnNote(AnnObject):
         string: str = ''
         if self.fullNameSuffix.endswith('rest'):
             string = self.fullNameSuffix
+            if self.pitches and self.pitches[0]:
+                string += ' (positioned from middle: ' + self.pitches[0].name[1:] + ')'
         elif self.fullNameSuffix.endswith('note'):
             string = self.pitches[0].name
             if self.pitches[0].accidental != 'None':
