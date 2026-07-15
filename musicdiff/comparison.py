@@ -77,106 +77,36 @@ class DiffOperation:
 
         return (m21_obj1, m21_obj2)
 
-# memoizers to speed up the recursive computation
-def _memoize_notes_set_distance(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
+# memoizer to speed up the recursive computation
+def _memoize_diff(func):
+    fname = func.__name__
 
-    return memoizer
-
-def _memoize_extras_set_distance(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_staff_groups_set_distance(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_metadata_items_set_distance(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_inside_bars_diff_lin(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_lyrics_diff_lin(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_block_diff_lin(func):
-    def memoizer(original, compare_to):
-        key = repr(original) + repr(compare_to)
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_pitches_lev_diff(func):
-    def memoizer(original, compare_to, noteNode1, noteNode2, ids):
+    def memoizer(original, compare_to, *rest):
         key = (
-            repr(original)
-            + repr(compare_to)
-            + repr(noteNode1)
-            + repr(noteNode2)
-            + repr(ids)
+            fname,
+            tuple(id(o) for o in original),
+            tuple(id(c) for c in compare_to),
+            tuple(r if isinstance(r, (str, int, tuple)) else id(r) for r in rest),
         )
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, ids)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
+        cached = Comparison._memoizer_mem.get(key)
+        if cached is None:
+            cached = func(original, compare_to, *rest)
+            Comparison._memoizer_mem[key] = cached
+        op_list, cost = cached
+        return list(op_list), cost
 
     return memoizer
 
-def _memoize_beamtuplet_lev_diff(func):
-    def memoizer(original, compare_to, noteNode1, noteNode2, which):
-        key = (
-            repr(original) + repr(compare_to) + repr(noteNode1) + repr(noteNode2) + which
-        )
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
-
-def _memoize_generic_lev_diff(func):
-    def memoizer(original, compare_to, noteNode1, noteNode2, which):
-        key = (
-            repr(original) + repr(compare_to) + repr(noteNode1) + repr(noteNode2) + which
-        )
-        if key not in Comparison._memoizer_mem:
-            Comparison._memoizer_mem[key] = func(original, compare_to, noteNode1, noteNode2, which)
-        return copy.deepcopy(Comparison._memoizer_mem[key])
-
-    return memoizer
+_memoize_notes_set_distance = _memoize_diff
+_memoize_extras_set_distance = _memoize_diff
+_memoize_staff_groups_set_distance = _memoize_diff
+_memoize_metadata_items_set_distance = _memoize_diff
+_memoize_inside_bars_diff_lin = _memoize_diff
+_memoize_lyrics_diff_lin = _memoize_diff
+_memoize_block_diff_lin = _memoize_diff
+_memoize_pitches_lev_diff = _memoize_diff
+_memoize_beamtuplet_lev_diff = _memoize_diff
+_memoize_generic_lev_diff = _memoize_diff
 
 class Comparison:
     _memoizer_mem: dict = {}
