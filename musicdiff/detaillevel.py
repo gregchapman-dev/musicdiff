@@ -108,6 +108,13 @@ class DetailLevel(IntEnum):
     # into every affected note. If this is set, NotesAndRests will also be considered set.
     NoteStaffPosition = 1 << 18
 
+    # The names the encoding gives to the lyric verses ('verse', 'part1verse1', etc).
+    # They print nothing in the score, so they are off by default; turn them on to
+    # compare them.
+    # Note that if Lyrics is not also requested, no lyric identifier differences
+    # will be found.
+    LyricIdentifiers = 1 << 19
+
     # default detail level is all objects:
     Default = AllObjects
 
@@ -192,6 +199,10 @@ class DetailLevel(IntEnum):
     @classmethod
     def includesNoteStaffPosition(cls, val: int) -> bool:
         return val & cls.NoteStaffPosition != 0
+
+    @classmethod
+    def includesLyricIdentifiers(cls, val: int) -> bool:
+        return val & cls.LyricIdentifiers != 0
 
     @classmethod
     def _included_m21_types(cls, val: int) -> tuple[t.Type, ...]:
