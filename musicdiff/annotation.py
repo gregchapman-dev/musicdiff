@@ -85,7 +85,7 @@ class AnnNote(AnnObject):
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, Voicing, or NoteStaffPosition.
+                LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
         super().__init__(general_note)
         self.is_in_chord: bool = False
@@ -672,7 +672,7 @@ class AnnExtra(AnnObject):
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, Voicing, or NoteStaffPosition.
+                LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
         super().__init__(extra)
         self.kind: str = M21Utils.extra_to_kind(extra)
@@ -894,7 +894,7 @@ class AnnLyric(AnnObject):
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, Voicing, or NoteStaffPosition.
+                LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
         super().__init__(lyric_holder)
 
@@ -911,7 +911,8 @@ class AnnLyric(AnnObject):
         if lyric.number is not None:
             self.number = lyric.number
 
-        if (lyric._identifier is not None
+        if (DetailLevel.includesLyricIdentifiers(detail)
+                and lyric._identifier is not None
                 and lyric._identifier != lyric.number
                 and lyric._identifier != str(lyric.number)):
             self.identifier = lyric._identifier
@@ -1027,7 +1028,7 @@ class AnnVoice(AnnObject):
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, Voicing, or NoteStaffPosition.
+                LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
         super().__init__(voice)
         note_list: list[m21.note.GeneralNote] = []
@@ -1176,7 +1177,7 @@ class AnnMeasure(AnnObject):
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, Voicing, or NoteStaffPosition.
+                LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
         super().__init__(measure)
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
@@ -1411,7 +1412,7 @@ class AnnPart(AnnObject):
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, Voicing, or NoteStaffPosition.
+                LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
         super().__init__(part)
         self.part_idx: int = part_idx
@@ -1720,7 +1721,7 @@ class AnnScore(AnnObject):
                 AllObjects), or any combination (with | or &~) of those or NotesAndRests,
                 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-                Style, Metadata, Voicing, or NoteStaffPosition.
+                LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
         super().__init__(score)
         self.part_list: list[AnnPart] = []
