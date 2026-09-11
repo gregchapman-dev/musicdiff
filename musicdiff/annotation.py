@@ -908,11 +908,11 @@ class AnnLyric(AnnObject):
         # are several .syllabic/.text combos that create the same .rawText).
         self.lyric = lyric.rawText
 
-        if lyric.number is not None:
-            self.number = lyric.number
-
-        if (DetailLevel.includesLyricIdentifiers(detail)
-                and lyric._identifier is not None
+        if (DetailLevel.includesLyricIdentifiers(detail):
+            # Number and identifier are both considered lyric identifiers
+            if lyric.number is not None:
+                self.number = lyric.number
+            if lyric._identifier is not None
                 and lyric._identifier != lyric.number
                 and lyric._identifier != str(lyric.number)):
             self.identifier = lyric._identifier

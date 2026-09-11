@@ -102,7 +102,6 @@ required:
             'metadata',
             'voicing',
             'notestaffposition',
-            'lyricidentifiers',
 
             'notesandrests',
             'beams',
@@ -119,7 +118,8 @@ required:
             'chordsymbols',
             'ottavas',
             'arpeggios',
-            'lyrics'],
+            'lyrics',
+            'lyricidentifiers'],
         help='included details (can include multiple details)'
     )
     parser.add_argument(
@@ -136,7 +136,6 @@ required:
             'metadata',
             'voicing',
             'notestaffposition',
-            'lyricidentifiers',
 
             'notesandrests',
             'beams',
@@ -153,7 +152,8 @@ required:
             'chordsymbols',
             'ottavas',
             'arpeggios',
-            'lyrics'],
+            'lyrics',
+            'lyricidentifiers'],
         help='excluded details (can exclude multiple details)'
     )
 
