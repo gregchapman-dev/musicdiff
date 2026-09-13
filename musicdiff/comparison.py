@@ -595,27 +595,19 @@ class Comparison:
             cost += content_cost
             op_list.append(DiffOperation('lyricedit', annLyric1, annLyric2, content_cost))
 
-        # add for the number
-        if annLyric1.number != annLyric2.number:
-            number_cost: int
-            if annLyric1.number == 0 or annLyric2.number == 0:
-                # add or delete number
-                number_cost = 1
-            else:
-                # add and delete number
-                number_cost = 2
-            cost += number_cost
-            op_list.append(DiffOperation('lyricnumedit', annLyric1, annLyric2, number_cost))
+        # we do not compare annLyric.number (it's only there for sorting,
+        # which is done in AnnMeasure initialization, well before now)
 
         # add for the identifier
         if annLyric1.identifier != annLyric2.identifier:
-            # someday we might do a Levenshtein distance of the two ids
             id_cost: int
             if not annLyric1.identifier or not annLyric1.identifier:
+                # someday we might use cost = len(identifier)
                 # add or delete identifier
                 id_cost = 1
             else:
                 # add and delete identifier
+                # someday we might do a Levenshtein distance of the two ids
                 id_cost = 2
             cost += id_cost
             op_list.append(DiffOperation('lyricidedit', annLyric1, annLyric2, id_cost))
