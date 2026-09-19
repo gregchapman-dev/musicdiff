@@ -786,7 +786,8 @@ class Comparison:
         # add for the pitches
         # if they are equal
         if annNote1.pitches == annNote2.pitches:
-            op_list_pitch, cost_pitch = [], 0
+            cost_pitch: int = 0
+            op_list_pitch: list[DiffOperation] = []
         else:
             # pitches diff is computed using Levenshtein distances (they are already ordered)
             op_list_pitch, cost_pitch = Comparison._pitches_levenshtein_diff(
