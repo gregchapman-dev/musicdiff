@@ -1278,6 +1278,7 @@ class AnnMeasure(AnnObject):
         self.extras_list.sort(key=lambda e: (e.kind, e.offset))
 
         self.lyrics_list: list[AnnLyric] = []
+        self.lyric_verse_ids: dict[int, list[str]] = {}
         if DetailLevel.includesLyrics(detail):
             for lyric_holder in M21Utils.get_lyrics_holders(measure):
                 for lyric in lyric_holder.lyrics:
@@ -1286,10 +1287,23 @@ class AnnMeasure(AnnObject):
                         self.lyrics_list.append(AnnLyric(lyric_holder, lyric, measure, detail))
             self.n_of_elements += len(self.lyrics_list)
 
-            # For correct comparison, sort the lyrics_list, so that any lyrics
-            # that all have the same offset are sorted by verse number.
             if self.lyrics_list:
+                # For correct comparison, sort the lyrics_list, so that any lyrics
+                # that all have the same offset are sorted by verse number.
                 self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.number))
+
+                if DetailLevel.includesLyricIdentifiers(detail):
+                    # gather up all the lyric verse id strings for the lyrics in this measure
+                    # (store them by lyric verse number)
+                    for annlyric in self.lyrics_list:
+                        if annlyric.identifier:
+                            if annlyric.number in self.lyric_verse_ids:
+                                if (annlyric.identifier
+                                        not in self.lyric_verse_ids[annlyric.number]):
+                                    self.lyric_verse_ids[annlyric.number].append(
+                                        annlyric.identifier)
+                            else:
+                                self.lyric_verse_ids[annlyric.number] = [annlyric.identifier]
 
         # precomputed/cached values to speed up the computation.
         # As they start to be long, they are hashed
@@ -1424,10 +1438,27 @@ class AnnPart(AnnObject):
             if ann_bar.n_of_elements > 0:
                 self.bar_list.append(ann_bar)
         self.n_of_bars: int = len(self.bar_list)
+
+        # Gather up the lyric verse ids (names)
+        self.lyric_verse_ids: dict[int, list[str]] = {}
+        if DetailLevel.includesLyricIdentifiers(detail):
+            for ann_bar in self.bar_list:
+                self.add_unique_lyric_verse_ids_from(ann_bar.lyric_verse_ids)
+
         # Precomputed str to speed up the computation.
         # String itself is pretty long, so it is hashed
         self.precomputed_str: int = hash(self.__str__())
         self._cached_notation_size: int | None = None
+
+    def add_unique_lyric_verse_ids_from(self, verse_ids: dict[int, list[str]]):
+        for num, new_ids in verse_ids.items():
+            if num in self.lyric_verse_ids:
+                curr_ids: list[str] = self.lyric_verse_ids[num]
+                for new_id in new_ids:
+                    if new_id not in curr_ids:
+                        curr_ids.append(new_id)
+            else:
+                self.lyric_verse_ids[num] = new_ids
 
     def __str__(self) -> str:
         output: str = 'Part: '
@@ -1825,6 +1856,17 @@ class AnnScore(AnnObject):
 
         # cached notation size
         self._cached_notation_size: int | None = None
+
+    def check_lyric_verse_names(self) -> str:
+        # check for any weird lyric verse id (name) changes
+        output: str = ''
+        for pidx, annpart in enumerate(self.part_list):
+            for num, id_list in annpart.lyric_verse_ids.items():
+                if len(id_list) > 1:
+                    if output:
+                        output += '\n'
+                    output += f'part {pidx}: lyric verse {num} has names {id_list}.'
+        return output
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
