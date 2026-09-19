@@ -1159,6 +1159,7 @@ class AnnMeasure(AnnObject):
     def __init__(
         self,
         measure: m21.stream.Measure,
+        prev_ann_measure,
         part: m21.stream.Part,
         score: m21.stream.Score,
         spannerBundle: m21.spanner.SpannerBundle,
@@ -1169,6 +1170,7 @@ class AnnMeasure(AnnObject):
 
         Args:
             measure (music21.stream.Measure): The music21 Measure to extend.
+            prev_ann_measure (AnnMeasure | None): the previous (annotated) measure.
             part (music21.stream.Part): the enclosing music21 Part.
             score (music21.stream.Score): the enclosing music21 Score.
             spannerBundle (music21.spanner.SpannerBundle): a bundle of all the spanners
@@ -1180,6 +1182,8 @@ class AnnMeasure(AnnObject):
                 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
                 LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.
         '''
+        if t.TYPE_CHECKING:
+            assert prev_ann_measure is None or isinstance(prev_ann_measure, AnnMeasure)
         super().__init__(measure)
         self.includes_voicing: bool = DetailLevel.includesVoicing(detail)
         self.n_of_elements: int = 0
@@ -1278,7 +1282,12 @@ class AnnMeasure(AnnObject):
         self.extras_list.sort(key=lambda e: (e.kind, e.offset))
 
         self.lyrics_list: list[AnnLyric] = []
-        self.lyric_verse_ids: dict[int, list[str]] = {}
+        self.most_recent_lyric_ids: dict[int, str] = {}
+        if prev_ann_measure and prev_ann_measure.most_recent_lyric_ids:
+            self.most_recent_lyric_ids = copy.copy(
+                prev_ann_measure.most_recent_lyric_ids
+            )
+
         if DetailLevel.includesLyrics(detail):
             for lyric_holder in M21Utils.get_lyrics_holders(measure):
                 for lyric in lyric_holder.lyrics:
@@ -1293,17 +1302,17 @@ class AnnMeasure(AnnObject):
                 self.lyrics_list.sort(key=lambda lyr: (lyr.offset, lyr.number))
 
                 if DetailLevel.includesLyricIdentifiers(detail):
-                    # gather up all the lyric verse id strings for the lyrics in this measure
-                    # (store them by lyric verse number)
                     for annlyric in self.lyrics_list:
-                        if annlyric.identifier:
-                            if annlyric.number in self.lyric_verse_ids:
-                                if (annlyric.identifier
-                                        not in self.lyric_verse_ids[annlyric.number]):
-                                    self.lyric_verse_ids[annlyric.number].append(
-                                        annlyric.identifier)
-                            else:
-                                self.lyric_verse_ids[annlyric.number] = [annlyric.identifier]
+                        expected_lyric_id: str = ''
+                        if annlyric.number in self.most_recent_lyric_ids:
+                            expected_lyric_id = self.most_recent_lyric_ids[annlyric.number]
+                        if annlyric.identifier == expected_lyric_id:
+                            # didn't change, so don't annotated it
+                            annlyric.identifier = ''
+                        else:
+                            # did change, so leave it annotated, and
+                            # update most recent to current id
+                            self.most_recent_lyric_ids[annlyric.number] = annlyric.identifier
 
         # precomputed/cached values to speed up the computation.
         # As they start to be long, they are hashed
@@ -1432,33 +1441,19 @@ class AnnPart(AnnObject):
         super().__init__(part)
         self.part_idx: int = part_idx
         self.bar_list: list[AnnMeasure] = []
+        prev_ann_bar: AnnMeasure | None = None
         for measure in part.getElementsByClass('Measure'):
             # create the bar objects
-            ann_bar = AnnMeasure(measure, part, score, spannerBundle, detail)
+            ann_bar = AnnMeasure(measure, prev_ann_bar, part, score, spannerBundle, detail)
             if ann_bar.n_of_elements > 0:
                 self.bar_list.append(ann_bar)
+                prev_ann_bar = ann_bar
         self.n_of_bars: int = len(self.bar_list)
-
-        # Gather up the lyric verse ids (names)
-        self.lyric_verse_ids: dict[int, list[str]] = {}
-        if DetailLevel.includesLyricIdentifiers(detail):
-            for ann_bar in self.bar_list:
-                self.add_unique_lyric_verse_ids_from(ann_bar.lyric_verse_ids)
 
         # Precomputed str to speed up the computation.
         # String itself is pretty long, so it is hashed
         self.precomputed_str: int = hash(self.__str__())
         self._cached_notation_size: int | None = None
-
-    def add_unique_lyric_verse_ids_from(self, verse_ids: dict[int, list[str]]):
-        for num, new_ids in verse_ids.items():
-            if num in self.lyric_verse_ids:
-                curr_ids: list[str] = self.lyric_verse_ids[num]
-                for new_id in new_ids:
-                    if new_id not in curr_ids:
-                        curr_ids.append(new_id)
-            else:
-                self.lyric_verse_ids[num] = new_ids
 
     def __str__(self) -> str:
         output: str = 'Part: '
@@ -1856,17 +1851,6 @@ class AnnScore(AnnObject):
 
         # cached notation size
         self._cached_notation_size: int | None = None
-
-    def check_lyric_verse_names(self) -> str:
-        # check for any weird lyric verse id (name) changes
-        output: str = ''
-        for pidx, annpart in enumerate(self.part_list):
-            for num, id_list in annpart.lyric_verse_ids.items():
-                if len(id_list) > 1:
-                    if output:
-                        output += '\n'
-                    output += f'part {pidx}: lyric verse {num} has names {id_list}.'
-        return output
 
     def __eq__(self, other) -> bool:
         # equality does not consider MEI id!
