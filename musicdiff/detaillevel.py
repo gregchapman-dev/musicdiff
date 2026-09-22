@@ -78,10 +78,15 @@ class DetailLevel(IntEnum):
     # Lyrics
     Lyrics = 1 << 14
 
+    # The names the encoding gives to the lyric verses ('1,3,5', 'part1verse1', etc).
+    # Note that if Lyrics is not also requested, no lyric identifier differences
+    # will be found.
+    LyricIdentifiers = 1 << 15
+
     # other objects (everything above that isn't in DecoratedNotesAndRests)
     OtherObjects = (
         Signatures | Directions | Barlines | StaffDetails
-        | ChordSymbols | Ottavas | Arpeggios | Lyrics
+        | ChordSymbols | Ottavas | Arpeggios | Lyrics | LyricIdentifiers
     )
 
     # all objects = decorated notes and other musical objects
@@ -91,29 +96,22 @@ class DetailLevel(IntEnum):
     # by hand if you want them.
 
     # Typographical stuff: stem direction, note shape, color, italic/bold, etc
-    Style = 1 << 15
+    Style = 1 << 16
 
     # Metadata: title, composer, etc
-    Metadata = 1 << 16
+    Metadata = 1 << 17
 
     # By default, we ignore which voice and chord each note is in, and just compare the
     # individual notes (and rests) themselves.  If Voicing is turned on, we compare which
     # voice and which chord each note is in.
     # Note that comparison of voices is done with no consideration of voice ordering or
     # voice ids; we compare the best matching pairs of voices.
-    Voicing = 1 << 17
+    Voicing = 1 << 18
 
     # If specified, note staff positions will be compared instead of note pitches. This is
     # good for ML training, where an erroneous clef or ottava should not propagate errors
     # into every affected note. If this is set, NotesAndRests will also be considered set.
-    NoteStaffPosition = 1 << 18
-
-    # The names the encoding gives to the lyric verses ('verse', 'part1verse1', etc).
-    # They print nothing in the score, so they are off by default; turn them on to
-    # compare them.
-    # Note that if Lyrics is not also requested, no lyric identifier differences
-    # will be found.
-    LyricIdentifiers = 1 << 19
+    NoteStaffPosition = 1 << 19
 
     # default detail level is all objects:
     Default = AllObjects
@@ -185,6 +183,10 @@ class DetailLevel(IntEnum):
         return val & cls.Lyrics != 0
 
     @classmethod
+    def includesLyricIdentifiers(cls, val: int) -> bool:
+        return val & cls.LyricIdentifiers != 0
+
+    @classmethod
     def includesStyle(cls, val: int) -> bool:
         return val & cls.Style != 0
 
@@ -199,10 +201,6 @@ class DetailLevel(IntEnum):
     @classmethod
     def includesNoteStaffPosition(cls, val: int) -> bool:
         return val & cls.NoteStaffPosition != 0
-
-    @classmethod
-    def includesLyricIdentifiers(cls, val: int) -> bool:
-        return val & cls.LyricIdentifiers != 0
 
     @classmethod
     def _included_m21_types(cls, val: int) -> tuple[t.Type, ...]:
