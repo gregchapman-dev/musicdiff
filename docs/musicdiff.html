@@ -158,7 +158,7 @@ musicdiff    </h1>
 </span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd">            AllObjects), or any combination (with | or &amp;~) of those or NotesAndRests,</span>
 </span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="sd">            Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,</span>
 </span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="sd">            Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,</span>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">            Style, Metadata, Voicing, or NoteStaffPosition.</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">            LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.</span>
 </span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
 </span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">    Returns:</span>
 </span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="sd">        int | None: The total OMR Edit Distance, i.e. the number of individual symbols</span>
@@ -416,7 +416,7 @@ musicdiff    </h1>
 </span><span id="L-355"><a href="#L-355"><span class="linenos">355</span></a><span class="sd">            AllObjects), or any combination (with | or &amp;~) of those or NotesAndRests,</span>
 </span><span id="L-356"><a href="#L-356"><span class="linenos">356</span></a><span class="sd">            Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,</span>
 </span><span id="L-357"><a href="#L-357"><span class="linenos">357</span></a><span class="sd">            Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,</span>
-</span><span id="L-358"><a href="#L-358"><span class="linenos">358</span></a><span class="sd">            Style, Metadata, Voicing, or NoteStaffPosition.</span>
+</span><span id="L-358"><a href="#L-358"><span class="linenos">358</span></a><span class="sd">            LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.</span>
 </span><span id="L-359"><a href="#L-359"><span class="linenos">359</span></a>
 </span><span id="L-360"><a href="#L-360"><span class="linenos">360</span></a><span class="sd">    Returns:</span>
 </span><span id="L-361"><a href="#L-361"><span class="linenos">361</span></a><span class="sd">        tuple[float, str]: Overall OMR-NED score for the batch, and the full path to the</span>
@@ -593,7 +593,7 @@ musicdiff    </h1>
 </span><span id="diff-98"><a href="#diff-98"><span class="linenos"> 98</span></a><span class="sd">            AllObjects), or any combination (with | or &amp;~) of those or NotesAndRests,</span>
 </span><span id="diff-99"><a href="#diff-99"><span class="linenos"> 99</span></a><span class="sd">            Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,</span>
 </span><span id="diff-100"><a href="#diff-100"><span class="linenos">100</span></a><span class="sd">            Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,</span>
-</span><span id="diff-101"><a href="#diff-101"><span class="linenos">101</span></a><span class="sd">            Style, Metadata, Voicing, or NoteStaffPosition.</span>
+</span><span id="diff-101"><a href="#diff-101"><span class="linenos">101</span></a><span class="sd">            LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.</span>
 </span><span id="diff-102"><a href="#diff-102"><span class="linenos">102</span></a>
 </span><span id="diff-103"><a href="#diff-103"><span class="linenos">103</span></a><span class="sd">    Returns:</span>
 </span><span id="diff-104"><a href="#diff-104"><span class="linenos">104</span></a><span class="sd">        int | None: The total OMR Edit Distance, i.e. the number of individual symbols</span>
@@ -781,7 +781,7 @@ Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
 AllObjects), or any combination (with | or &amp;~) of those or NotesAndRests,
 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-Style, Metadata, Voicing, or NoteStaffPosition.</li>
+LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.</li>
 </ul>
 
 <h6 id="returns">Returns:</h6>
@@ -829,7 +829,7 @@ Style, Metadata, Voicing, or NoteStaffPosition.</li>
 </span><span id="diff_ml_training-356"><a href="#diff_ml_training-356"><span class="linenos">356</span></a><span class="sd">            AllObjects), or any combination (with | or &amp;~) of those or NotesAndRests,</span>
 </span><span id="diff_ml_training-357"><a href="#diff_ml_training-357"><span class="linenos">357</span></a><span class="sd">            Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,</span>
 </span><span id="diff_ml_training-358"><a href="#diff_ml_training-358"><span class="linenos">358</span></a><span class="sd">            Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,</span>
-</span><span id="diff_ml_training-359"><a href="#diff_ml_training-359"><span class="linenos">359</span></a><span class="sd">            Style, Metadata, Voicing, or NoteStaffPosition.</span>
+</span><span id="diff_ml_training-359"><a href="#diff_ml_training-359"><span class="linenos">359</span></a><span class="sd">            LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.</span>
 </span><span id="diff_ml_training-360"><a href="#diff_ml_training-360"><span class="linenos">360</span></a>
 </span><span id="diff_ml_training-361"><a href="#diff_ml_training-361"><span class="linenos">361</span></a><span class="sd">    Returns:</span>
 </span><span id="diff_ml_training-362"><a href="#diff_ml_training-362"><span class="linenos">362</span></a><span class="sd">        tuple[float, str]: Overall OMR-NED score for the batch, and the full path to the</span>
@@ -931,7 +931,7 @@ Can be DecoratedNotesAndRests, OtherObjects, AllObjects, Default (currently
 AllObjects), or any combination (with | or &amp;~) of those or NotesAndRests,
 Beams, Tremolos, Ornaments, Articulations, Ties, Slurs, Signatures,
 Directions, Barlines, StaffDetails, ChordSymbols, Ottavas, Arpeggios, Lyrics,
-Style, Metadata, Voicing, or NoteStaffPosition.</li>
+LyricIdentifiers, Style, Metadata, Voicing, or NoteStaffPosition.</li>
 </ul>
 
 <h6 id="returns">Returns:</h6>
