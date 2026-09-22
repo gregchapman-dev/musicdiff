@@ -1,0 +1,32 @@
+Changes since 5.1.0:
+    Low-level API change (NOT BACKWARD COMPATIBLE):
+        New types replace old tuples: PitchInfo and DiffOperation.  This enabled a
+            nice refactoring of the visualization code, allowing a lot of shared
+            code between visually rendered score diffs and printed text diffs.
+
+    Added coverage tests for the newly factored visualization code.
+    In the process, found and fixed the following:
+        Fixed graceness comparison to be simply visual (no more accented vs
+            non-accented, just slashed vs not).
+        Note comparison fix.
+        Barline comparison fix.
+        Better text description of vertically positioned rest.
+
+    Optimizations:
+        From René-paul Debroize: massive optimization of expensive comparisons (i.e.
+            comparisons of very different scores).  Can literally be >100x faster,
+            and use much less memory.
+
+        Use weakref to avoid recursively searching the scores over and over during
+            visualization.
+
+    Better lyric identifier (verse name) comparisons:
+        From René-paul Debroize: Add new lyricidentifiers command-line option so
+            comparison of verse names can be turned off.
+
+        Compare lyric identifiers (verse names) only when they change, instead of
+            being repeatedly comparing them for every single lyric syllable (which
+            is how they are stored in music21 scores).
+
+        Stop comparing lyric numbers (1-based lyric verse indexes); use them only
+            for sorting the lyrics at a particular offset within a measure.

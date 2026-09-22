@@ -7,7 +7,7 @@ musicdiff is derived from: [music-score-diff](https://github.com/fosfrancesco/mu
     by [Francesco Foscarin](https://github.com/fosfrancesco).
 
 ## Setup
-Depends on [music21](https://pypi.org/project/music21) (version 9.9.1+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21) (version 4.0.1+). You also will need to configure music21 (instructions [here](https://www.music21.org/music21docs/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).  Requires Python 3.10+.
+Depends on [music21](https://pypi.org/project/music21) (version 10.5.0+),  [numpy](https://pypi.org/project/numpy), and [converter21](https://pypi.org/project/converter21) (version 4.0.2+). You also will need to configure music21 (instructions [here](https://www.music21.org/music21docs/usersGuide/usersGuide_01_installing.html)) to display a musical score (e.g. with MuseScore).  Requires Python 3.12+.
 
 ## Usage
 On the command line:
@@ -20,12 +20,12 @@ On the command line:
                     otherobjects, allobjects, or any combination of those and/or the following:
                     notesandrests; the aforementioned note decorations: beams, tremolos, ornaments,
                     articulations, ties, slurs; the other objects: signatures, directions,
-                    barlines, staffdetails, chordsymbols, ottavas, arpeggios, and lyrics; and
-                    a final few details that are not found in allobjects: style, metadata, 
-                    notestaffposition, and voicing.  notestaffposition compares note staff position
-                    instead of note diatonic pitch (to avoid cascading errors from OMR clef/key 
-                    errors), and voicing compares how notes are included in voices and chords (by 
-                    default this is ignored).
+                    barlines, staffdetails, chordsymbols, ottavas, arpeggios, lyrics and
+                    lyricidentifiers; and a final few details that are not found in allobjects:
+                    style, metadata, notestaffposition, and voicing.  notestaffposition compares
+                    note staff position instead of note diatonic pitch (to avoid cascading errors
+                    from OMR clef/key errors), and voicing compares how notes are included in voices
+                    and chords (by default this is ignored).
       -x/--exclude  one or more named details to exclude from comparison.  Can be any of the
                     named details accepted by -i/--include.
       -o/--output   one or more of three output formats: text (or t) or visual (or v) or omrned
@@ -50,12 +50,12 @@ Alternate usage (for ML training runs):
                     otherobjects, allobjects, or any combination of those and/or the following:
                     notesandrests; the aforementioned note decorations: beams, tremolos, ornaments,
                     articulations, ties, slurs; the other objects: signatures, directions,
-                    barlines, staffdetails, chordsymbols, ottavas, arpeggios, and lyrics; and
-                    a final few details that are not found in allobjects: style, metadata, 
-                    notestaffposition, and voicing.  notestaffposition compares note staff position
-                    instead of note diatonic pitch (to avoid cascading errors from OMR clef/key 
-                    errors), and voicing compares how notes are included in voices and chords (by 
-                    default this is ignored).
+                    barlines, staffdetails, chordsymbols, ottavas, arpeggios, lyrics and
+                    lyricidentifiers; and a final few details that are not found in allobjects:
+                    style, metadata, notestaffposition, and voicing.  notestaffposition compares
+                    note staff position instead of note diatonic pitch (to avoid cascading errors
+                    from OMR clef/key errors), and voicing compares how notes are included in voices
+                    and chords (by default this is ignored).
       -x/--exclude  one or more named details to exclude from comparison.  Can be any of the
                     named details accepted by -i/--include.
 
@@ -72,9 +72,9 @@ If you use this work in any research, please cite the relevant papers:
 ```
 @inproceedings{juan_c_martinez_sevilla_2025_17811446,
   title = {Sheet Music Benchmark: Standardized Optical Music Recognition Evaluation},
-  author = {Juan C. Martinez-Sevilla and Joan Cerveto-Serrano and Noelia Luna-Barahona and 
+  author = {Juan C. Martinez-Sevilla and Joan Cerveto-Serrano and Noelia Luna-Barahona and
             Greg Chapman and Craig Sapp and David Rizo and Jorge Calvo-Zaragoza},
-  booktitle = {Proceedings of the 26th International Society for 
+  booktitle = {Proceedings of the 26th International Society for
                Music Information Retrieval Conference},
   pages = {618-625},
   year = 2025,
