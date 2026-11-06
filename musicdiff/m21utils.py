@@ -455,6 +455,32 @@ class M21Utils:
 
 
     @staticmethod
+    def is_full_measure_rest(rest: m21.note.Rest) -> bool:
+        '''
+        Whether rest lasts its whole measure: either the file says so (MusicXML
+        <rest measure="yes"/>), or its duration is the measure's duration.
+        '''
+        if rest.fullMeasure in (True, 'always'):
+            return True
+        if rest.fullMeasure == 'auto':
+            ts: m21.meter.TimeSignature | None = rest.getContextByClass(m21.meter.TimeSignature)
+            return ts is not None and ts.barDuration.quarterLength == rest.duration.quarterLength
+        return False
+
+    @staticmethod
+    def get_compared_duration(gn: m21.note.GeneralNote) -> m21.duration.Duration:
+        '''
+        Return the duration whose type and dots are compared for gn.
+        A rest lasting its whole measure means the same whatever type the file
+        gives it (whole, dotted half in 3/4, or none with <rest measure="yes"/>,
+        from which music21 derives a dotted half in 3/4): it is compared as a
+        whole rest.
+        '''
+        if isinstance(gn, m21.note.Rest) and M21Utils.is_full_measure_rest(gn):
+            return m21.duration.Duration('whole')
+        return gn.duration
+
+    @staticmethod
     def get_type_num(duration: m21.duration.Duration) -> float:
         typeStr: str = duration.type
         if typeStr == 'complex':
