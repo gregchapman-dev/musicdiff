@@ -101,6 +101,7 @@ class AnnNote(AnnObject):
         # general_note (if parent_chord not present); we call that the carrier
         carrier: m21.note.GeneralNote = parent_chord or general_note
         curr_clef: m21.clef.Clef | None = carrier.getContextByClass(m21.clef.Clef)
+        compared_dur: m21.duration.Duration = M21Utils.get_compared_duration(carrier)
 
         self.gap_dur: OffsetQL = gap_dur
         self.beamings: list[str] = enhanced_beam_list
@@ -114,7 +115,7 @@ class AnnNote(AnnObject):
 
         # fullNameSuffix is only for text output, it is not involved in comparison at all.
         # It is of the form 'Dotted Quarter Rest', etc.
-        self.fullNameSuffix: str = general_note.duration.fullName
+        self.fullNameSuffix: str = M21Utils.get_compared_duration(general_note).fullName
         if isinstance(general_note, m21.note.Rest):
             self.fullNameSuffix += ' Rest'
         elif isinstance(general_note, m21.chord.ChordBase):
@@ -141,8 +142,8 @@ class AnnNote(AnnObject):
                 self.note_offset = chord_offset
 
             # visual duration
-            self.note_dur_type = carrier.duration.type
-            self.note_dur_dots = carrier.duration.dots
+            self.note_dur_type = compared_dur.type
+            self.note_dur_dots = compared_dur.dots
 
         if DetailLevel.includesStyle(detail):
             # we will take style from the individual note, and then override with
@@ -219,7 +220,7 @@ class AnnNote(AnnObject):
         dur: m21.duration.Duration = carrier.duration
         # note head
         type_number = Fraction(
-            M21Utils.get_type_num(dur)
+            M21Utils.get_type_num(compared_dur)
         )
         self.note_head: int | Fraction
         if type_number >= 4:
@@ -227,7 +228,7 @@ class AnnNote(AnnObject):
         else:
             self.note_head = type_number
         # dots
-        self.dots: int = dur.dots
+        self.dots: int = compared_dur.dots
         # graceness
         if dur.isGrace:
             if t.TYPE_CHECKING:

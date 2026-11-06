@@ -336,3 +336,32 @@ class TestScl:
         op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
         assert cost == 10
         assert len(op_list) == 10
+
+
+    def test_musicxml_full_measure_rest_diff1(self):
+        # A complete measure rest in 3/4 is the same whether the file gives it the
+        # whole type or no type.
+        score1_path = Path("tests/test_scores/musicxml/full_measure_rest_1a.xml")
+        score1 = m21.converter.parse(str(score1_path))
+        score2_path = Path("tests/test_scores/musicxml/full_measure_rest_1b.xml")
+        score2 = m21.converter.parse(str(score2_path))
+        for detail in (DetailLevel.AllObjects | DetailLevel.Voicing, DetailLevel.Default):
+            score_lin1 = AnnScore(score1, detail=detail)
+            score_lin2 = AnnScore(score2, detail=detail)
+            op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+            assert cost == 0
+            assert len(op_list) == 0
+
+
+    def test_musicxml_full_measure_rest_diff2(self):
+        # A dotted half rest lasting the 3/4 measure is a complete measure rest too.
+        score1_path = Path("tests/test_scores/musicxml/full_measure_rest_1a.xml")
+        score1 = m21.converter.parse(str(score1_path))
+        score2_path = Path("tests/test_scores/musicxml/full_measure_rest_1c.xml")
+        score2 = m21.converter.parse(str(score2_path))
+        for detail in (DetailLevel.AllObjects | DetailLevel.Voicing, DetailLevel.Default):
+            score_lin1 = AnnScore(score1, detail=detail)
+            score_lin2 = AnnScore(score2, detail=detail)
+            op_list, cost = Comparison.annotated_scores_diff(score_lin1, score_lin2)
+            assert cost == 0
+            assert len(op_list) == 0
